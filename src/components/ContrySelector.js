@@ -74,10 +74,10 @@ const CountrySelector = ({ onCountryChange }) => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-[95%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700"
+                        className="w-[95%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700 text-[14px]"
                         placeholder="Search"
                     />
-                    <ul className="max-h-40 overflow-y-auto">
+                    <ul className="max-h-40 overflow-y-auto text-[14px]">
                         {filteredCountries.length > 0 ? (
                             filteredCountries.map((country, index) => (
                                 <li key={index} className="flex items-center p-3 cursor-pointer hover:bg-gray-100" onClick={() => handleCountryChange(country)}>
@@ -160,10 +160,10 @@ const StateSelector = ({ selectedCountry, onStateChange, isMandatory }) => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-[93%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700"
+                        className="w-[93%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700 text-[14px]"
                         placeholder="Search"
                     />
-                    <ul className="max-h-40 overflow-y-auto">
+                    <ul className="max-h-40 overflow-y-auto text-[14px]">
                         {filteredStates.length > 0 ? (
                             filteredStates.map((state, index) => (
                                 <li key={index} className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => handleStateChange(state)}>

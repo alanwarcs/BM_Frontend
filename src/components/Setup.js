@@ -1,13 +1,31 @@
-import React, { useState } from 'react'
-import ContrySelector from './ContrySelector'
+import React, { useState } from 'react';
+import ContrySelector from './ContrySelector';
+import TimezoneSelector from './TimezoneSelector';
+import CurrencySelector from './CurrencySelector';
+
 const Setup = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown toggle
-    const [step1, setStep1] = useState(false); // Dropdown toggle
+    const [isGstRegistered, setIsGstRegistered] = useState(false); // GST Registered state
+    const [selectedTimezone, setSelectedTimezone] = useState(null);
+    const [selectedCurrency, setSelectedCurrency] = useState(null);
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
+    const handleGstCheckboxChange = (e) => {
+        setIsGstRegistered(e.target.checked);
+    };
+
+    const handleTimezoneChange = (timezone) => {
+        setSelectedTimezone(timezone);
+        console.log('Selected Timezone:', timezone);
+    };
+
+    const handleCurrencyChange = (currency) => {
+        console.log('Selected currency:', currency);
+        setSelectedCurrency(currency);
+    };
     return (
-        <div className='relative flex flex-col items-center justify-between w-full min-h-screen p-3'>
+        <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-3'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
 
@@ -33,30 +51,29 @@ const Setup = () => {
                 <p className='text-center'>
                     Enter your Business/Organization Details <br />to complete Setup.
                 </p>
-                {/* {step1 &&( */}
                 <div className='flex text-left flex-col mt-5'>
                     <input type="text" name="address" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
                     <ContrySelector />
                     <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
+                    <TimezoneSelector onTimezoneChange={handleTimezoneChange} />
+                    <CurrencySelector onCurrencyChange={handleCurrencyChange} />
                     <div className='flex items-center mx-3 my-2 w-fit'>
-                        <input type="checkbox" name="gst" id="gst" className='me-2' />
-                        <label htmlFor="terms" className='text-[14px]'>
-                            Is your Business GST Registerd?
+                        <input type="checkbox" name="gst" id="gst" className='me-2' checked={isGstRegistered} onChange={handleGstCheckboxChange} />
+                        <label htmlFor="gst" className='text-[14px]'>
+                            Is your Business GST Registered?
                         </label>
                     </div>
-                    <input type="text" name="gstin" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='GSTIN' />
-                    
+
+                    {/* Conditionally render GSTIN input if the user checks the GST Registered checkbox */}
+                    {isGstRegistered && (
+                        <input type="text" name="gstin" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='GSTIN' />
+                    )}
                     <div className='flex w-full justify-between'>
-                        <button className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
-                            Preview
-                        </button>
                         <button className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
                             Next
                         </button>
                     </div>
                 </div>
-                {/* )} */}
-
             </form>
             <footer className='my-4 items-center'>
                 <p className='text-sm font-thin text-center text-gray-500'>
@@ -64,7 +81,7 @@ const Setup = () => {
                 </p>
             </footer>
         </div>
-    )
-}
+    );
+};
 
-export default Setup
+export default Setup;
