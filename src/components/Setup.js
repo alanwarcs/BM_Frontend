@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ContrySelector from './ContrySelector';
+import CountrySelector from './CountrySelector';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 
@@ -54,7 +54,7 @@ const Setup = () => {
                 <div className='flex text-left flex-col mt-5'>
                     <h3 className='text-[14px] font-semibold mx-2'>Address</h3>
                     <input type="text" name="address" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
-                    <ContrySelector />
+                    <CountrySelector />
                     <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
                     <h3 className='text-[14px] font-semibold mx-2'>Preferences</h3>
                     <TimezoneSelector onTimezoneChange={handleTimezoneChange} />
