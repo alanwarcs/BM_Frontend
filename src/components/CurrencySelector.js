@@ -45,7 +45,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
     return (
         <div className="relative" ref={dropdownRef}>
             <div
-                className="py-3 px-4 m-2 rounded-lg outline outline-1 text-[14px] outline-customSecondary focus:outline-2 text-gray-700 cursor-pointer text-[14px]"
+                className="py-3 px-4 m-2 rounded-lg outline outline-1 font-[14px] outline-customSecondary focus:outline-2 text-gray-700 cursor-pointer text-[14px]"
                 onClick={toggleDropdown}
                 role="button"
                 aria-expanded={isDropdownOpen}
