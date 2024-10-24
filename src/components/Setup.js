@@ -54,9 +54,9 @@ const Setup = () => {
                 </div>
 
                 {isDropdownOpen && (
-                    <div className='absolute right-0 top-16 max-h-60 m-1 bg-white rounded-lg shadow-lg z-10 text-center'>
-                        <ul className="w-[100px] max-h-48 overflow-y-auto">
-                            <li className="p-3 text-gray-500">
+                    <div className='absolute right-0 top-16 max-h-60 m-1 bg-white rounded-lg shadow z-10 text-center overflow-hidden py-1'>
+                        <ul className="max-h-48 overflow-y-auto w-[120px]">
+                            <li className="p-3 hover:bg-gray-100">
                                 <a href="/">Logout</a>
                             </li>
                         </ul>

@@ -55,7 +55,7 @@ const PhoneCodeSelector = () => {
       </div>
 
       {isDropdownOpen && (
-        <div className="flex absolute flex-col top-12 rounded-lg shadow-lg bg-white w-[250px] max-h-[200px] z-10">
+        <div className="flex absolute flex-col top-12 rounded-lg shadow bg-white w-[250px] max-h-[200px] z-10">
           {/* Search Bar */}
           <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]" placeholder="Search" />
 

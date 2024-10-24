@@ -69,7 +69,7 @@ const CountrySelector = ({ onCountryChange }) => {
             </div>
 
             {isDropdownOpen && (
-                <div className="absolute max-h-60 mt-2 bg-white rounded-lg shadow-lg z-10">
+                <div className="absolute max-h-60 mt-2 bg-white rounded-lg shadow z-10">
                     <input
                         type="text"
                         value={searchQuery}
@@ -155,7 +155,7 @@ const StateSelector = ({ selectedCountry, onStateChange, isMandatory }) => {
             </div>
 
             {isDropdownOpen && states.length > 0 && (
-                <div className="absolute max-w-[250px] max-h-60 m-2 bg-white rounded-lg shadow-lg z-10">
+                <div className="absolute max-w-[250px] max-h-60 m-2 bg-white rounded-lg shadow z-10">
                     <input
                         type="text"
                         value={searchQuery}
