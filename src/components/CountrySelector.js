@@ -22,6 +22,7 @@ const CountrySelector = ({ onCountryChange }) => {
     const [countries, setCountries] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [focusedIndex, setFocusedIndex] = useState(-1); // Track focused index
     const dropdownRef = useRef(null);
 
     useOutsideClick(dropdownRef, () => setIsDropdownOpen(false));
@@ -47,6 +48,32 @@ const CountrySelector = ({ onCountryChange }) => {
     const filteredCountries = countries.filter((country) =>
         country.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const handleKeyDown = (e) => {
+        if (!isDropdownOpen) return;
+
+        if (e.key === "ArrowDown") {
+            setFocusedIndex((prevIndex) => (prevIndex + 1) % filteredCountries.length);
+        } else if (e.key === "ArrowUp") {
+            setFocusedIndex((prevIndex) => (prevIndex - 1 + filteredCountries.length) % filteredCountries.length);
+        } else if (e.key === "Enter" && focusedIndex !== -1) {
+            handleCountryChange(filteredCountries[focusedIndex]);
+        } else if (e.key === "Escape") {
+            setIsDropdownOpen(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isDropdownOpen) {
+            document.addEventListener("keydown", handleKeyDown);
+        } else {
+            document.removeEventListener("keydown", handleKeyDown);
+        }
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isDropdownOpen, focusedIndex, filteredCountries]);
 
     return (
         <div className="relative dropdown-container" ref={dropdownRef}>
@@ -80,7 +107,12 @@ const CountrySelector = ({ onCountryChange }) => {
                     <ul className="max-h-40 overflow-y-auto text-[14px]">
                         {filteredCountries.length > 0 ? (
                             filteredCountries.map((country, index) => (
-                                <li key={index} className="flex items-center p-3 cursor-pointer hover:bg-gray-100" onClick={() => handleCountryChange(country)}>
+                                <li
+                                    key={index}
+                                    className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${focusedIndex === index ? "bg-gray-200" : ""}`}
+                                    onClick={() => handleCountryChange(country)}
+                                    role="option"
+                                >
                                     <Flag code={country.isoCode} className="w-6 h-4 mr-2" />
                                     <span>{country.name}</span>
                                 </li>
@@ -94,6 +126,7 @@ const CountrySelector = ({ onCountryChange }) => {
         </div>
     );
 };
+
 
 const StateSelector = ({ selectedCountry, onStateChange, isMandatory }) => {
     const [states, setStates] = useState([]);
