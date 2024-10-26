@@ -20,6 +20,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const dropdownRef = useRef(null);
 
     useOutsideClick(dropdownRef, () => setIsDropdownOpen(false)); // Handle outside clicks
@@ -42,8 +43,24 @@ const CurrencySelector = ({ onCurrencyChange }) => {
         currency.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleKeyDown = (e) => {
+        if (!isDropdownOpen) return;
+
+        if (e.key === 'ArrowDown') {
+            setHighlightedIndex((prevIndex) =>
+                prevIndex === filteredCurrencies.length - 1 ? 0 : prevIndex + 1
+            );
+        } else if (e.key === 'ArrowUp') {
+            setHighlightedIndex((prevIndex) =>
+                prevIndex === 0 ? filteredCurrencies.length - 1 : prevIndex - 1
+            );
+        } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+            handleCurrencyChange(filteredCurrencies[highlightedIndex]);
+        }
+    };
+
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative" ref={dropdownRef} onKeyDown={handleKeyDown}>
             <div
                 className="py-3 px-4 m-2 rounded-lg outline outline-1 font-[14px] outline-customSecondary focus:outline-2 text-gray-700 cursor-pointer text-[14px]"
                 onClick={toggleDropdown}
@@ -65,7 +82,10 @@ const CurrencySelector = ({ onCurrencyChange }) => {
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setHighlightedIndex(-1);
+                        }}
                         className="w-[95%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700 text-[14px]"
                         placeholder="Search"
                     />
@@ -74,8 +94,11 @@ const CurrencySelector = ({ onCurrencyChange }) => {
                             filteredCurrencies.map((currency, index) => (
                                 <li
                                     key={index}
-                                    className="flex items-center p-3 cursor-pointer hover:bg-gray-100"
+                                    className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${
+                                        index === highlightedIndex ? 'bg-gray-100' : ''
+                                    }`}
                                     onClick={() => handleCurrencyChange(currency)}
+                                    onMouseEnter={() => setHighlightedIndex(index)}
                                 >
                                     <span>{`${currency.name} (${currency.symbol})`}</span>
                                 </li>

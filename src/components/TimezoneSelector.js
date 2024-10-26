@@ -21,6 +21,7 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
     const [currentTimezone, setCurrentTimezone] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [highlightedIndex,setHighlightedIndex] =useState(-1);
     const dropdownRef = useRef(null);
 
     useOutsideClick(dropdownRef, () => setIsDropdownOpen(false));
@@ -55,12 +56,28 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
         onTimezoneChange(timezone);
     };
 
+    const handleKeyDown = (e) => {
+        if (!isDropdownOpen) return;
+
+        if (e.key === 'ArrowDown') {
+            setHighlightedIndex((prevIndex) =>
+                prevIndex === filteredTimezones.length - 1 ? 0 : prevIndex + 1
+            );
+        } else if (e.key === 'ArrowUp') {
+            setHighlightedIndex((prevIndex) =>
+                prevIndex === 0 ? filteredTimezones.length - 1 : prevIndex - 1
+            );
+        } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+            handleTimezoneChange(filteredTimezones[highlightedIndex]);
+        }
+    }
+
     const filteredTimezones = timezones.filter((tz) =>
         tz.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
-        <div className="relative dropdown-container" ref={dropdownRef}>
+        <div className="relative dropdown-container" ref={dropdownRef} onKeyDown={handleKeyDown}>
             <div className="py-3 px-4 m-2 rounded-lg outline outline-1 text-[14px] outline-customSecondary focus-within:outline-2 text-gray-700 cursor-pointer" onClick={toggleDropdown} role="button" aria-expanded={isDropdownOpen}>
                 <div className="flex items-center justify-between">
                     <span>{currentTimezone ? `${currentTimezone.name} (UTC${currentTimezone.offset >= 0 ? '+' : ''}${currentTimezone.offset / 60})` : 'Select a timezone'}</span>
@@ -75,14 +92,22 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setHighlightedIndex(-1);
+                        }}
                         className="w-[95%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700 text-[14px]"
                         placeholder="Search"
                     />
                     <ul className="max-h-40 overflow-y-auto text-[14px]">
                         {filteredTimezones.length > 0 ? (
                             filteredTimezones.map((timezone, index) => (
-                                <li key={index} className="flex items-center p-3 cursor-pointer hover:bg-gray-100" onClick={() => handleTimezoneChange(timezone)}>
+                                <li key={index}
+                                className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${
+                                    index === highlightedIndex ? 'bg-gray-100' : ''
+                                }`}
+                                onClick={() => handleTimezoneChange(timezone)}
+                                onMouseEnter={() => setHighlightedIndex(index)}>
                                     <span>{`${timezone.name} (UTC${timezone.offset >= 0 ? '+' : ''}${timezone.offset / 60})`}</span>
                                 </li>
                             ))

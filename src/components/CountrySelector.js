@@ -216,7 +216,7 @@ const StateSelector = ({ selectedCountry, onStateChange, isMandatory }) => {
                                 <li
                                     key={index}
                                     className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${
-                                        index === highlightedIndex ? 'bg-gray-200' : ''
+                                        index === highlightedIndex ? 'bg-gray-100' : ''
                                     }`}
                                     onClick={() => handleStateChange(state)}
                                     onMouseEnter={() => setHighlightedIndex(index)}
