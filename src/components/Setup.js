@@ -28,18 +28,20 @@ const Setup = () => {
 
     // Fetch user's timezone on component load
     useEffect(() => {
-        const fetchTimezone = async () => {
+        const fetchTimezoneAndCurrency = async () => {
             try {
-                const response = await axios.get('https://ipapi.co/timezone/');
-                const userTimezone = response.data;
-                setSelectedTimezone(userTimezone);
-                console.log('User Timezone:', userTimezone);
+                const response = await axios.get('https://ipapi.co/json/');
+                const { timezone, currency } = response.data;
+                
+                // Set both timezone and currency in your state
+                setSelectedTimezone(timezone);
+                setSelectedCurrency(currency);  // Assuming you have a state for currency
             } catch (error) {
-                console.error('Error fetching timezone:', error);
+                console.error('Error fetching timezone and currency:', error);
             }
         };
-
-        fetchTimezone();
+    
+        fetchTimezoneAndCurrency();
     }, []);
 
     return (
@@ -75,7 +77,7 @@ const Setup = () => {
                     <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
                     <h3 className='text-[14px] font-semibold mx-2'>Preferences</h3>
                     <TimezoneSelector onTimezoneChange={handleTimezoneChange} selectedTimezone={selectedTimezone} />
-                    <CurrencySelector onCurrencyChange={handleCurrencyChange} />
+                    <CurrencySelector onCurrencyChange={handleCurrencyChange} selectedCurrency={selectedCurrency}/>
                     <h3 className='text-[14px] font-semibold mx-2'>Tax</h3>
                     <div className='flex items-center mx-3 my-2 w-fit'>
                         <input type="checkbox" name="gst" id="gst" className='me-2' checked={isGstRegistered} onChange={handleGstCheckboxChange} />

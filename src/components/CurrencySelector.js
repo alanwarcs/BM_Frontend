@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import currencies from 'currencies.json'; // Importing currency data
 
 // Hook for detecting clicks outside the dropdown
@@ -16,8 +16,8 @@ const useOutsideClick = (ref, callback) => {
     }, [ref, callback]);
 };
 
-const CurrencySelector = ({ onCurrencyChange }) => {
-    const [selectedCurrency, setSelectedCurrency] = useState(null);
+const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
+    const [currentCurrency, setCurrentCurrency] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -25,15 +25,24 @@ const CurrencySelector = ({ onCurrencyChange }) => {
 
     useOutsideClick(dropdownRef, () => setIsDropdownOpen(false)); // Handle outside clicks
 
-    // Access the currency list correctly based on the structure of the imported currencies
-    const currencyList = currencies.currencies || []; // Use an empty array if undefined
+    // Use useMemo to memoize the currencyList
+    const currencyList = useMemo(() => currencies.currencies || [], []); // Empty array as dependency
 
+    useEffect(() => {
+        if (selectedCurrency) {
+            const currency = currencyList.find(c => c.code === selectedCurrency);
+            if (currency) {
+                setCurrentCurrency(currency);
+                onCurrencyChange(currency); // Notify parent component
+            }
+        }
+    }, [selectedCurrency, currencyList, onCurrencyChange]);
     // Toggle dropdown visibility
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
     // Handle currency selection
     const handleCurrencyChange = (currency) => {
-        setSelectedCurrency(currency);
+        setCurrentCurrency(currency);
         setIsDropdownOpen(false);
         onCurrencyChange(currency);
     };
@@ -69,7 +78,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
             >
                 <div className="flex items-center justify-between">
                     <span>
-                        {selectedCurrency ? `${selectedCurrency.name} (${selectedCurrency.symbol})` : 'Select a currency'}
+                        {currentCurrency ? `${currentCurrency.name} (${currentCurrency.symbol})` : 'Select a currency'}
                     </span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
                         <path d="m6 9 6 6 6-6" />
