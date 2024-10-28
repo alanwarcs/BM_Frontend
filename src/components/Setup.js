@@ -9,6 +9,7 @@ const Setup = () => {
     const [isGstRegistered, setIsGstRegistered] = useState(false);
     const [selectedTimezone, setSelectedTimezone] = useState(null);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
+    const [selectedCountry, setSelectedCountry] = useState(null);
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -18,12 +19,14 @@ const Setup = () => {
 
     const handleTimezoneChange = (timezone) => {
         setSelectedTimezone(timezone);
-        console.log('Selected Timezone:', timezone);
     };
 
     const handleCurrencyChange = (currency) => {
-        console.log('Selected currency:', currency);
         setSelectedCurrency(currency);
+    };
+
+    const handleCountryChange = (country) => {
+        setSelectedCountry(country);
     };
 
     // Fetch user's timezone on component load
@@ -31,19 +34,21 @@ const Setup = () => {
         const fetchTimezoneAndCurrency = async () => {
             try {
                 const response = await axios.get('https://ipapi.co/json/');
-                const { timezone, currency } = response.data;
+                const { timezone, currency, country } = response.data;
                 
                 // Set both timezone and currency in your state
+                setSelectedCountry(country);
                 setSelectedTimezone(timezone);
-                setSelectedCurrency(currency);  // Assuming you have a state for currency
+                setSelectedCurrency(currency);
             } catch (error) {
                 console.error('Error fetching timezone and currency:', error);
             }
         };
     
         fetchTimezoneAndCurrency();
-    }, []);
 
+    }, []);
+    
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
@@ -65,7 +70,7 @@ const Setup = () => {
                     </div>
                 )}
             </div>
-            <form className='rounded-xl shadow p-5 text-left'>
+            <form className='rounded-xl md:shadow p-5 text-left'>
                 <h1 className='text-center text-[24px] m-2 font-bold'>Complete Business Setup</h1>
                 <p className='text-center'>
                     Enter your Organization Details <br/> to complete Setup.
@@ -73,7 +78,7 @@ const Setup = () => {
                 <div className='flex text-left flex-col mt-5'>
                     <h3 className='text-[14px] font-semibold mx-2'>Address</h3>
                     <input type="text" name="address" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
-                    <CountrySelector />
+                    <CountrySelector defaultCountry={selectedCountry} onCountryChange={handleCountryChange} />
                     <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
                     <h3 className='text-[14px] font-semibold mx-2'>Preferences</h3>
                     <TimezoneSelector onTimezoneChange={handleTimezoneChange} selectedTimezone={selectedTimezone} />
