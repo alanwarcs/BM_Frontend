@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import CountrySelector from './CountrySelector';
-import StateSelector from './StateSelector';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 import axios from 'axios';
+import AddressSelector from './AddressSelector';
 
 const Setup = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -29,11 +28,8 @@ const Setup = () => {
         setSelectedCurrency(currency);
     };
 
-    const handleCountryChange = (country) => {
+    const handleAddressChange = (country, State) => {
         setSelectedCountry(country);
-    };
-
-    const handleStateChange = (State) => {
         setSelectedState(State);
     };
 
@@ -88,8 +84,7 @@ const Setup = () => {
                 <div className='flex text-left flex-col mt-5'>
                     <h3 className='text-[14px] font-semibold mx-2'>Address</h3>
                     <input type="text" name="address" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
-                    <CountrySelector defaultCountry={selectedCountry} onCountryChange={handleCountryChange} />
-                    <StateSelector selectedCountry={selectedCountry} selectedState={selectedState} onStateChange={handleStateChange} />
+                    <AddressSelector defaultCountry={selectedCountry} selectedState={selectedState} onAddressChange={handleAddressChange} />
                     <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
                     <h3 className='text-[14px] font-semibold mx-2'>Preferences</h3>
                     <TimezoneSelector onTimezoneChange={handleTimezoneChange} selectedTimezone={selectedTimezone} />
