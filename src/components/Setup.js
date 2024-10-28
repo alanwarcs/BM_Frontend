@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CountrySelector from './CountrySelector';
+import StateSelector from './StateSelector';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 import axios from 'axios';
@@ -10,6 +11,9 @@ const Setup = () => {
     const [selectedTimezone, setSelectedTimezone] = useState(null);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [selectedCountry, setSelectedCountry] = useState(null);
+    const [selectedState, setSelectedState] = useState(null);
+    const hasFetchedData = useRef(false); // Ref to track fetch status
+
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -29,14 +33,21 @@ const Setup = () => {
         setSelectedCountry(country);
     };
 
+    const handleStateChange = (State) => {
+        setSelectedState(State);
+    };
+
     // Fetch user's timezone on component load
     useEffect(() => {
         const fetchTimezoneAndCurrency = async () => {
+            if (hasFetchedData.current) return; // Check if data has been fetched already
+
+            hasFetchedData.current = true; // Set the ref to true to indicate data has been fetched
+
             try {
                 const response = await axios.get('https://ipapi.co/json/');
                 const { timezone, currency, country } = response.data;
-                
-                // Set both timezone and currency in your state
+
                 setSelectedCountry(country);
                 setSelectedTimezone(timezone);
                 setSelectedCurrency(currency);
@@ -46,9 +57,8 @@ const Setup = () => {
         };
     
         fetchTimezoneAndCurrency();
-
     }, []);
-    
+
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
@@ -79,6 +89,7 @@ const Setup = () => {
                     <h3 className='text-[14px] font-semibold mx-2'>Address</h3>
                     <input type="text" name="address" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
                     <CountrySelector defaultCountry={selectedCountry} onCountryChange={handleCountryChange} />
+                    <StateSelector selectedCountry={selectedCountry} selectedState={selectedState} onStateChange={handleStateChange} />
                     <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
                     <h3 className='text-[14px] font-semibold mx-2'>Preferences</h3>
                     <TimezoneSelector onTimezoneChange={handleTimezoneChange} selectedTimezone={selectedTimezone} />
