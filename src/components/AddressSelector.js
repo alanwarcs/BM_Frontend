@@ -119,7 +119,7 @@ const AddressSelector = ({ onAddressChange }) => {
     );
 
     return (
-        <div className="relative">
+        <div className="flex relative flex-col">
             {/* Country Selector */}
             <div className="relative dropdown-container" ref={countryDropdownRef} onKeyDown={(e) => handleKeyDown(e, 'country')}>
                 <div
@@ -233,7 +233,7 @@ const AddressSelector = ({ onAddressChange }) => {
                             </ul>
                         </div>
                     )}
-                </div>
+                </div> 
             )}
         </div>
     );
