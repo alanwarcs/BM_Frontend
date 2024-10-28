@@ -91,7 +91,7 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
             </div>
 
             {isDropdownOpen && (
-                <div className="absolute max-h-60 mt-2 bg-white rounded-lg shadow z-10">
+                <div className="absolute max-h-60 min-w-[250px] mt-2 bg-white rounded-lg shadow z-10">
                     <input
                         type="text"
                         value={searchQuery}

@@ -150,7 +150,7 @@ const AddressSelector = ({ onAddressChange }) => {
                 </div>
 
                 {isCountryDropdownOpen && (
-                    <div className="absolute max-h-60 mt-2 bg-white rounded-lg shadow z-10">
+                    <div className="absolute max-h-60 min-w-[250px] mt-2 bg-white rounded-lg shadow z-10">
                         <input
                             type="text"
                             value={countrySearchQuery}
@@ -228,7 +228,7 @@ const AddressSelector = ({ onAddressChange }) => {
                                     filteredStates.map((state, index) => (
                                         <li
                                             key={index}
-                                            className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${index === highlightedStateIndex ? 'bg-gray-100' : ''
+                                            className={`flex items-center p-3 min-w-[250px] cursor-pointer hover:bg-gray-100 ${index === highlightedStateIndex ? 'bg-gray-100' : ''
                                                 }`}
                                             onClick={() => handleStateChange(state)}
                                             onMouseEnter={() => setHighlightedStateIndex(index)}
