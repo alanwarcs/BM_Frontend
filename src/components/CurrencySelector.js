@@ -75,6 +75,10 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
                 onClick={toggleDropdown}
                 role="button"
                 aria-expanded={isDropdownOpen}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen);
+                }}
             >
                 <div className="flex items-center justify-between">
                     <span>

@@ -125,6 +125,10 @@ const AddressSelector = ({ onAddressChange }) => {
                 <div
                     className="py-3 px-4 m-2 rounded-lg outline outline-1 text-[14px] outline-customSecondary focus-within:outline-2 hover:outline-2 text-gray-700 cursor-pointer"
                     onClick={toggleCountryDropdown}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') setIsCountryDropdownOpen(!isCountryDropdownOpen);
+                    }}
+                    tabIndex={0}
                     role="button"
                     aria-expanded={isCountryDropdownOpen}
                 >
@@ -186,6 +190,10 @@ const AddressSelector = ({ onAddressChange }) => {
                         className="py-3 px-4 m-2 rounded-lg outline outline-1 text-[14px] outline-customSecondary focus-within:outline-2 hover:outline-2 text-gray-700 cursor-pointer"
                         onClick={toggleStateDropdown}
                         role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') setIsStateDropdownOpen(!isStateDropdownOpen);
+                        }}
                         aria-expanded={isStateDropdownOpen}
                     >
                         <div className="flex items-center justify-between">
@@ -211,6 +219,7 @@ const AddressSelector = ({ onAddressChange }) => {
                                     setStateSearchQuery(e.target.value);
                                     setHighlightedStateIndex(-1);
                                 }}
+                                
                                 className="w-[95%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700 text-[14px]"
                                 placeholder="Search State"
                             />
