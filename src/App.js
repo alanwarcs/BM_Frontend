@@ -1,10 +1,10 @@
 import './App.css';
-import SelectPlan from './components/SelectPlan';
+import CheckoutCart from './components/CheckoutCart';
 
 function App() {
   return (
     <div className="App">
-      <SelectPlan />
+      <CheckoutCart />
     </div>
   );
 }

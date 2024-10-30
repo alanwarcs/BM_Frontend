@@ -13,7 +13,6 @@ const Setup = () => {
     const [selectedState, setSelectedState] = useState(null);
     const hasFetchedData = useRef(false); // Ref to track fetch status
 
-
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
     const handleGstCheckboxChange = (e) => {
