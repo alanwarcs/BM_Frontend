@@ -13,14 +13,14 @@ const SelectPlan = () => {
 
   const plans = [
     // Monthly Plans
-    { name: "Basic Plan", price: 10, duration: "30", features: ["Basic Feature", "Invoice Generation", "Customer Management", "Vendor Management"] },
-    { name: "Standard Plan", price: 20, duration: "30", features: ["Advance Feature", "Invoice Generation", "CRM Management", "Live SMS/Email Management"] },
-    { name: "Premium Plan", price: 50, duration: "30", features: ["Advance Feature", "CRM Management ", "Customer SMS/Email Reminder", "Live SMS/Email Management"] },
+    { name: "Basic", price: 10, duration: "30", features: ["Basic Feature", "Invoice Generation", "Customer Management", "Vendor Management"] },
+    { name: "Standard", price: 20, duration: "30", features: ["Advance Feature", "Invoice Generation", "CRM Management", "Live SMS/Email Management"] },
+    { name: "Premium", price: 50, duration: "30", features: ["Advance Feature", "CRM Management ", "Customer SMS/Email Reminder", "Live SMS/Email Management"] },
 
     // Yearly Plans
-    { name: "Basic Plan", price: 100, duration: "365", features: ["Basic Feature", "Invoice Generation", "Customer Management", "Vendor Management"] },
-    { name: "Standard Plan", price: 200, duration: "365", features: ["Advance Feature", "Invoice Generation", "CRM Management", "Live SMS/Email Management"] },
-    { name: "Premium Plan", price: 500, duration: "365", features: ["Advance Feature", "CRM Management ", "Customer SMS/Email Reminder", "Live SMS/Email Management"] },
+    { name: "Basic", price: 100, duration: "365", features: ["Basic Feature", "Invoice Generation", "Customer Management", "Vendor Management"] },
+    { name: "Standard", price: 200, duration: "365", features: ["Advance Feature", "Invoice Generation", "CRM Management", "Live SMS/Email Management"] },
+    { name: "Premium", price: 500, duration: "365", features: ["Advance Feature", "CRM Management ", "Customer SMS/Email Reminder", "Live SMS/Email Management"] },
   ];
 
   return (
@@ -82,7 +82,7 @@ const SelectPlan = () => {
               {plans
                 .filter((plan) => plan.duration === "30")
                 .map((plan, index) => (
-                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 bg-transparent border border-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl'>
+                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 bg-transparent border border-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl shadow-md'>
                     <h4 className='text-[18px] text-gray-400 font-semibold'>{plan.name}</h4>
                     <span className='flex items-end'>
                       <h2 className='text-[32px] my-5'>₹{plan.price}/yr</h2>
@@ -107,7 +107,7 @@ const SelectPlan = () => {
               {plans
                 .filter((plan) => plan.duration === "365")
                 .map((plan, index) => (
-                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 bg-transparent border border-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl'>
+                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 bg-transparent border border-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl shadow-md'>
                     <h4 className='text-[18px] text-gray-400 font-semibold'>{plan.name}</h4>
                     <span className='flex items-end'>
                       <h2 className='text-[32px] my-5'>₹{plan.price}/yr</h2>
