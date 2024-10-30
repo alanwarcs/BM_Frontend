@@ -1,4 +1,4 @@
-import React,{useState} from 'react'
+import React, { useState } from 'react'
 
 const CheckoutCart = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -26,8 +26,73 @@ const CheckoutCart = () => {
                     </div>
                 )}
             </div>
-            <form>
-
+            <form className='rounded-xl md:shadow p-5 text-right'>
+                <div className='p-2'>
+                    <h1 className='text-center text-[20px] m-2 font-bold'>Checkout Summary</h1>
+                    <p className='text-center m-4'>
+                        Complete your purchase and unlock your <br/> plan's full potential!
+                    </p>
+                    <hr />
+                    <div className='flex my-4 justify-between'>
+                        <div className=''>
+                            <p className=''>Transition Id</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <p className='font-semibold'>AA202412000100</p>
+                        </div>
+                    </div>
+                    <div className='flex my-4 justify-between'>
+                        <div className=''>
+                            <p className=''>Plan Name</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <p className='font-semibold'>Basic</p>
+                        </div>
+                    </div>
+                    <div className='flex my-4 justify-between'>
+                        <div className=''>
+                            <p className=''>Validity</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <p className='font-semibold'>1-Month</p>
+                        </div>
+                    </div>
+                    <div className='flex my-4 justify-between'>
+                        <div className=''>
+                            <p className=''>Price</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <p className='font-semibold'>₹10.00</p>
+                        </div>
+                    </div>
+                    <hr />
+                    <div className='flex my-4 justify-between'>
+                        <div className=''>
+                            <p className=''>Tax</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <p className='font-semibold'>-</p>
+                        </div>
+                    </div>
+                    <hr />
+                    <div className='flex my-4 justify-between'>
+                        <div className=''>
+                            <p className='text-[20px] font-semibold'>Total</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <p className='text-[20px] font-semibold text-customPrimary'>₹10.00</p>
+                        </div>
+                    </div>
+                    <div className='flex items-center justify-between p-5'>
+                        <img src="/images/visa.png" className='w-14 h-fit' alt="" />
+                        <img src="/images/mastercard.png" className='w-14 h-fit' alt="" />
+                        <img src="/images/rupay.png" className='w-14 h-fit' alt="" />
+                        <img src="/images/upi.png" className='w-14 h-fit' alt="" />
+                    </div>
+                </div>
+                <button className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
+                    Pay Now
+                </button>
             </form>
             <footer className='my-4 items-center'>
                 <p className='text-sm font-thin text-center text-gray-500'>

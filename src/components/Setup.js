@@ -101,7 +101,7 @@ const Setup = () => {
                     )}
                     <div className='flex w-full justify-between'>
                         <button className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
-                            Next
+                            Submit
                         </button>
                     </div>
                 </div>
