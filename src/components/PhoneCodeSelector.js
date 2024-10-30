@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Flag from 'react-world-flags';
 import { Country } from 'country-state-city';
 
-const PhoneCodeSelector = () => {
+const PhoneCodeSelector = ({ onPhoneChange }) => {
   const [selectedCountryCode, setSelectedCountryCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -10,6 +10,7 @@ const PhoneCodeSelector = () => {
   const [countryCodes, setCountryCodes] = useState([]);
   const [highlightedIndex, setHighlightedIndex] = useState(0); // For keyboard navigation
   const dropdownRef = useRef(null);
+
 
   // Hook for detecting clicks outside the dropdown
   const useOutsideClick = (ref, callback) => {
@@ -43,22 +44,31 @@ const PhoneCodeSelector = () => {
   // Toggle dropdown visibility
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  // Handle country code selection
-  const handleCountryCodeChange = (country) => {
-    setSelectedCountryCode(country);
-    setIsDropdownOpen(false);
-    setHighlightedIndex(0); // Reset highlighted index when dropdown is closed
-  };
-
-  // Handle phone number input
-  const handlePhoneNumberChange = (e) => {
-    setPhoneNumber(e.target.value);
-  };
-
   // Filter country codes based on search query
   const filteredCountries = countryCodes.filter((country) =>
     country.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+    // Handle phone number input
+    const handlePhoneNumberChange = (e) => {
+      const newPhoneNumber = e.target.value;
+      setPhoneNumber(newPhoneNumber);
+  
+      // Update phone number in the parent component
+      const fullPhoneNumber = `${selectedCountryCode.code}${newPhoneNumber}`; // Use selectedCountryCode.code
+      onPhoneChange(fullPhoneNumber); // Call the parent function with the new phone number
+    };
+  
+    // Handle country code selection
+    const handleCountryCodeChange = (country) => {
+      setSelectedCountryCode(country);
+      setIsDropdownOpen(false);
+      setHighlightedIndex(0);
+  
+      // Update phone number in the parent component
+      const fullPhoneNumber = `${country.code}${phoneNumber}`; // Use the country.code directly
+      onPhoneChange(fullPhoneNumber); // Call the parent function with the new phone number
+    };
 
   // Keyboard navigation handler
   const handleKeyDown = (e) => {

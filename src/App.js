@@ -1,10 +1,18 @@
 import './App.css';
-import CheckoutCart from './components/CheckoutCart';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import SignUp from './components/SignUp';
+import Setup from './components/Setup';
 
 function App() {
   return (
     <div className="App">
-      <CheckoutCart />
+      <Router>
+            <Routes>
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/setup" element={<Setup />} />
+                {/* Add more routes as needed */}
+            </Routes>
+        </Router>
     </div>
   );
 }
