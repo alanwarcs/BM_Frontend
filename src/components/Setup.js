@@ -59,7 +59,7 @@ const Setup = () => {
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
-                <div className='flex items-center underline mx-1' onClick={toggleDropdown} role="button" aria-expanded={isDropdownOpen}>
+                <div className='flex items-center underline mx-1' onClick={toggleDropdown} tabIndex={0} role="button" aria-expanded={isDropdownOpen} onKeyDown={(e) => {if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen);}}>
                     <p className='m-1'>Murtaza Patel</p>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
                         <path d="m6 9 6 6 6-6" />
