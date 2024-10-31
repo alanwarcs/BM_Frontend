@@ -33,7 +33,7 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
             const currency = currencyList.find(c => c.code === selectedCurrency);
             if (currency) {
                 setCurrentCurrency(currency);
-                onCurrencyChange(currency); // Notify parent component
+                onCurrencyChange(currency.code); // Notify parent component
             }
         }
     }, [selectedCurrency, currencyList, onCurrencyChange]);
@@ -44,7 +44,7 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
     const handleCurrencyChange = (currency) => {
         setCurrentCurrency(currency);
         setIsDropdownOpen(false);
-        onCurrencyChange(currency);
+        onCurrencyChange(currency.code);
     };
 
     // Filter currencies based on search query

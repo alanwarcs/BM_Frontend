@@ -97,10 +97,7 @@ const SignUp = () => {
             navigate('/setup'); // Adjust the path based on your routing setup
 
         } catch (error) {
-            setErrors((prevErrors) => ({
-                ...prevErrors,
-                server: error.response.data.message || 'Signup failed.', // Set error message from the server
-            }));
+            alert(error.response?.data?.message || 'Internal server error.'); // Show error message from the server in an alert
         }
     };
 

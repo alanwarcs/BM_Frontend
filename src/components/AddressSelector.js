@@ -79,13 +79,13 @@ const AddressSelector = ({ onAddressChange }) => {
         const countryStates = State.getStatesOfCountry(country.code); // Fetch states based on selected country
         setStates(countryStates);
         setSelectedState(null); // Reset state selection
-        onAddressChange(country, null); // Notify parent about the selected country
+        onAddressChange(country.name, null,countryStates); // Notify parent about the selected country
         setIsCountryDropdownOpen(false);
     };
 
     const handleStateChange = (state) => {
         setSelectedState(state);
-        onAddressChange(selectedCountry, state); // Notify parent about the selected state
+        onAddressChange(selectedCountry.name, state.name,states); // Notify parent about the selected state
         setIsStateDropdownOpen(false);
     };
 
@@ -125,9 +125,7 @@ const AddressSelector = ({ onAddressChange }) => {
                 <div
                     className="py-3 px-4 m-2 rounded-lg outline outline-1 text-[14px] outline-customSecondary focus-within:outline-2 hover:outline-2 text-gray-700 cursor-pointer"
                     onClick={toggleCountryDropdown}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') setIsCountryDropdownOpen(!isCountryDropdownOpen);
-                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') toggleCountryDropdown(); }}
                     tabIndex={0}
                     role="button"
                     aria-expanded={isCountryDropdownOpen}
@@ -143,9 +141,7 @@ const AddressSelector = ({ onAddressChange }) => {
                                 <span>Select a country</span>
                             )}
                         </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
+                        {/* Icon */}
                     </div>
                 </div>
 
@@ -189,11 +185,9 @@ const AddressSelector = ({ onAddressChange }) => {
                     <div
                         className="py-3 px-4 m-2 rounded-lg outline outline-1 text-[14px] outline-customSecondary focus-within:outline-2 hover:outline-2 text-gray-700 cursor-pointer"
                         onClick={toggleStateDropdown}
-                        role="button"
+                        onKeyDown={(e) => { if (e.key === 'Enter') toggleStateDropdown(); }}
                         tabIndex={0}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') setIsStateDropdownOpen(!isStateDropdownOpen);
-                        }}
+                        role="button"
                         aria-expanded={isStateDropdownOpen}
                     >
                         <div className="flex items-center justify-between">
@@ -204,9 +198,7 @@ const AddressSelector = ({ onAddressChange }) => {
                                     <span>Select a state</span>
                                 )}
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
-                                <path d="m6 9 6 6 6-6" />
-                            </svg>
+                            {/* Icon */}
                         </div>
                     </div>
 
@@ -219,7 +211,7 @@ const AddressSelector = ({ onAddressChange }) => {
                                     setStateSearchQuery(e.target.value);
                                     setHighlightedStateIndex(-1);
                                 }}
-                                
+
                                 className="w-[95%] h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 text-gray-700 text-[14px]"
                                 placeholder="Search State"
                             />
@@ -242,7 +234,7 @@ const AddressSelector = ({ onAddressChange }) => {
                             </ul>
                         </div>
                     )}
-                </div> 
+                </div>
             )}
         </div>
     );

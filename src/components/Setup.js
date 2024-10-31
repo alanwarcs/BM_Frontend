@@ -11,7 +11,12 @@ const Setup = () => {
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [selectedCountry, setSelectedCountry] = useState(null);
     const [selectedState, setSelectedState] = useState(null);
-    const hasFetchedData = useRef(false); // Ref to track fetch status
+    const [states, setStates] = useState([]);
+    const [address, setAddress] = useState('');
+    const [pin, setPin] = useState('');
+    const [gstin, setGstin] = useState('');
+    const [errors, setErrors] = useState({});
+    const hasFetchedData = useRef(false);
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -27,9 +32,10 @@ const Setup = () => {
         setSelectedCurrency(currency);
     };
 
-    const handleAddressChange = (country, State) => {
+    const handleAddressChange = (country, state, statesArray) => {
         setSelectedCountry(country);
-        setSelectedState(State);
+        setSelectedState(state);
+        setStates(statesArray); // Update states array
     };
 
     // Fetch user's timezone on component load
@@ -50,15 +56,74 @@ const Setup = () => {
                 console.error('Error fetching timezone and currency:', error);
             }
         };
-    
+
         fetchTimezoneAndCurrency();
     }, []);
 
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!address.trim()) { // Ensure address is not empty
+            newErrors.address = "Address is required.";
+        }
+        if (!selectedCountry) {
+            newErrors.country = "Country is required.";
+        }
+
+        if (states.length > 0 && !selectedState) {
+            newErrors.state = "State is required.";
+        }
+
+        if (!pin.trim()) {
+            newErrors.pin = "PinCode is required.";
+        }
+        if (!selectedTimezone) {
+            newErrors.timezone = "TimeZone is required.";
+        }
+        if (!selectedCurrency) {
+            newErrors.currency = "Currency is required.";
+        }
+
+        if (isGstRegistered && !gstin) {
+            newErrors.gstin = "GSTIN is required.";
+        }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0; // Return true if no errors
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        try {
+            const response = await axios.post('/api/auth/setup', {
+                address,
+                country: selectedCountry,
+                state: selectedState,
+                pin,
+                isGst: isGstRegistered,
+                gstin: isGstRegistered ? gstin : null,
+                timeZone: selectedTimezone,
+                dateFormat: 'YYYY-MM-DD', // Set this or take from state if changeable
+                currency: selectedCurrency,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`, // Send token if required
+                },
+            });
+
+            if (response.data.message) {
+                alert(response.data.message);
+            }
+        } catch (error) {
+            alert(error.response?.data?.message || 'Internal server error.'); // Show error message from the server in an alert
+        }
+    }
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
-                <div className='flex items-center underline mx-1' onClick={toggleDropdown} tabIndex={0} role="button" aria-expanded={isDropdownOpen} onKeyDown={(e) => {if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen);}}>
+                <div className='flex items-center underline mx-1' onClick={toggleDropdown} tabIndex={0} role="button" aria-expanded={isDropdownOpen} onKeyDown={(e) => { if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen); }}>
                     <p className='m-1'>Murtaza Patel</p>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
                         <path d="m6 9 6 6 6-6" />
@@ -75,19 +140,25 @@ const Setup = () => {
                     </div>
                 )}
             </div>
-            <form className='rounded-xl md:shadow p-5 text-left'>
+            <form className='rounded-xl md:shadow p-5 text-left' onSubmit={handleSubmit}>
                 <h1 className='text-center text-[24px] m-2 font-bold'>Complete Business Setup</h1>
                 <p className='text-center'>
-                    Enter your Organization Details <br/> to complete Setup.
+                    Enter your Organization Details <br /> to complete Setup.
                 </p>
                 <div className='flex text-left flex-col mt-5'>
                     <h3 className='text-[14px] font-semibold mx-2'>Address</h3>
-                    <input type="text" name="address" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
+                    <input type="text" name="address" value={address} onChange={(e) => setAddress(e.target.value)} className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Address' />
+                    {errors.address && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.address}</span>}
                     <AddressSelector defaultCountry={selectedCountry} selectedState={selectedState} onAddressChange={handleAddressChange} />
-                    <input type="text" name="pincode" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
+                    {errors.country && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.country}</span>}
+                    {errors.state && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.state}</span>}
+                    <input type="text" name="pin" value={pin} onChange={(e) => setPin(e.target.value)} className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='Pincode' />
+                    {errors.pin && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.pin}</span>}
                     <h3 className='text-[14px] font-semibold mx-2'>Preferences</h3>
                     <TimezoneSelector onTimezoneChange={handleTimezoneChange} selectedTimezone={selectedTimezone} />
-                    <CurrencySelector onCurrencyChange={handleCurrencyChange} selectedCurrency={selectedCurrency}/>
+                    {errors.timezone && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.timezone}</span>}
+                    <CurrencySelector onCurrencyChange={handleCurrencyChange} selectedCurrency={selectedCurrency} />
+                    {errors.currency && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.currency}</span>}
                     <h3 className='text-[14px] font-semibold mx-2'>Tax</h3>
                     <div className='flex items-center mx-3 my-2 w-fit'>
                         <input type="checkbox" name="gst" id="gst" className='me-2' checked={isGstRegistered} onChange={handleGstCheckboxChange} />
@@ -97,10 +168,14 @@ const Setup = () => {
                     </div>
 
                     {isGstRegistered && (
-                        <input type="text" name="gstin" className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='GSTIN' />
+                        <>
+                            <input type="text" name="gstin" value={gstin} onChange={(e) => setGstin(e.target.value)} className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]' placeholder='GSTIN' />
+                            {errors.gstin && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.gstin}</span>}
+                        </>
                     )}
+                    {errors.server && <span className='flex max-w-[350px] text-red-500 justify-center text-[14px] mx-2'>{errors.server}</span>} {/* Display server error here */}
                     <div className='flex w-full justify-between'>
-                        <button className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
+                        <button type='submit' className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
                             Submit
                         </button>
                     </div>
