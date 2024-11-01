@@ -116,7 +116,7 @@ const Setup = () => {
                 alert(response.data.message);
             }
         } catch (error) {
-            alert(error.response?.data?.message || 'Internal server error.'); // Show error message from the server in an alert
+            alert(error.response?.data?.message || '500 - Internal server error.'); // Show error message from the server in an alert
         }
     }
     return (

@@ -58,7 +58,7 @@ const AddressSelector = ({ onAddressChange }) => {
                     setSelectedCountry(country);
                     const countryStates = State.getStatesOfCountry(country.code);
                     setStates(countryStates);
-                    onAddressChange(country, null); // Notify parent component
+                    onAddressChange(country, null, countryStates); // Notify parent component
                 }
             } catch (error) {
                 console.error("Failed to fetch country from IP:", error);
