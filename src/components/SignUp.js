@@ -18,7 +18,6 @@ const SignUp = () => {
 
     const navigate = useNavigate(); // Initialize the navigate function
 
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -125,7 +124,7 @@ const SignUp = () => {
                         <PhoneCodeSelector onPhoneChange={handlePhoneChange} />
                         {errors.phone && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.phone}</span>}
 
-                        <div className='w-[300px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus-within:outline-2 focus-within:outline-customSecondary text-gray-700 text-[14px]'>
+                        <div className='w-[250px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus-within:outline-2 focus-within:outline-customSecondary text-gray-700 text-[14px]'>
                             <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} className='w-[80%] md:w-[88%] outline-none' placeholder='Password' />
                             <a href="/" onClick={togglePasswordVisibility} className='text-gray-800 hover:text-gray-500'>
                                 {showPassword ? 'Hide' : 'Show'}

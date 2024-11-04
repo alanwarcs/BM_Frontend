@@ -45,13 +45,13 @@ const SelectPlan = () => {
         )}
       </div>
       <form className='flex flex-col rounded-xl w-full p-5 text-left'>
-        <div className='flex flex-col md:flex-row items-center md:justify-between w-full'>
+        <div className='flex flex-col md:flex-row items-center md:justify-between w-full px-4'>
           <div className='text-center md:text-left'>
             <h3 className='text-[18px] font-semibold'>Grow smarter, choose the plan that fits your goals</h3>
             <p className='text-gray-400'>Flexible options tailored to your needs, helping you grow every step of the way.</p>
           </div>
           <div className='flex flex-row w-100 border border-customPrimary border-1 rounded-full p-[2px] max-h-[50px]'>
-            <label className={`flex w-[100px] p-2 text-center items-center justify-center cursor-pointer rounded-full ${planValidity === "monthly" ? "bg-customPrimary text-white" : "bg-transparent text-black"} transition-all duration-500`}>
+            <label className={`flex w-[100px] p-2 text-center items-center justify-center cursor-pointer rounded-full ${planValidity === "monthly" ? "bg-customPrimary text-white" : "bg-transparent text-black"}  transition-all duration-500`}>
               <p>Monthly</p>
               <input
                 type="radio"
@@ -62,7 +62,7 @@ const SelectPlan = () => {
                 className="hidden"
               />
             </label>
-            <label className={`flex w-[100px] p-2 text-center items-center justify-center cursor-pointer rounded-full ${planValidity === "yearly" ? "bg-customPrimary text-white" : "bg-transparent text-black"} transition-all duration-500`}>
+            <label className={`flex w-[100px] p-2 text-center items-center justify-center cursor-pointer rounded-full ${planValidity === "yearly" ? "bg-customPrimary text-white" : "bg-transparent text-black"} hover:bg-customSecondary hover:text-gray-950 transition-all duration-500`}>
               <input
                 type="radio"
                 name="planValidity"
@@ -82,13 +82,13 @@ const SelectPlan = () => {
               {plans
                 .filter((plan) => plan.duration === "30")
                 .map((plan, index) => (
-                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 bg-transparent border border-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl shadow-md'>
-                    <h4 className='text-[18px] text-gray-400 font-semibold'>{plan.name}</h4>
+                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 border border-customSecondary bg-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl shadow-md'>
+                    <h4 className='text-[18px] font-semibold'>{plan.name}</h4>
                     <span className='flex items-end'>
-                      <h2 className='text-[32px] my-5'>₹{plan.price}/yr</h2>
+                      <h2 className='text-[32px] my-5'>₹{plan.price}/mo</h2>
                     </span>
                     <p className='whitespace-normal my-5'>Choose the perfect plan to accelerate your growth!</p>
-                    <ul className='text-gray-400 py-5'>
+                    <ul className='py-5 px-2'>
                       {plan.features.map((feature, featureIndex) => (
                         <li key={featureIndex} className='flex items-center m-1'>
                           <svg xmlns="http://www.w3.org/2000/svg" className='me-2' width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bdbdbd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="lucide lucide-circle-check"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
@@ -107,13 +107,13 @@ const SelectPlan = () => {
               {plans
                 .filter((plan) => plan.duration === "365")
                 .map((plan, index) => (
-                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 bg-transparent border border-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl shadow-md'>
-                    <h4 className='text-[18px] text-gray-400 font-semibold'>{plan.name}</h4>
+                  <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-2 border border-customSecondary bg-customSecondary hover:bg-customPrimary text-black hover:text-white rounded-3xl shadow-md'>
+                    <h4 className='text-[18px] font-semibold'>{plan.name}</h4>
                     <span className='flex items-end'>
                       <h2 className='text-[32px] my-5'>₹{plan.price}/yr</h2>
                     </span>
                     <p className='whitespace-normal my-5'>Choose the perfect plan to accelerate your growth!</p>
-                    <ul className='text-gray-400 py-5'>
+                    <ul className='py-5 px-2'>
                       {plan.features.map((feature, featureIndex) => (
                         <li key={featureIndex} className='flex items-center m-1'>
                           <svg xmlns="http://www.w3.org/2000/svg" className='me-2' width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
