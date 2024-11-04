@@ -86,8 +86,6 @@ const SignUp = () => {
 
         try {
             const response = await axios.post('/api/auth/signup', formData);
-            alert(response.data.message);
-
 
             // Store token in local storage
             localStorage.setItem('token', response.data.token); // Assuming the response contains the token
