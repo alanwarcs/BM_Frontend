@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import PhoneCodeSelector from './PhoneCodeSelector'; // Import the PhoneCodeSelector component
+import LoadingBar from './LoadingBar'; // Import the LoadingBar component
+import Alert from './Alert';
 import axios from 'axios';
 
 const SignUp = () => {
     const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
     const [errors, setErrors] = useState({});
+    const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
+    const [alert, setAlert] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         organizationName: '',
@@ -83,23 +87,28 @@ const SignUp = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return; // Only submit if validation passes
+        setLoadingProgress(50);
 
         try {
             const response = await axios.post('/api/auth/signup', formData);
-
-            // Store token in local storage
-            localStorage.setItem('token', response.data.token); // Assuming the response contains the token
-
-            // Redirect to setup page
-            navigate('/setup'); // Adjust the path based on your routing setup
+            // Redirect to setup page on successful signup
+            if (response.status === 201) {
+                navigate('/setup'); // Adjust the path based on your routing setup
+                setLoadingProgress(100);
+            }
 
         } catch (error) {
-            alert(error.response?.data?.message || '500 - Internal server error.'); // Show error message from the server in an alert
+            const newErrors = {};
+            newErrors.clientError = error.response?.data?.message || '500 - Internal server error.';
+            setErrors(newErrors);
+            setAlert({ message: newErrors.clientError, type: 'error' }); // Set error alert
+            setLoadingProgress(0);
         }
     };
 
     return (
         <div>
+            <LoadingBar progress={loadingProgress} />
             <div className='relative flex flex-col items-center justify-between w-full min-h-screen p-3'>
                 <div className='text-center md:text-left w-full'>
                     <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
@@ -159,6 +168,9 @@ const SignUp = () => {
                         </span>
                     </div>
                 </form>
+                {alert && (
+                    <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />
+                )}
                 <footer className='my-4 items-center'>
                     <p className='text-sm font-thin text-center text-gray-500'>
                         Copyright &copy; by All-In-One & Agile Business Management Software {new Date().getFullYear()}.
