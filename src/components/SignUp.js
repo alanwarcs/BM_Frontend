@@ -93,8 +93,9 @@ const SignUp = () => {
             const response = await axios.post('/api/auth/signup', formData);
             // Redirect to setup page on successful signup
             if (response.status === 201) {
-                navigate('/setup'); // Adjust the path based on your routing setup
                 setLoadingProgress(100);
+                
+                navigate('/setup'); // Adjust the path based on your routing setup
             }
 
         } catch (error) {

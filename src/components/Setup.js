@@ -109,10 +109,9 @@ const Setup = () => {
                 timeZone: selectedTimezone,
                 dateFormat: 'YYYY-MM-DD', // Set this or take from state if changeable
                 currency: selectedCurrency,
-            }, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`, // Send token if required
-                },
+            },
+            {
+                withCredentials: true, // Include cookies with the request
             });
 
             if (response.data.message) {
