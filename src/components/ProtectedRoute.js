@@ -1,13 +1,10 @@
-// ProtectedRoute.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Alert from './Alert';
 
 const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticatedUser, setIsAuthenticatedUser] = useState(false);
-    const [error, setError] = useState(null); // State for error messages
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,14 +16,8 @@ const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) 
                 } else {
                     setIsAuthenticatedUser(false);
                 }
-            } catch (err) {
+            } catch (error) {
                 setIsAuthenticatedUser(false);
-                if (err.response?.data?.error) {
-                    // Set a specific error message from the server response
-                    setError(err.response.data.error);
-                } else {
-                    setError('Authentication failed. Please try again.');
-                }
             } finally {
                 setIsLoading(false);
             }
@@ -42,27 +33,15 @@ const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) 
     // If the user is logged in and tries to access a sign-in or sign-up page, go back to the previous page
     if (isAuthenticatedUser && isAuthenticatedPage) {
         window.history.back(); // Go back to the previous page
-        return null;
+        return null; // Prevent rendering of the current page
     }
 
     if (!isAuthenticatedUser && !isAuthenticatedPage) {
-        navigate('/signin'); // Redirect to login if not authenticated
+        navigate('/login'); // Redirect to login if not authenticated
         return null;
     }
 
-    return (
-        <>
-            {/* Display Alert if there’s an error */}
-            {error && (
-                <Alert
-                    message={error}
-                    type="error"
-                    handleClose={() => setError(null)} // Reset error on close
-                />
-            )}
-            <Component {...rest} />
-        </>
-    );
+    return <Component {...rest} />;
 };
 
 export default ProtectedRoute;
