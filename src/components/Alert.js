@@ -20,7 +20,7 @@ const Alert = ({ message, type, handleClose }) => {
         : 'bg-red-500';
 
     return (
-        <div className={`fixed bottom-4 right-4 max-w-[600px] p-2 ${alertStyles} text-white items-center border rounded-lg justify-center text-[14px] mx-2 flex transition-transform duration-200 ease-in-out transform ${ visible ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className={`fixed bottom-4 right-4 z-10 max-w-[600px] p-2 ${alertStyles} text-white items-center border rounded-lg justify-center text-[14px] mx-2 flex transition-transform duration-200 ease-in-out transform ${ visible ? 'translate-x-0' : 'translate-x-full'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-shield-${type === 'success' ? 'check' : 'alert'} mx-2`}>
                 {type === 'success' ? (
                     <path d="M20 6L9 17l-5-5" />

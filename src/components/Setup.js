@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
-import axios from 'axios';
 import AddressSelector from './AddressSelector';
+import SignOutButton from './SignOutButton';
+import axios from 'axios';
 
 const Setup = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -136,7 +137,7 @@ const Setup = () => {
                     <div className='absolute right-0 top-16 max-h-60 m-1 bg-white rounded-lg shadow z-10 text-center overflow-hidden py-1'>
                         <ul className="max-h-48 overflow-y-auto w-[120px]">
                             <li className="p-3 hover:bg-gray-100">
-                                <a href="/">Logout</a>
+                                <SignOutButton />
                             </li>
                         </ul>
                     </div>

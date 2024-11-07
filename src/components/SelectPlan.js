@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
+import SignOutButton from './SignOutButton';
 
 const SelectPlan = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -38,7 +39,7 @@ const SelectPlan = () => {
           <div className='absolute right-0 top-16 max-h-60 m-1 bg-white rounded-lg shadow z-10 text-center overflow-hidden py-1'>
             <ul className="max-h-48 overflow-y-auto w-[120px]">
               <li className="p-3 hover:bg-gray-100">
-                <a href="/">Logout</a>
+                <SignOutButton />
               </li>
             </ul>
           </div>
