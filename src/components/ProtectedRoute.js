@@ -37,7 +37,7 @@ const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) 
     }
 
     if (!isAuthenticatedUser && !isAuthenticatedPage) {
-        navigate('/login'); // Redirect to login if not authenticated
+        navigate('/signin'); // Redirect to login if not authenticated
         return null;
     }
 
