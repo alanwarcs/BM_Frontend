@@ -91,13 +91,13 @@ const SignUp = () => {
 
         try {
             const response = await axios.post('/api/auth/signup', formData);
+
             // Redirect to setup page on successful signup
             if (response.status === 201) {
                 setLoadingProgress(100);
-                
-                navigate('/setup'); // Adjust the path based on your routing setup
-            }
 
+                navigate('/setup', { replace: true });
+            }
         } catch (error) {
             const newErrors = {};
             newErrors.clientError = error.response?.data?.message || '500 - Internal server error.';
@@ -109,7 +109,7 @@ const SignUp = () => {
 
     return (
         <div>
-            <LoadingBar progress={loadingProgress} />
+            {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
             <div className='relative flex flex-col items-center justify-between w-full min-h-screen p-3'>
                 <div className='text-center md:text-left w-full'>
                     <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
@@ -132,7 +132,7 @@ const SignUp = () => {
                         <PhoneCodeSelector onPhoneChange={handlePhoneChange} />
                         {errors.phone && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.phone}</span>}
 
-                        <div className='w-[250px] md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus-within:outline-2 focus-within:outline-customSecondary text-gray-700 text-[14px]'>
+                        <div className='md:w-[350px] py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus-within:outline-2 focus-within:outline-customSecondary text-gray-700 text-[14px]'>
                             <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} className='w-[80%] md:w-[88%] outline-none' placeholder='Password' />
                             <a href="/" onClick={togglePasswordVisibility} className='text-gray-800 hover:text-gray-500'>
                                 {showPassword ? 'Hide' : 'Show'}
