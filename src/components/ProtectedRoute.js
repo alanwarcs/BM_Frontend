@@ -1,85 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useUser } from '../context/userContext';
 import Alert from './Alert';
 
 const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [isAuthenticatedUser, setIsAuthenticatedUser] = useState(null);
+    const { user, isLoading } = useUser();
     const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        const checkAuthentication = async () => {
-            try {
-                // Step 1: Validate User Authentication
-                const response = await axios.post('/api/auth/validate-user', {}, { withCredentials: true });
-                const user = response.data.user;
-
-                if (response.status === 200) {
-                    // Step 2: Check if setup is complete
-                    if (!user.organization.isSetupCompleted) {
-                        // Redirect to setup if setup is incomplete
-                        if (!isAuthenticatedPage) {
-                            navigate('/setup', { replace: true });
-                            return;
-                        }
-                    } else {
-                        // If setup is complete, prevent access to the setup page
-                        if (window.location.pathname === '/setup') {
-                            navigate('/dashboard', { replace: true });
-                            return;
-                        }
-
-                        // Step 3: Check if payment is completed
-                        if (!user.organization.isPaid) {
-                            // Redirect to select-plan if payment is not done
-                            if (!isAuthenticatedPage) {
-                                navigate('/select-plan', { replace: true });
-                                return;
-                            }
-                        } else {
-                            // If payment is completed, redirect to dashboard if on an unauthenticated page
-                            if (window.location.pathname === '/select-plan') {
-                                navigate('/dashboard', { replace: true });
-                                return;
-                            }
-                        }
-                    }
-
-                    // Set user as authenticated if all checks pass
-                    setIsAuthenticatedUser(true);
-                } else {
-                    // If the response is not 200, show an error message
-                    throw new Error();
+        if (!isLoading) {
+            if (user) {
+                if (!user.organization.isSetupCompleted && !isAuthenticatedPage) {
+                    navigate('/setup', { replace: true });
+                } else if (!user.organization.isPaid && !isAuthenticatedPage) {
+                    navigate('/select-plan', { replace: true });
+                } else if (user.organization.isPaid && window.location.pathname !== '/dashboard' && isAuthenticatedPage) {
+                    navigate('/dashboard', { replace: true });
                 }
-            } catch (error) {
-                // Handle error and show error message only on protected routes
-                if (!isAuthenticatedPage) {
-                    setErrorMessage(error.response?.data?.message || 'Authentication failed. Please sign in again.');
-                    navigate('/signin', { replace: true });
-                }
-                setIsAuthenticatedUser(false);
-            } finally {
-                setIsLoading(false);
+            } else if (!isAuthenticatedPage) {
+                setErrorMessage('Authentication failed. Please sign in again.');
+                navigate('/signin', { replace: true });
             }
-        };
-
-        checkAuthentication();
-    }, [isAuthenticatedPage, navigate]);
+        }
+    }, [user, isLoading, isAuthenticatedPage, navigate]);
 
     if (isLoading) {
-        return (
-            <div className="flex w-screen h-screen items-center justify-center text-customPrimary">
-                Loading...
-            </div>
-        );
-    }
-
-    // If the user is authenticated and trying to access public routes
-    if (isAuthenticatedUser && isAuthenticatedPage) {
-        window.history.back();
-        return null;
+        return <div>Loading...</div>; // Optionally show a loading spinner
     }
 
     return (

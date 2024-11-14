@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../context/userContext';
 import PhoneCodeSelector from './PhoneCodeSelector'; // Import the PhoneCodeSelector component
 import LoadingBar from './LoadingBar'; // Import the LoadingBar component
 import Alert from './Alert';
 import axios from 'axios';
 
 const SignUp = () => {
+    const { fetchUser, isLoading } = useUser(); 
     const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
     const [errors, setErrors] = useState({});
     const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
@@ -20,6 +22,7 @@ const SignUp = () => {
         termsAccepted: false,
     });
 
+    
     const navigate = useNavigate(); // Initialize the navigate function
 
     const handleChange = (e) => {
@@ -94,9 +97,9 @@ const SignUp = () => {
 
             // Redirect to setup page on successful signup
             if (response.status === 201) {
+                await fetchUser(); 
                 setLoadingProgress(100);
-
-                navigate('/setup', { replace: true });
+                navigate('/setup', { replace: false });
             }
         } catch (error) {
             const newErrors = {};
@@ -106,6 +109,10 @@ const SignUp = () => {
             setLoadingProgress(0);
         }
     };
+
+    if (isLoading) {
+        return <div>Loading...</div>; // Optionally show a loading indicator
+    }
 
     return (
         <div>

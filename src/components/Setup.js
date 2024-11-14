@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'; 
+import { useUser } from '../context/userContext';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 import AddressSelector from './AddressSelector';
@@ -19,7 +20,7 @@ const Setup = () => {
     const [gstin, setGstin] = useState('');
     const [errors, setErrors] = useState({});
     const hasFetchedData = useRef(false);
-
+    const { user,fetchUser, isLoading } = useUser();
     const navigate = useNavigate(); // Initialize the navigate function
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -116,18 +117,24 @@ const Setup = () => {
             });
 
             if (response.data.message) {
+                await fetchUser(); 
                 navigate('/select-plan');
             }
         } catch (error) {
             alert(error.response?.data?.message || '500 - Internal server error.'); // Show error message from the server in an alert
         }
     }
+
+    if (isLoading) {
+        return <div>Loading...</div>; // Optionally show a loading indicator
+    }
+
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
                 <div className='flex items-center underline mx-1' onClick={toggleDropdown} tabIndex={0} role="button" aria-expanded={isDropdownOpen} onKeyDown={(e) => { if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen); }}>
-                    <p className='m-1'>Murtaza Patel</p>
+                    <p className='m-1'>{user?.name}</p>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
                         <path d="m6 9 6 6 6-6" />
                     </svg>
