@@ -1,16 +1,20 @@
 import React, { useState } from 'react'
+import { useUser } from '../context/userContext';
 
 const CheckoutCart = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+    const { user, isLoading } = useUser();
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
+    if (isLoading) {
+        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
+    }
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
                 <div className='flex items-center underline mx-1' onClick={toggleDropdown} tabIndex={0} role="button" aria-expanded={isDropdownOpen} onKeyDown={(e) => { if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen); }}>
-                    <p className='m-1'>Murtaza Patel</p>
+                    <p className='m-1'>{user?.name}</p>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
                         <path d="m6 9 6 6 6-6" />
                     </svg>
@@ -26,11 +30,12 @@ const CheckoutCart = () => {
                     </div>
                 )}
             </div>
+
             <form className='rounded-xl md:shadow p-5 text-right'>
                 <div className='p-2'>
                     <h1 className='text-center text-[20px] m-2 font-bold'>Checkout Summary</h1>
                     <p className='text-center m-4'>
-                        Complete your purchase and unlock your <br/> plan's full potential!
+                        Complete your purchase and unlock your <br /> plan's full potential!
                     </p>
                     <hr />
                     <div className='flex my-4 justify-between'>
@@ -94,13 +99,14 @@ const CheckoutCart = () => {
                     Pay Now
                 </button>
             </form>
+
             <footer className='my-4 items-center'>
                 <p className='text-sm font-thin text-center text-gray-500'>
                     Copyright &copy; by All-In-One & Agile Business Management Software {new Date().getFullYear()}.
                 </p>
             </footer>
         </div>
-    )
+    );
 }
 
 export default CheckoutCart

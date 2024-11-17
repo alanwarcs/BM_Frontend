@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { useUser } from '../context/userContext';
+import { usePlans } from '../context/plansContext';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 import AddressSelector from './AddressSelector';
@@ -21,6 +22,7 @@ const Setup = () => {
     const [errors, setErrors] = useState({});
     const hasFetchedData = useRef(false);
     const { user,fetchUser, isLoading } = useUser();
+    const { fetchPlans, isPlansLoading } = usePlans();
     const navigate = useNavigate(); // Initialize the navigate function
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -118,6 +120,7 @@ const Setup = () => {
 
             if (response.data.message) {
                 await fetchUser(); 
+                await fetchPlans(); 
                 navigate('/select-plan');
             }
         } catch (error) {
@@ -126,7 +129,11 @@ const Setup = () => {
     }
 
     if (isLoading) {
-        return <div>Loading...</div>; // Optionally show a loading indicator
+        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
+    }
+
+    if(isPlansLoading) {
+        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator 
     }
 
     return (

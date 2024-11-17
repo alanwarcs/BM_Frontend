@@ -111,7 +111,7 @@ const SignUp = () => {
     };
 
     if (isLoading) {
-        return <div>Loading...</div>; // Optionally show a loading indicator
+        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
     }
 
     return (
