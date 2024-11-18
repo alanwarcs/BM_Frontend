@@ -14,7 +14,15 @@ const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) 
                 if (!user.organization.isSetupCompleted && !isAuthenticatedPage) {
                     navigate('/setup', { replace: true });
                 } else if (!user.organization.isPaid && !isAuthenticatedPage) {
-                    navigate('/select-plan', { replace: true });
+
+                    const orderDetails = localStorage.getItem('orderDetails');
+                    const selectedPlan = localStorage.getItem('selectedPlan');
+
+                    if (orderDetails && selectedPlan) {
+                        navigate('/checkout', { replace: true }); // Redirect to checkout if order details exist
+                    } else {
+                        navigate('/select-plan', { replace: true }); // Redirect to select-plan if order details do not exist
+                    }
                 } else if (user.organization.isPaid && window.location.pathname !== '/dashboard' && isAuthenticatedPage) {
                     navigate('/dashboard', { replace: true });
                 }

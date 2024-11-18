@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { usePlans } from '../context/plansContext';
 import SignOutButton from './SignOutButton';
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/userContext';
-// import axios from 'axios'; // Add axios for making API requests
+import axios from 'axios'; // Add axios for making API requests
 
 const SelectPlan = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [planValidity, setPlanValidity] = useState('monthly');
   const { user, isLoading } = useUser();
   const { plans, isPlansLoading } = usePlans();
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -20,9 +20,26 @@ const SelectPlan = () => {
   };
 
   const handleSelectPlan = async (plan) => {
+    try {
+      // Send a POST request to create an order
+      const response = await axios.post('/api/payment/create-order', { planId: plan._id });
 
-  };
+      // Check if the response is successful
+      if (response.data.success) {
+
+        localStorage.setItem('orderDetails', JSON.stringify(response.data));
+        localStorage.setItem('selectedPlan', JSON.stringify(plan));
   
+        navigate('/checkout')
+      } else {
+        // Show error alert if something went wrong
+        alert('Failed to create order: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert('An error occurred while creating the order.', error.message);
+    }
+  };
 
   if (isLoading || isPlansLoading) {
     return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
@@ -98,7 +115,7 @@ const SelectPlan = () => {
                           ))}
                         </ul>
                       </div>
-                      <button onClick={() => handleSelectPlan(plan)} className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'>Choose One</button>
+                      <button type="button" onClick={() => handleSelectPlan(plan)} className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'>Choose One</button>
                     </div>
                   ))
               ) : (
@@ -130,7 +147,7 @@ const SelectPlan = () => {
                           ))}
                         </ul>
                       </div>
-                      <button onClick={() => handleSelectPlan(plan)} className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'>Choose One</button>
+                      <button type="button" onClick={() => handleSelectPlan(plan)} className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'>Choose One</button>
                     </div>
                   ))
               ) : (
