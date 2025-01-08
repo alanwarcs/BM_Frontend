@@ -21,10 +21,10 @@ const SignUp = () => {
         designation: '',
         termsAccepted: false,
     });
-
     
     const navigate = useNavigate(); // Initialize the navigate function
 
+    // Handle input changes
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -40,6 +40,8 @@ const SignUp = () => {
         setShowPassword(!showPassword); // Toggle password visibility
     };
 
+
+    // Update phone number
     const handlePhoneChange = (fullPhoneNumber) => {
         setFormData((prevData) => ({
             ...prevData,
@@ -87,6 +89,8 @@ const SignUp = () => {
         return Object.keys(newErrors).length === 0; // Return true if no errors
     };
 
+
+    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return; // Only submit if validation passes
@@ -110,6 +114,7 @@ const SignUp = () => {
         }
     };
 
+    // Show loading indicator while fetching user data
     if (isLoading) {
         return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
     }

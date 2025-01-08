@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment-timezone';
 
+// Custom hook to handle clicks outside of the dropdown
 const useOutsideClick = (ref, callback) => {
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -23,8 +24,10 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const dropdownRef = useRef(null);
 
+    // Reference for the dropdown container
     useOutsideClick(dropdownRef, () => setIsDropdownOpen(false));
 
+   // Close dropdown when clicking outside
     useEffect(() => {
         const tzData = moment.tz.names().map((name) => {
             const offset = moment.tz(name).utcOffset();
@@ -36,6 +39,7 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
         setTimezones(tzData);
     }, []);
 
+   // Update current timezone if selectedTimezone prop changes
     useEffect(() => {
         if (selectedTimezone) {
             const timezone = timezones.find(tz => tz.name === selectedTimezone);
@@ -46,14 +50,17 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
         }
     }, [selectedTimezone, timezones, onTimezoneChange]);
 
+    // Toggle dropdown visibility
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
+    // Handle timezone selection
     const handleTimezoneChange = (timezone) => {
         setCurrentTimezone(timezone);
         setIsDropdownOpen(false);
         onTimezoneChange(timezone.name);
     };
 
+    // Handle keyboard navigation (up/down arrows, enter)
     const handleKeyDown = (e) => {
         if (!isDropdownOpen) return;
 
@@ -70,6 +77,7 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
         }
     };
 
+    // Filter timezones based on search query
     const filteredTimezones = timezones.filter((tz) =>
         tz.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -111,9 +119,8 @@ const TimezoneSelector = ({ onTimezoneChange, selectedTimezone }) => {
                             filteredTimezones.map((timezone, index) => (
                                 <li
                                     key={index}
-                                    className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${
-                                        index === highlightedIndex ? 'bg-gray-100' : ''
-                                    }`}
+                                    className={`flex items-center p-3 cursor-pointer hover:bg-gray-100 ${index === highlightedIndex ? 'bg-gray-100' : ''
+                                        }`}
                                     onClick={() => handleTimezoneChange(timezone)}
                                     onMouseEnter={() => setHighlightedIndex(index)}
                                     role="option"

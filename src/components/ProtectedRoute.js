@@ -11,22 +11,24 @@ const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) 
     useEffect(() => {
         if (!isLoading) {
             if (user) {
-                if (!user.organization.isSetupCompleted && !isAuthenticatedPage) {
-                    navigate('/setup', { replace: true });
-                } else if (!user.organization.isPaid && !isAuthenticatedPage) {
+                const { isSetupCompleted, isPaid, subscriptionStatus } = user.organization;
 
-                    const orderDetails = localStorage.getItem('orderDetails');
-                    const selectedPlan = localStorage.getItem('selectedPlan');
-
-                    if (orderDetails && selectedPlan) {
-                        navigate('/checkout', { replace: true }); // Redirect to checkout if order details exist
-                    } else {
-                        navigate('/select-plan', { replace: true }); // Redirect to select-plan if order details do not exist
-                    }
-                } else if (user.organization.isPaid && window.location.pathname !== '/dashboard' && isAuthenticatedPage) {
+                if (!isAuthenticatedPage) {
+                    // Redirect authenticated users away from public routes (e.g., /signin, /signup)
                     navigate('/dashboard', { replace: true });
+                } else {
+                    // Handle authenticated page access
+                    if (!isSetupCompleted) {
+                        navigate('/setup', { replace: true });
+                    } else if (!isPaid) {
+                        navigate('/select-plan', { replace: true });
+                    } else if (subscriptionStatus !== 'active') {
+                        setErrorMessage('Your subscription has expired. Please renew your plan.');
+                        navigate('/select-plan', { replace: true });
+                    }
                 }
-            } else if (!isAuthenticatedPage) {
+            } else if (isAuthenticatedPage) {
+                // Handle unauthenticated access to protected pages
                 setErrorMessage('Authentication failed. Please sign in again.');
                 navigate('/signin', { replace: true });
             }
@@ -34,7 +36,7 @@ const ProtectedRoute = ({ component: Component, isAuthenticatedPage, ...rest }) 
     }, [user, isLoading, isAuthenticatedPage, navigate]);
 
     if (isLoading) {
-        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading spinner
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 
     return (

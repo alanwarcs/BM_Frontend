@@ -23,11 +23,14 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const dropdownRef = useRef(null);
 
+
+    // Detect outside click to close dropdown
     useOutsideClick(dropdownRef, () => setIsDropdownOpen(false)); // Handle outside clicks
 
-    // Use useMemo to memoize the currencyList
+    // Memoize the currency list to avoid unnecessary recalculations
     const currencyList = useMemo(() => currencies.currencies || [], []); // Empty array as dependency
 
+    // Effect hook to set the current selected currency on load
     useEffect(() => {
         if (selectedCurrency) {
             const currency = currencyList.find(c => c.code === selectedCurrency);
@@ -37,6 +40,7 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
             }
         }
     }, [selectedCurrency, currencyList, onCurrencyChange]);
+
     // Toggle dropdown visibility
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -52,6 +56,7 @@ const CurrencySelector = ({ onCurrencyChange, selectedCurrency }) => {
         currency.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Handle keyboard navigation for currency selection
     const handleKeyDown = (e) => {
         if (!isDropdownOpen) return;
 

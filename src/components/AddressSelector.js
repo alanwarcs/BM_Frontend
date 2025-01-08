@@ -31,9 +31,11 @@ const AddressSelector = ({ onAddressChange }) => {
     const countryDropdownRef = useRef(null);
     const stateDropdownRef = useRef(null);
 
+    // Close dropdowns when clicking outside
     useOutsideClick(countryDropdownRef, () => setIsCountryDropdownOpen(false));
     useOutsideClick(stateDropdownRef, () => setIsStateDropdownOpen(false));
 
+    // Fetch all countries on component mount
     useEffect(() => {
         const countriesData = Country.getAllCountries();
         const formattedCountries = countriesData.map((country) => ({
@@ -44,8 +46,8 @@ const AddressSelector = ({ onAddressChange }) => {
         setCountries(formattedCountries);
     }, []);
 
+    // Fetch user's country based on IP if no country is selected
     useEffect(() => {
-        // Fetch country based on IP only if no country is selected
         const getCountryFromIP = async () => {
             try {
                 const response = await fetch('https://ipapi.co/json/');
@@ -71,9 +73,12 @@ const AddressSelector = ({ onAddressChange }) => {
         }
     }, [countries, selectedCountry, onAddressChange]);
 
+    // Toggle dropdown visibility
     const toggleCountryDropdown = () => setIsCountryDropdownOpen(!isCountryDropdownOpen);
     const toggleStateDropdown = () => setIsStateDropdownOpen(!isStateDropdownOpen);
 
+
+    // Handle country selection
     const handleCountryChange = (country) => {
         setSelectedCountry(country);
         const countryStates = State.getStatesOfCountry(country.code); // Fetch states based on selected country
@@ -83,12 +88,15 @@ const AddressSelector = ({ onAddressChange }) => {
         setIsCountryDropdownOpen(false);
     };
 
+
+    // Handle state selection
     const handleStateChange = (state) => {
         setSelectedState(state);
         onAddressChange(selectedCountry.name, state.name,states); // Notify parent about the selected state
         setIsStateDropdownOpen(false);
     };
 
+    // Handle keyboard navigation in the dropdowns
     const handleKeyDown = (e, type) => {
         if (type === 'country' && !isCountryDropdownOpen) return;
         if (type === 'state' && !isStateDropdownOpen) return;
@@ -110,6 +118,7 @@ const AddressSelector = ({ onAddressChange }) => {
         }
     };
 
+    // Filter countries and states based on the search query
     const filteredCountries = countries.filter((country) =>
         country.name.toLowerCase().includes(countrySearchQuery.toLowerCase())
     );

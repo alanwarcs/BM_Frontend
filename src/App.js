@@ -8,32 +8,45 @@ import Setup from './components/Setup';
 import Dashboard from './components/Dashboard';
 import CheckoutCart from './components/CheckoutCart';
 import { UserProvider } from './context/userContext';
-import { PlansProvider } from './context/plansContext';
 
 function App() {
   return (
     <div className="App">
       <UserProvider>
-        <PlansProvider>
-          <Router>
-            <Routes>
-              {/* Public routes for SignUp and SignIn */}
-              <Route path="/signup" element={<ProtectedRoute component={SignUp} isAuthenticatedPage={true} />} />
-              <Route path="/signin" element={<ProtectedRoute component={SignIn} isAuthenticatedPage={true} />} />
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route
+              path="/signup"
+              element={<ProtectedRoute component={SignUp} isAuthenticatedPage={false} />}
+            />
+            <Route
+              path="/signin"
+              element={<ProtectedRoute component={SignIn} isAuthenticatedPage={false} />}
+            />
 
-              {/* Protected onboarding routes */}
-              <Route path="/setup" element={<ProtectedRoute component={Setup} isAuthenticatedPage={false} />} />
-              <Route path="/select-plan" element={<ProtectedRoute component={SelectPlan} isAuthenticatedPage={false} />} />
-              <Route path="/checkout" element={<ProtectedRoute component={CheckoutCart} isAuthenticatedPage={false} />} />
-              
-              {/* Protected dashboard route */}
-              <Route path="/dashboard" element={<ProtectedRoute component={Dashboard} isAuthenticatedPage={false} />} />
+            {/* Protected onboarding routes */}
+            <Route
+              path="/setup"
+              element={<ProtectedRoute component={Setup} isAuthenticatedPage={true} />}
+            />
+            <Route
+              path="/select-plan"
+              element={<ProtectedRoute component={SelectPlan} isAuthenticatedPage={true} />}
+            />
+  
+            <Route path="/checkout" element={<CheckoutCart />} />
 
-              {/* Redirect to dashboard for unknown routes */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
-        </PlansProvider>
+            {/* Protected dashboard route */}
+            <Route
+              path="/dashboard"
+              element={<ProtectedRoute component={Dashboard} isAuthenticatedPage={true} />}
+            />
+
+            {/* Redirect to dashboard for unknown routes */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Router>
       </UserProvider>
     </div>
   );

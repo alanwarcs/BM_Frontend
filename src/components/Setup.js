@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { useUser } from '../context/userContext';
-import { usePlans } from '../context/plansContext';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 import AddressSelector from './AddressSelector';
@@ -22,30 +21,36 @@ const Setup = () => {
     const [errors, setErrors] = useState({});
     const hasFetchedData = useRef(false);
     const { user,fetchUser, isLoading } = useUser();
-    const { fetchPlans, isPlansLoading } = usePlans();
     const navigate = useNavigate(); // Initialize the navigate function
 
+    // Toggle dropdown visibility
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
+
+    // Handle checkbox change for GST registration
     const handleGstCheckboxChange = (e) => {
         setIsGstRegistered(e.target.checked);
     };
 
+    // Handle timezone change
     const handleTimezoneChange = (timezone) => {
         setSelectedTimezone(timezone);
     };
-
+    
+    // Handle currency change
     const handleCurrencyChange = (currency) => {
         setSelectedCurrency(currency);
     };
 
+    // Handle address, country, state change and update states array
     const handleAddressChange = (country, state, statesArray) => {
         setSelectedCountry(country);
         setSelectedState(state);
         setStates(statesArray); // Update states array
     };
 
-    // Fetch user's timezone on component load
+
+    // Fetch user's timezone, currency, and country on component load
     useEffect(() => {
         const fetchTimezoneAndCurrency = async () => {
             if (hasFetchedData.current) return; // Check if data has been fetched already
@@ -67,6 +72,7 @@ const Setup = () => {
         fetchTimezoneAndCurrency();
     }, []);
 
+    // Form validation
     const validateForm = () => {
         const newErrors = {};
 
@@ -98,6 +104,7 @@ const Setup = () => {
         return Object.keys(newErrors).length === 0; // Return true if no errors
     };
 
+    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return;
@@ -119,21 +126,17 @@ const Setup = () => {
             });
 
             if (response.data.message) {
-                await fetchUser(); 
-                await fetchPlans(); 
+                await fetchUser();  
                 navigate('/select-plan');
             }
         } catch (error) {
             alert(error.response?.data?.message || '500 - Internal server error.'); // Show error message from the server in an alert
         }
     }
-
+    
+    // Show loading state if data is still being fetched
     if (isLoading) {
         return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
-    }
-
-    if(isPlansLoading) {
-        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator 
     }
 
     return (

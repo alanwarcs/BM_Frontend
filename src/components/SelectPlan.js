@@ -1,49 +1,83 @@
-import React, { useState } from 'react';
-import { usePlans } from '../context/plansContext';
+import React, { useState, useEffect } from 'react';
 import SignOutButton from './SignOutButton';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/userContext';
+import Alert from './Alert';
 import axios from 'axios'; // Add axios for making API requests
 
 const SelectPlan = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [planValidity, setPlanValidity] = useState('monthly');
   const { user, isLoading } = useUser();
-  const { plans, isPlansLoading } = usePlans();
+  const [alert, setAlert] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [isPlansLoading, setIsPlansLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Toggle dropdown visibility
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  // Handle radio button change
+
+  // Handle plan validity (monthly/yearly) selection
   const handleChange = (event) => {
     setPlanValidity(event.target.value);
   };
 
+  // Handle plan selection and order creation
   const handleSelectPlan = async (plan) => {
     try {
-      // Send a POST request to create an order
       const response = await axios.post('/api/payment/create-order', { planId: plan._id });
 
-      // Check if the response is successful
-      if (response.data.success) {
-
-        localStorage.setItem('orderDetails', JSON.stringify(response.data));
-        localStorage.setItem('selectedPlan', JSON.stringify(plan));
+      if (response.status === 200) {
   
-        navigate('/checkout')
+        navigate('/checkout');
       } else {
-        // Show error alert if something went wrong
-        alert('Failed to create order: ' + response.data.message);
+        setAlert({
+          message: response.data?.message || '500 - Internal server error.',
+          type: 'error',
+        });
       }
     } catch (error) {
-      console.error('Error creating order:', error);
-      alert('An error occurred while creating the order.', error.message);
+      setAlert({
+        message: error.message || '500 - Internal server error.',
+        type: 'error',
+      });
     }
   };
 
+
+  // Fetch available plans from the API
+  const fetchPlans = async () => {
+    setIsPlansLoading(true);
+    try {
+      const response = await axios.get('/api/plans/', { withCredentials: true });
+      const plansWithParsedPrice = response.data.plans.map((plan) => ({
+        ...plan,
+        price: parseFloat(plan.price.$numberDecimal),
+      }));
+      setPlans(plansWithParsedPrice);
+    } catch (error) {
+      setPlans([]);
+      setAlert({
+        message: '500 - Internal server error.',
+        type: 'error',
+      });
+    } finally {
+      setIsPlansLoading(false);
+    }
+  };
+
+
+  // Fetch plans on component mount
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  // Show loading indicator if data is loading
   if (isLoading || isPlansLoading) {
     return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
   };
+
 
   return (
     <div className='relative flex flex-col items-center w-full min-h-screen max-h-screen p-1'>
@@ -90,73 +124,120 @@ const SelectPlan = () => {
 
         {/* Plans Display */}
         <div className='flex flex-row md:flex-col justify-center'>
-          {planValidity === "monthly" ? (
-            <div className='flex justify-center m-3 flex-wrap'>
-              {plans.filter((plan) => plan.durationDays === 30).length > 0 ? (
-                plans
-                  .filter((plan) => plan.durationDays === 30)
-                  .map((plan, index) => (
-                    <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-3 border border-customSecondary bg-customPrimary text-white rounded-3xl shadow-md'>
-                      <div>
-                        <h4 className='text-[18px] font-semibold'>{plan.planName}</h4>
-                        <span className='flex items-end'>
-                          <h2 className='text-[42px] my-2'>₹{plan.price}/mo</h2>
-                        </span>
-                        <p className='whitespace-normal my-2'>Choose the perfect plan to accelerate your growth!</p>
-                        <ul className='py-5 px-2'>
-                          {plan.features.split(', ').map((feature, featureIndex) => (
-                            <li key={featureIndex} className='flex items-center m-1'>
-                              <svg xmlns="http://www.w3.org/2000/svg" className='me-2' width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bdbdbd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="m9 12 2 2 4-4" />
-                              </svg>
-                              <span className='ms-1 whitespace-pre'>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
+          {plans ? (
+            planValidity === "monthly" ? (
+              <div className='flex justify-center m-3 flex-wrap'>
+                {plans.filter((plan) => plan.durationDays === 30).length > 0 ? (
+                  plans
+                    .filter((plan) => plan.durationDays === 30)
+                    .map((plan, index) => (
+                      <div
+                        key={index}
+                        className='flex flex-col justify-between max-w-[340px] p-8 m-3 border border-customSecondary bg-customPrimary text-white rounded-3xl shadow-md'
+                      >
+                        <div>
+                          <h4 className='text-[18px] font-semibold'>{plan.planName}</h4>
+                          <span className='flex items-end'>
+                            <h2 className='text-[42px] my-2'>₹{plan.price}/mo</h2>
+                          </span>
+                          <p className='whitespace-normal my-2'>Choose the perfect plan to accelerate your growth!</p>
+                          <ul className='py-5 px-2'>
+                            {plan.features.split(', ').map((feature, featureIndex) => (
+                              <li key={featureIndex} className='flex items-center m-1'>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className='me-2'
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#bdbdbd"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="m9 12 2 2 4-4" />
+                                </svg>
+                                <span className='ms-1 whitespace-pre'>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectPlan(plan)}
+                          className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'
+                        >
+                          Choose One
+                        </button>
                       </div>
-                      <button type="button" onClick={() => handleSelectPlan(plan)} className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'>Choose One</button>
-                    </div>
-                  ))
-              ) : (
-                <p className='text-center text-gray-500 text-sm m-5'>No plans available for this duration.</p>
-              )}
-            </div>
+                    ))
+                ) : (
+                  <p className='text-center text-gray-500 text-sm m-5'>No plans available for this duration.</p>
+                )}
+              </div>
+            ) : (
+              <div className='flex justify-center m-3 flex-wrap'>
+                {plans.filter((plan) => plan.durationDays === 365).length > 0 ? (
+                  plans
+                    .filter((plan) => plan.durationDays === 365)
+                    .map((plan, index) => (
+                      <div
+                        key={index}
+                        className='flex flex-col justify-between max-w-[340px] p-8 m-3 border border-customSecondary bg-customPrimary text-white rounded-3xl shadow-md'
+                      >
+                        <div>
+                          <h4 className='text-[18px] font-semibold'>{plan.planName}</h4>
+                          <span className='flex items-end'>
+                            <h2 className='text-[42px] my-2'>₹{plan.price}/yr</h2>
+                          </span>
+                          <p className='whitespace-normal my-2'>Choose the perfect plan to accelerate your growth!</p>
+                          <ul className='py-5 px-2'>
+                            {plan.features.split(', ').map((feature, featureIndex) => (
+                              <li key={featureIndex} className='flex items-center m-1'>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className='me-2'
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#bdbdbd"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="m9 12 2 2 4-4" />
+                                </svg>
+                                <span className='ms-1 whitespace-pre'>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectPlan(plan)}
+                          className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'
+                        >
+                          Choose One
+                        </button>
+                      </div>
+                    ))
+                ) : (
+                  <p className='text-center text-gray-500 text-sm m-5'>No plans available for this duration.</p>
+                )}
+              </div>
+            )
           ) : (
-            <div className='flex justify-center m-3 flex-wrap'>
-              {plans.filter((plan) => plan.durationDays === 365).length > 0 ? (
-                plans
-                  .filter((plan) => plan.durationDays === 365)
-                  .map((plan, index) => (
-                    <div key={index} className='flex flex-col justify-between max-w-[340px] p-8 m-3 border border-customSecondary bg-customPrimary text-white rounded-3xl shadow-md'>
-                      <div>
-                        <h4 className='text-[18px] font-semibold'>{plan.planName}</h4>
-                        <span className='flex items-end'>
-                          <h2 className='text-[42px] my-2'>₹{plan.price}/yr</h2>
-                        </span>
-                        <p className='whitespace-normal my-2'>Choose the perfect plan to accelerate your growth!</p>
-                        <ul className='py-5 px-2'>
-                          {plan.features.split(', ').map((feature, featureIndex) => (
-                            <li key={featureIndex} className='flex items-center m-1'>
-                              <svg xmlns="http://www.w3.org/2000/svg" className='me-2' width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bdbdbd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="m9 12 2 2 4-4" />
-                              </svg>
-                              <span className='ms-1 whitespace-pre'>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <button type="button" onClick={() => handleSelectPlan(plan)} className='py-3 px-4 m-5 bg-white rounded-lg outline outline-1 outline-customSecondary hover:outline-2 focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]'>Choose One</button>
-                    </div>
-                  ))
-              ) : (
-                <p className='text-center text-gray-500 text-sm m-5'>No plans available for this duration.</p>
-              )}
-            </div>
+            <p className='text-center text-gray-500 text-sm m-5'>No plans available.</p>
           )}
         </div>
       </form>
+      {alert && (
+        <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />
+      )}
       <footer className='py-4 items-center'>
         <p className='text-sm font-thin text-center text-gray-500'>
           Copyright &copy; by All-In-One & Agile Business Management Software {new Date().getFullYear()}.
