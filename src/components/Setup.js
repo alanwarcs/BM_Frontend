@@ -56,10 +56,10 @@ const Setup = () => {
     useEffect(() => {
         const { isSetupCompleted } = user.organization;
     
-        if (isSetupCompleted) {
-            alert('404 - Page Not Found');
-            navigate('/dashboard', { replace: true });
-        }
+        // if (isSetupCompleted) {
+        //     alert('404 - Page Not Found');
+        //     navigate('/dashboard', { replace: true });
+        // }
     
         const fetchTimezoneAndCurrency = async () => {
             if (hasFetchedData.current) return; // Check if data has been fetched already
@@ -153,7 +153,7 @@ const Setup = () => {
     }
 
     return (
-        <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
+        <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1 bg-gray-50'>
             {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
@@ -174,7 +174,7 @@ const Setup = () => {
                     </div>
                 )}
             </div>
-            <form className='rounded-xl md:shadow p-5 text-left' onSubmit={handleSubmit}>
+            <form className='rounded-xl md:shadow p-5 text-left bg-white' onSubmit={handleSubmit}>
                 <h1 className='text-center text-[24px] m-2 font-bold'>Complete Business Setup</h1>
                 <p className='text-center'>
                     Enter your Organization Details <br /> to complete Setup.

@@ -9,9 +9,13 @@ module.exports = {
         sans: ['Arial', 'sans-serif'], // Set Arial as the default sans-serif font
       },
       colors: {
-        customSecondary: '#feebdb',
-        customPrimary: '#006d77',
-        customPrimaryHover: '#00808c',
+        customSecondary: '#9B9B9B',
+        customPrimary: '#014C93',
+        customPrimaryHover: '#1564AE',
+
+        // customSecondary: '#feebdb',
+        // customPrimary: '#006d77',
+        // customPrimaryHover: '#00808c',
       },
     },
   },

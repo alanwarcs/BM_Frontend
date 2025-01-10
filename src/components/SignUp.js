@@ -120,13 +120,13 @@ const SignUp = () => {
     }
 
     return (
-        <div>
+        <div className='bg-gray-50'>
             {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
             <div className='relative flex flex-col items-center justify-between w-full min-h-screen p-3'>
                 <div className='text-center md:text-left w-full'>
                     <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
                 </div>
-                <form className='rounded-xl shadow p-5 text-left' onSubmit={handleSubmit} >
+                <form className='rounded-xl shadow p-5 text-left bg-white' onSubmit={handleSubmit}>
                     <h1 className='text-center text-[24px] m-2 font-bold'>Registeration</h1>
                     <p className='text-center'>
                         Enter your Details to Register your business.

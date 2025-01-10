@@ -80,11 +80,11 @@ const SignIn = () => {
   return (
     <div>
       {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
-      <div className='relative flex flex-col items-center justify-between w-full h-screen p-5'>
+      <div className='relative flex flex-col items-center justify-between w-full h-screen p-5 bg-gray-50'>
         <div className='text-center md:text-left w-full'>
           <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
         </div>
-        <form className='rounded-xl shadow p-5 text-left' onSubmit={handleSubmit}>
+        <form className='rounded-xl shadow p-5 text-left bg-white' onSubmit={handleSubmit}>
           <h1 className='text-center text-[24px] m-5 font-bold'> Login</h1>
           <p className='text-center whitespace-normal break-words'>
             Enter your Details to get login to <br />your account.

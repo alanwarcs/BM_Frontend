@@ -4,8 +4,8 @@ import UserLayout from './UserLayout'; // Import UserLayout
 const Dashboard = () => {
   return (
     <UserLayout>
-      <div>
-        hi
+      <div className='flex flex-col w-full text-start'>
+        
       </div>
     </UserLayout>
   )
