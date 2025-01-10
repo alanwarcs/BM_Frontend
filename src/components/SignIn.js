@@ -115,7 +115,7 @@ const SignIn = () => {
             </div>
             {errors.password && <span className='flex max-w-[350px] text-red-500 text-[14px] mx-2'>{errors.password}</span>}
 
-            <a href="/" className='m-2 text-[14px] text-gray-800 hover:text-gray-500 underline'>Forgot Password?</a>
+            <a href="/" className='m-2 text-[14px] text-customPrimary hover:text-customPrimaryHover underline'>Forgot Password?</a>
             <button className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-3 px-5 text-white text-[16px]'>
               Sign in
             </button>
@@ -129,7 +129,7 @@ const SignIn = () => {
               </button>
             </div>
             <span className='my-5 text-center text-[14px]'>
-              <p>Don't have an account? <a href="/" className='font-semibold'>Register Now</a></p>
+              <p>Don't have an account? <a href="/" className='font-semibold text-customPrimary'>Register Now</a></p>
             </span>
           </div>
         </form>

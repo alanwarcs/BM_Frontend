@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/userContext';
 import TimezoneSelector from './TimezoneSelector';
 import CurrencySelector from './CurrencySelector';
 import AddressSelector from './AddressSelector';
 import SignOutButton from './SignOutButton';
+import LoadingBar from './LoadingBar'; // Import the LoadingBar component
 import axios from 'axios';
 
 const Setup = () => {
@@ -16,11 +17,12 @@ const Setup = () => {
     const [selectedState, setSelectedState] = useState(null);
     const [states, setStates] = useState([]);
     const [address, setAddress] = useState('');
+    const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
     const [pin, setPin] = useState('');
     const [gstin, setGstin] = useState('');
     const [errors, setErrors] = useState({});
     const hasFetchedData = useRef(false);
-    const { user,fetchUser, isLoading } = useUser();
+    const { user, fetchUser, isLoading } = useUser();
     const navigate = useNavigate(); // Initialize the navigate function
 
     // Toggle dropdown visibility
@@ -36,7 +38,7 @@ const Setup = () => {
     const handleTimezoneChange = (timezone) => {
         setSelectedTimezone(timezone);
     };
-    
+
     // Handle currency change
     const handleCurrencyChange = (currency) => {
         setSelectedCurrency(currency);
@@ -52,25 +54,32 @@ const Setup = () => {
 
     // Fetch user's timezone, currency, and country on component load
     useEffect(() => {
+        const { isSetupCompleted } = user.organization;
+    
+        if (isSetupCompleted) {
+            alert('404 - Page Not Found');
+            navigate('/dashboard', { replace: true });
+        }
+    
         const fetchTimezoneAndCurrency = async () => {
             if (hasFetchedData.current) return; // Check if data has been fetched already
-
+    
             hasFetchedData.current = true; // Set the ref to true to indicate data has been fetched
-
+    
             try {
                 const response = await axios.get('https://ipapi.co/json/');
                 const { timezone, currency, country } = response.data;
-
+    
                 setSelectedCountry(country);
                 setSelectedTimezone(timezone);
                 setSelectedCurrency(currency);
             } catch (error) {
-                console.error('Error fetching timezone and currency:', error);
+                alert('Error fetching timezone and currency:', error);
             }
         };
-
+    
         fetchTimezoneAndCurrency();
-    }, []);
+    }, [navigate, user.organization]); // Add navigate and user.organization to the dependency array    
 
     // Form validation
     const validateForm = () => {
@@ -107,8 +116,9 @@ const Setup = () => {
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoadingProgress(20);
         if (!validateForm()) return;
-
+        setLoadingProgress(50);
         try {
             const response = await axios.post('/api/auth/setup', {
                 address,
@@ -121,19 +131,22 @@ const Setup = () => {
                 dateFormat: 'YYYY-MM-DD', // Set this or take from state if changeable
                 currency: selectedCurrency,
             },
-            {
-                withCredentials: true, // Include cookies with the request
-            });
-
+                {
+                    withCredentials: true, // Include cookies with the request
+                });
+                setLoadingProgress(80);
             if (response.data.message) {
-                await fetchUser();  
+
+                await fetchUser();
+                setLoadingProgress(100);
                 navigate('/select-plan');
             }
         } catch (error) {
+            setLoadingProgress(0);
             alert(error.response?.data?.message || '500 - Internal server error.'); // Show error message from the server in an alert
         }
     }
-    
+
     // Show loading state if data is still being fetched
     if (isLoading) {
         return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
@@ -141,6 +154,7 @@ const Setup = () => {
 
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
+            {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
                 <div className='flex items-center underline mx-1' onClick={toggleDropdown} tabIndex={0} role="button" aria-expanded={isDropdownOpen} onKeyDown={(e) => { if (e.key === 'Enter') setIsDropdownOpen(!isDropdownOpen); }}>

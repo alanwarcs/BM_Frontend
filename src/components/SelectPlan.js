@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SignOutButton from './SignOutButton';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/userContext';
+import LoadingBar from './LoadingBar'; // Import the LoadingBar component
 import Alert from './Alert';
 import axios from 'axios'; // Add axios for making API requests
 
@@ -12,6 +13,7 @@ const SelectPlan = () => {
   const [alert, setAlert] = useState(null);
   const [plans, setPlans] = useState([]);
   const [isPlansLoading, setIsPlansLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
   const navigate = useNavigate();
 
   // Toggle dropdown visibility
@@ -25,19 +27,22 @@ const SelectPlan = () => {
 
   // Handle plan selection and order creation
   const handleSelectPlan = async (plan) => {
+    setLoadingProgress(50);
     try {
       const response = await axios.post('/api/payment/create-order', { planId: plan._id });
-
+      setLoadingProgress(80);
       if (response.status === 200) {
-  
+        setLoadingProgress(100);
         navigate('/checkout');
       } else {
+        setLoadingProgress(0);
         setAlert({
           message: response.data?.message || '500 - Internal server error.',
           type: 'error',
         });
       }
     } catch (error) {
+      setLoadingProgress(0);
       setAlert({
         message: error.message || '500 - Internal server error.',
         type: 'error',
@@ -55,8 +60,10 @@ const SelectPlan = () => {
         ...plan,
         price: parseFloat(plan.price.$numberDecimal),
       }));
+
       setPlans(plansWithParsedPrice);
     } catch (error) {
+      setLoadingProgress(0);
       setPlans([]);
       setAlert({
         message: '500 - Internal server error.',
@@ -81,6 +88,7 @@ const SelectPlan = () => {
 
   return (
     <div className='relative flex flex-col items-center w-full min-h-screen max-h-screen p-1'>
+      {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
       {/* Header */}
       <div className='flex text-center md:text-left items-center justify-between w-full my-2'>
         <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>

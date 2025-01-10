@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import SignOutButton from './SignOutButton';
 import { useUser } from '../context/userContext';
 import { useNavigate } from 'react-router-dom';
+import LoadingBar from './LoadingBar'; // Import the LoadingBar component
+import Alert from './Alert';
 import axios from 'axios';
 
 const CheckoutCart = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [orderDetails, setOrderDetails] = useState(null);
     const { user, fetchUser, isLoading } = useUser();
+    const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
+    const [alert, setAlert] = useState(null);
     const navigate = useNavigate();
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -16,26 +21,30 @@ const CheckoutCart = () => {
             try {
                 const response = await axios.get('/api/payment/order-details', { withCredentials: true });
                 const fetchedDetails = response.data.orderDetails;
-
+                
                 // Convert Decimal128 to string or number
                 fetchedDetails.total = fetchedDetails.total?.$numberDecimal || '0.00';
                 setOrderDetails(fetchedDetails);
             } catch (error) {
-                console.error('Error fetching order details:', error);
+                setAlert({ message: 'There is error while fetching Order Details', type: 'error' }); // Set error alert
                 navigate('/selectplan');
             }
         };
-    
+
         fetchOrderDetails();
     }, [navigate]);
 
     const handlePayment = async () => {
+        setLoadingProgress(20);
+
         if (!orderDetails) {
-            alert('Order details not available.');
+            setAlert({ message: 'Order details not available.', type: 'error' }); // Set error alert
             return;
         }
-    
+
         try {
+            setLoadingProgress(50);
+
             const options = {
                 key: process.env.REACT_APP_RAZORPAY_KEY, // Your Razorpay Key
                 amount: (parseFloat(orderDetails.total) * 100).toString(), // Razorpay expects amount in paise (cents)
@@ -47,20 +56,23 @@ const CheckoutCart = () => {
                 handler: async function (response) {
                     try {
                         // Verify payment
-                        axios.post(
+                        await axios.post(
                             '/api/payment/verify-payment',
                             { paymentData: response, planId: orderDetails.planId }
                         );
-                        
+
                         // Handle successful verification
-                        alert('Payment successful!');
-                        
+                        setAlert({ message: 'Payement Success!', type: 'success' }); // Set error alert
+                        setLoadingProgress(80);
+
                         // Update user context and navigate
                         await fetchUser(); // Ensure this function is asynchronous
-                        navigate('/dashboard');
+                        setTimeout(() => {
+                            setLoadingProgress(100);
+                            navigate('/dashboard', { replace: true });
+                        }, 500); 
                     } catch (error) {
-                        console.error('Payment verification failed:', error);
-                        alert('Payment verification failed!');
+                        setAlert({ message: error, type: 'error' }); // Set error alert
                     }
                 },
                 prefill: {
@@ -72,15 +84,14 @@ const CheckoutCart = () => {
                     color: '#feebdb', // Customize the color of the Razorpay widget
                 },
             };
-    
+
             const razorpayInstance = new window.Razorpay(options);
             razorpayInstance.open(); // Open Razorpay checkout
         } catch (error) {
-            console.error('Error initiating payment:', error);
-            alert('Payment initiation failed!');
+            setAlert({ message: 'Payment initiation failed!', type: 'error' }); // Set error alert
         }
     };
-    
+
 
     if (isLoading) {
         return (
@@ -96,6 +107,7 @@ const CheckoutCart = () => {
 
     return (
         <div className='relative flex flex-col items-center justify-between w-full min-h-screen max-h-screen p-1'>
+            {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
             <div className='flex text-center md:text-left items-center justify-between w-full'>
                 <h1 className='text-[38px] mx-5 font-bold'>aab.</h1>
                 <div
@@ -129,7 +141,7 @@ const CheckoutCart = () => {
                     <div className='absolute right-0 top-16 max-h-60 m-1 bg-white rounded-lg shadow z-10 text-center overflow-hidden py-1'>
                         <ul className='max-h-48 overflow-y-auto w-[120px]'>
                             <li className='p-3 hover:bg-gray-100'>
-                                <a href='/'>Logout</a>
+                                <SignOutButton />
                             </li>
                         </ul>
                     </div>
@@ -201,6 +213,9 @@ const CheckoutCart = () => {
                     Pay Now
                 </button>
             </form>
+            {alert && (
+                <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />
+            )}
             <footer className='my-4 items-center'>
                 <p className='text-sm font-thin text-center text-gray-500'>
                     Copyright &copy; by All-In-One & Agile Business Management Software{' '}

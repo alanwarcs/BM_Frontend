@@ -1,10 +1,13 @@
-import React from 'react'
+import React from 'react';
+import UserLayout from './UserLayout'; // Import UserLayout
 
 const Dashboard = () => {
   return (
-    <div>
-      hi
-    </div>
+    <UserLayout>
+      <div>
+        hi
+      </div>
+    </UserLayout>
   )
 }
 

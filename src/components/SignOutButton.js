@@ -46,7 +46,7 @@ const SignOutButton = () => {
             {alert && (
                 <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />
             )}
-            <button onClick={handleSignOut} className="">
+            <button onClick={handleSignOut} className="block text-gray-700 hover:bg-gray-100">
                 SignOut
             </button>
         </>
