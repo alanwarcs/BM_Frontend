@@ -17,9 +17,10 @@ const TaxTab = ({ formData, handleChange }) => {
       {/* Tax Status */}
       <SelectInput
         id="taxStatus"
+        name="taxDetails.taxStatus" // Add name attribute
         label="Tax Status"
-        value={formData.taxStatus}
-        onChange={(e) => handleChange('taxStatus', e.target.value)}  // Ensure the correct field name is used
+        value={formData.taxDetails.taxStatus}
+        onChange={(e) => handleChange('taxDetails.taxStatus', e.target.value)} // Pass explicitly
         options={[
           { value: 'gstRegistered', label: 'GST Registered' },
           { value: 'unregistered', label: 'Unregistered' },
@@ -30,9 +31,10 @@ const TaxTab = ({ formData, handleChange }) => {
       {/* Source State */}
       <SelectInput
         id="sourceState"
+        name="taxDetails.sourceState" // Add name attribute
         label="Source State"
-        value={formData.sourceState}
-        onChange={(e) => handleChange('sourceState', e.target.value)}  // Ensure the correct field name is used
+        value={formData.taxDetails.sourceState}
+        onChange={(e) => handleChange('taxDetails.sourceState', e.target.value)} // Pass explicitly
         options={states.map(state => ({
           value: state.isoCode,
           label: state.name,
@@ -43,8 +45,9 @@ const TaxTab = ({ formData, handleChange }) => {
       <TextInput
         label="GSTIN"
         id="gstin"
-        value={formData.gstin}
-        onChange={(e) => handleChange("gstin", e.target.value)}
+        name="taxDetails.gstin" // Add name attribute
+        value={formData.taxDetails.gstin}
+        onChange={(e) => handleChange('taxDetails.gstin', e.target.value)} // Pass explicitly
         placeholder="Enter GST Number"
       />
 
@@ -52,10 +55,12 @@ const TaxTab = ({ formData, handleChange }) => {
       <TextInput
         label="PAN"
         id="panNumber"
-        value={formData.panNumber}
-        onChange={(e) => handleChange("panNumber", e.target.value)}
+        name="taxDetails.panNumber" // Add name attribute
+        value={formData.taxDetails.panNumber}
+        onChange={(e) => handleChange('taxDetails.panNumber', e.target.value)} // Pass explicitly
         placeholder="Enter PAN Number"
       />
+
     </div>
   );
 };

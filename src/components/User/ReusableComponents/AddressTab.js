@@ -10,34 +10,34 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
   useEffect(() => {
     // Set the country to "India" if not already set
-    if (!formData.shippingCountry) handleChange({ target: { id: 'shippingCountry', value: 'IN' } });
-    if (!formData.billingCountry) handleChange({ target: { id: 'billingCountry', value: 'IN' } });
+    if (!formData.shippingAddress.country) handleChange({ target: { name: 'shippingCountry', value: 'IN' } });
+    if (!formData.billingAddress.country) handleChange({ target: { name: 'billingCountry', value: 'IN' } });
 
     // Set all states of India for both shipping and billing
     const allStates = State.getStatesOfCountry('IN');
     setShippingStates(allStates);
     setBillingStates(allStates);
-  }, [formData.shippingCountry, formData.billingCountry, handleChange]);
+  }, [formData.shippingAddress.country, formData.billingAddress.country, handleChange]);
 
   useEffect(() => {
     // If no valid state is found, clear the shippingState
-    if (formData.shippingCountry === 'IN' && formData.shippingState) {
+    if (formData.shippingAddress.country === 'IN' && formData.shippingAddress.state) {
       const states = State.getStatesOfCountry('IN');
-      if (!states.some(state => state.isoCode === formData.shippingState)) {
-        handleChange({ target: { id: 'shippingState', value: '' } });
+      if (!states.some(state => state.isoCode === formData.shippingAddress.state)) {
+        handleChange({ target: { name: 'shippingState', value: '' } });
       }
     }
-  }, [formData.shippingCountry, formData.shippingState, handleChange]);
+  }, [formData.shippingAddress.country , formData.shippingAddress.state, handleChange]);
 
   useEffect(() => {
     // If no valid state is found, clear the billingState
-    if (formData.billingCountry === 'IN' && formData.billingState) {
+    if (formData.billingAddress.country === 'IN' && formData.billingAddress.state) {
       const states = State.getStatesOfCountry('IN');
-      if (!states.some(state => state.isoCode === formData.billingState)) {
-        handleChange({ target: { id: 'billingState', value: '' } });
+      if (!states.some(state => state.isoCode === formData.billingAddress.state)) {
+        handleChange({ target: { name: 'billingState', value: '' } });
       }
     }
-  }, [formData.billingCountry, formData.billingState, handleChange]);
+  }, [formData.billingAddress.country, formData.billingAddress.state, handleChange]);
 
   return (
     <div className="flex flex-wrap">
@@ -47,11 +47,11 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
         {/* Country - Disabled */}
         <SelectInput
-          id="shippingCountry"
+          name="shippingCountry" // Add the name attribute here
           label="Country"
           required
-          value={formData.shippingCountry}
-          onChange={handleChange}
+          value={formData.shippingAddress.country}
+          onChange={(e) => handleChange('shippingAddress.country', e.target.value)} // Pass explicitly
           options={countries.map(country => ({
             value: country.isoCode,
             label: country.name,
@@ -61,31 +61,31 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
         {/* Address Line 1 */}
         <TextInput
-          id="shippingAddress1"
+          name="shippingAddress1" // Add the name attribute here
           label="Address Line 1"
           required
           placeholder="Enter address line 1"
-          value={formData.shippingAddress1}
-          onChange={handleChange}
+          value={formData.shippingAddress.addressLine1}
+          onChange={(e) => handleChange('shippingAddress.addressLine1', e.target.value)} // Pass explicitly
         />
 
         {/* City */}
         <TextInput
-          id="shippingCity"
+          name="shippingCity" // Add the name attribute here
           label="City"
           required
           placeholder="Enter city"
-          value={formData.shippingCity}
-          onChange={handleChange}
+          value={formData.shippingAddress.city}
+          onChange={(e) => handleChange('shippingAddress.city', e.target.value)} // Pass explicitly
         />
 
         {/* State */}
         <SelectInput
-          id="shippingState"
+          name="shippingState" // Add the name attribute here
           label="State"
           required
-          value={formData.shippingState}
-          onChange={handleChange}
+          value={formData.shippingAddress.state}
+          onChange={(e) => handleChange('shippingAddress.state', e.target.value)} // Pass explicitly
           options={shippingStates.map(state => ({
             value: state.isoCode,
             label: state.name,
@@ -94,12 +94,12 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
         {/* Pincode */}
         <TextInput
-          id="shippingPincode"
+          name="shippingPincode" // Add the name attribute here
           label="Pincode"
           required
           placeholder="Enter pincode"
-          value={formData.shippingPincode}
-          onChange={handleChange}
+          value={formData.shippingAddress.postalCode}
+          onChange={(e) => handleChange('shippingAddress.postalCode', e.target.value)} // Pass explicitly
         />
       </div>
 
@@ -114,11 +114,11 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
         {/* Country - Disabled */}
         <SelectInput
-          id="billingCountry"
+          name="billingCountry" // Add the name attribute here
           label="Country"
           required
-          value={formData.billingCountry}
-          onChange={handleChange}
+          value={formData.billingAddress.country}
+          onChange={(e) => handleChange('billingAddress.country', e.target.value)} // Pass explicitly
           options={countries.map(country => ({
             value: country.isoCode,
             label: country.name,
@@ -128,31 +128,31 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
         {/* Address Line 1 */}
         <TextInput
-          id="billingAddress1"
+          name="billingAddress1" // Add the name attribute here
           label="Address Line 1"
           required
           placeholder="Enter address line 1"
-          value={formData.billingAddress1}
-          onChange={handleChange}
+          value={formData.billingAddress.addressLine1}
+          onChange={(e) => handleChange('billingAddress.addressLine1', e.target.value)} // Pass explicitly
         />
 
         {/* City */}
         <TextInput
-          id="billingCity"
+          name="billingCity" // Add the name attribute here
           label="City"
           required
           placeholder="Enter city"
-          value={formData.billingCity}
-          onChange={handleChange}
+          value={formData.billingAddress.city}
+          onChange={(e) => handleChange('billingAddress.city', e.target.value)} // Pass explicitly
         />
 
         {/* State */}
         <SelectInput
-          id="billingState"
+          name="billingState" // Add the name attribute here
           label="State"
           required
-          value={formData.billingState}
-          onChange={handleChange}
+          value={formData.billingAddress.state}
+          onChange={(e) => handleChange('billingAddress.state', e.target.value)} // Pass explicitly
           options={billingStates.map(state => ({
             value: state.isoCode,
             label: state.name,
@@ -161,12 +161,12 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
 
         {/* Pincode */}
         <TextInput
-          id="billingPincode"
+          name="billingPincode" // Add the name attribute here
           label="Pincode"
           required
           placeholder="Enter pincode"
-          value={formData.billingPincode}
-          onChange={handleChange}
+          value={formData.billingAddress.postalCode}
+          onChange={(e) => handleChange('billingAddress.postalCode', e.target.value)} // Pass explicitly
         />
       </div>
     </div>

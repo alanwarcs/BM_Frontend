@@ -9,25 +9,38 @@ import BankTab from './ReusableComponents/BankTab'
 const AddVendor = () => {
     const [activeTab, setActiveTab] = useState("address"); // Initial tab is "address"
     const [formData, setFormData] = useState({
-        vendorOrganizationName: '',
-        primaryPerson: '',
-        displayName: '',
-        organizationName: '',
+        vendorOrganizationName: '', // Vendor's organization name
+        primaryPerson: '', // Primary contact person
+        displayName: '', // Display name for the vendor
+        emailAddress: '', // Vendor's email address
+        phone: '', // Vendor's phone number
 
-        emailAddress: '',
-        phone: '',
+        shippingAddress: {
+            addressLine1: '', // First line of shipping address
+            city: '', // Shipping city
+            state: '', // Shipping state
+            country: 'IN', // Default to India
+            postalCode: '', // Shipping postal code
+        },
 
-        shippingAddress: 'IN',
-        billingAddress: 'IN',
+        billingAddress: {
+            addressLine1: '', // First line of billing address
+            city: '', // Billing city
+            state: '', // Billing state
+            country: 'IN', // Default to India
+            postalCode: '', // Billing postal code
+        },
 
-        taxStatus: '',
-        sourceState: '',
-        gstin: '',
-        panNumber: '',
+        taxDetails: {
+            taxStatus: '', // Tax status (e.g., GST Registered, Unregistered)
+            sourceState: '', // Source state
+            gstin: '', // GSTIN if GST Registered
+            panNumber: '', // PAN number
+        },
 
-        currency: 'INR',
-        tags: '',
-        notes: '',
+        currency: 'INR', // Default currency
+        tags: '', // Tags for categorizing the vendor
+        notes: '', // Additional notes about the vendor
 
         bankDetails: [
             {
@@ -37,20 +50,55 @@ const AddVendor = () => {
                 accountNumber: '',
             },
         ],
+
+        customFields: [
+            {
+                fieldName: '', // Custom field name
+                fieldValue: '', // Custom field value
+            },
+        ],
     });
 
     const MAX_BANKS = 4; // Maximum allowed banks
     const MAX_CUSTOM_FIELDS = 5; // Maximum allowed custom fields
-
 
     // State for custom fields
     const [customFields, setCustomFields] = useState([
         { key: '', value: '' },
     ]);
 
-    const handleChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+    const handleChange = (nameOrEvent, value) => {
+        if (typeof nameOrEvent === "string") {
+            // Handle nested fields like "taxDetails.gstin"
+            if (nameOrEvent.includes('.')) {
+                const keys = nameOrEvent.split('.');
+                setFormData((prevData) => {
+                    const updatedData = { ...prevData };
+                    let nested = updatedData;
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        nested = nested[keys[i]]; // Navigate to the nested object
+                    }
+                    nested[keys[keys.length - 1]] = value; // Update the nested key
+                    return updatedData;
+                });
+            } else {
+                // Handle top-level fields
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [nameOrEvent]: value,
+                }));
+            }
+        } else {
+            // Handle event directly
+            const { name, value: eventValue } = nameOrEvent.target;
+            if (!name) {
+                console.error("Field name is missing in the event target", nameOrEvent);
+                return;
+            }
+            handleChange(name, eventValue); // Delegate to the string-based handler
+        }
     };
+
 
     const copyShippingToBilling = () => {
         setFormData((prev) => ({
@@ -81,21 +129,24 @@ const AddVendor = () => {
         setCustomFields(updatedCustomFields);
     };
 
-
     const handleBankChange = (index, field, value) => {
-        const updatedBankDetails = [...formData.bankDetails];
-        updatedBankDetails[index][field] = value;
-        setFormData((prev) => ({ ...prev, bankDetails: updatedBankDetails }));
+        setFormData((prev) => {
+            const updatedBankDetails = [...prev.bankDetails];
+            updatedBankDetails[index] = {
+                ...updatedBankDetails[index],
+                [field]: value,
+            };
+            return { ...prev, bankDetails: updatedBankDetails };
+        });
     };
 
-    // Add Bank with limit
     const addBank = () => {
         if (formData.bankDetails.length < MAX_BANKS) {
             setFormData((prev) => ({
                 ...prev,
                 bankDetails: [
                     ...prev.bankDetails,
-                    { accountHolderName: '', bankName: '', ifscCode: '', accountNumber: '' },
+                    { accountHolderName: "", bankName: "", ifscCode: "", accountNumber: "" },
                 ],
             }));
         } else {
@@ -108,17 +159,110 @@ const AddVendor = () => {
         setFormData((prev) => ({ ...prev, bankDetails: updatedBankDetails }));
     };
 
-
     const displayNameOptions = [
         formData.primaryPerson && { value: formData.primaryPerson, label: formData.primaryPerson },
         formData.vendorOrganizationName && { value: formData.vendorOrganizationName, label: formData.vendorOrganizationName },
     ].filter(Boolean);  // Filter out undefined or null values
 
+    // Form validation
+    const validateForm = () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
 
+        // Validate Display Name
+        if (!formData.displayName?.trim()) {
+            alert("Display Name is required.");
+            return false;
+        }
+
+        // Validate Email Address (if provided)
+        if (formData.emailAddress && !emailRegex.test(formData.emailAddress)) {
+            alert("Please enter a valid email address.");
+            return false;
+        }
+
+        // Validate Shipping Address
+        const { shippingAddress, billingAddress, taxDetails } = formData;
+
+        if (
+            !shippingAddress?.addressLine1?.trim() ||
+            !shippingAddress?.city?.trim() ||
+            !shippingAddress?.state?.trim() ||
+            !shippingAddress?.country?.trim()
+        ) {
+            alert("Please enter a valid Shipping Address.");
+            return false;
+        }
+
+        // Validate Shipping Address Pincode
+        if (!/^\d+$/.test(shippingAddress?.postalCode?.trim())) {
+            alert("Shipping Address Pincode must be a valid number.");
+            return false;
+        }
+
+        // Validate Billing Address
+        if (
+            !billingAddress?.addressLine1?.trim() ||
+            !billingAddress?.city?.trim() ||
+            !billingAddress?.state?.trim() ||
+            !billingAddress?.country?.trim()
+        ) {
+            alert("Please enter a valid Billing Address.");
+            return false;
+        }
+
+        // Validate Billing Address Pincode
+        if (!/^\d+$/.test(billingAddress?.postalCode?.trim())) {
+            alert("Billing Address Pincode must be a valid number.");
+            return false;
+        }
+
+        // Validate Tax Details
+        if (!taxDetails?.taxStatus) {
+            alert("Please select a Tax Preference.");
+            return false;
+        }
+
+        if (taxDetails.taxStatus === "gstRegistered") {
+            if (!taxDetails?.sourceState?.trim()) {
+                alert("Please select the Source State.");
+                return false;
+            }
+
+            // Validate GSTIN Length and Format
+            if (!gstinRegex.test(taxDetails?.gstin?.trim())) {
+                alert(
+                    "Please enter a valid GSTIN (15 characters, proper format: ##AAAAA####A#Z#)."
+                );
+                return false;
+            }
+        }
+
+        // Validate Currency
+        if (!formData.currency) {
+            alert("Please select currency.");
+            return false;
+        }
+        
+        return true; // All validations passed
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // Prevent default form submission behavior
+        const isValid = validateForm(); // Call the validation function
+
+        if (!isValid) {
+            return; // Stop submission if validation fails
+        }
+
+        // Proceed with form submission after validation
+        console.log("Form data:", formData);
+        // Add your async submit logic here
+    };
     return (
         <UserLayout>
             {/* Form Section */}
-            <form className="flex flex-col relative h-full w-full text-start overflow-scroll">
+            <form onSubmit={handleSubmit} className="flex flex-col relative h-full w-full text-start overflow-scroll">
                 {/* Page Header */}
                 <div className="text-2xl text-start font-semibold my-2">
                     <p>Add Vendor</p>
@@ -231,7 +375,7 @@ const AddVendor = () => {
                             <div key={index} className="mb-4">
                                 <BankTab
                                     formData={bank}
-                                    handleChange={(field, value) => handleBankChange(index, field, value)}
+                                    handleChange={(field, value) => handleBankChange(index, field, value)} // Pass index to handle dynamic updates
                                 />
                                 <button
                                     type="button"
@@ -251,7 +395,6 @@ const AddVendor = () => {
                                 Add Another Bank
                             </button>
                         )}
-
                     </div>
                 )}
 
