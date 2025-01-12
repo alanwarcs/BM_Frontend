@@ -4,5 +4,10 @@
 
 /* Global styles */
 html {
-    font-family: Arial, sans-serif; /* Set Arial as the global font */
+    font-family: Arial, sans-serif;
+    /* Set Arial as the global font */
+}
+
+.collapse-menu {
+    transition: max-height 0.6s ease-in-out, padding 0.6s ease-in-out;
 }

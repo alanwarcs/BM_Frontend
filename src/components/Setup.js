@@ -56,10 +56,10 @@ const Setup = () => {
     useEffect(() => {
         const { isSetupCompleted } = user.organization;
     
-        // if (isSetupCompleted) {
-        //     alert('404 - Page Not Found');
-        //     navigate('/dashboard', { replace: true });
-        // }
+        if (isSetupCompleted) {
+            alert('404 - Page Not Found');
+            navigate('/dashboard', { replace: true });
+        }
     
         const fetchTimezoneAndCurrency = async () => {
             if (hasFetchedData.current) return; // Check if data has been fetched already

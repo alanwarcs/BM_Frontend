@@ -17,6 +17,9 @@ module.exports = {
         // customPrimary: '#006d77',
         // customPrimaryHover: '#00808c',
       },
+      height: {
+        'screen-minus-80': 'calc(100vh - 80px)',
+      },
     },
   },
   plugins: [],

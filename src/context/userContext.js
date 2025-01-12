@@ -18,7 +18,6 @@ export const UserProvider = ({ children }) => {
         try {
             const response = await axios.post('/api/auth/validate-user', {}, { withCredentials: true });
             setUser(response.data.user);
-            console.log(response.data.user);
         } catch (error) {
             setUser(null);
         } finally {

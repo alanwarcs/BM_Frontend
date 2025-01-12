@@ -5,7 +5,6 @@ const Dashboard = () => {
   return (
     <UserLayout>
       <div className='flex flex-col w-full text-start'>
-        
       </div>
     </UserLayout>
   )

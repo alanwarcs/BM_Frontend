@@ -109,7 +109,7 @@ const PhoneCodeSelector = ({ onPhoneChange }) => {
       {/* Country Code Dropdown */}
       <div
         onClick={toggleDropdown}
-        className="flex w-[150px] py-3 px-2 items-center justify-between outline-none text-[14px] cursor-pointer"
+        className="flex w-[150px] py-3 px-2 items-center justify-between outline-none bg-white text-[14px] cursor-pointer"
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
@@ -140,12 +140,12 @@ const PhoneCodeSelector = ({ onPhoneChange }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 py-3 px-4 m-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
+            className="h-10 py-3 px-4 m-2 rounded-lg bg-white outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
             placeholder="Search"
           />
 
           {/* Country Code List */}
-          <ul className="max-h-40 overflow-y-auto text-[14px]">
+          <ul className="max-h-40 overflow-y-auto bg-white text-[14px]">
             {filteredCountries.length > 0 ? (
               filteredCountries.map((country, index) => (
                 <li
@@ -171,7 +171,7 @@ const PhoneCodeSelector = ({ onPhoneChange }) => {
         type="text"
         value={phoneNumber}
         onChange={handlePhoneNumberChange}
-        className="block w-full py-3 px-2 ml-2 outline-none text-[14px]"
+        className="block w-full py-3 px-2 outline-none text-[14px]"
         placeholder="Enter phone number"
       />
     </div>

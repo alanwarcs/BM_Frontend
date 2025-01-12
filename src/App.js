@@ -5,9 +5,10 @@ import SignIn from './components/SignIn';
 import ProtectedRoute from './components/ProtectedRoute';
 import SelectPlan from './components/SelectPlan';
 import Setup from './components/Setup';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/User/Dashboard';
 import CheckoutCart from './components/CheckoutCart';
 import { UserProvider } from './context/userContext';
+import AddVendor from './components/User/AddVendor';
 
 function App() {
   return (
@@ -34,13 +35,17 @@ function App() {
               path="/select-plan"
               element={<ProtectedRoute component={SelectPlan} isAuthenticatedPage={true} />}
             />
-  
+
             <Route path="/checkout" element={<CheckoutCart />} />
 
             {/* Protected dashboard route */}
             <Route
               path="/dashboard"
               element={<ProtectedRoute component={Dashboard} isAuthenticatedPage={true} />}
+            />
+            <Route
+              path="/addvendor"
+              element={<ProtectedRoute component={AddVendor} isAuthenticatedPage={true} />}
             />
 
             {/* Redirect to dashboard for unknown routes */}
