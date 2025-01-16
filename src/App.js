@@ -9,7 +9,7 @@ import Dashboard from './components/User/Dashboard';
 import CheckoutCart from './components/CheckoutCart';
 import { UserProvider } from './context/userContext';
 import AddVendor from './components/User/AddVendor';
-
+import Vendor from './components/User/Vendor';
 function App() {
   return (
     <div className="App">
@@ -42,6 +42,10 @@ function App() {
             <Route
               path="/dashboard"
               element={<ProtectedRoute component={Dashboard} isAuthenticatedPage={true} />}
+            />
+            <Route
+              path="/Vendor"
+              element={<ProtectedRoute component={Vendor} isAuthenticatedPage={true} />}
             />
             <Route
               path="/addvendor"

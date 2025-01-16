@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useUser } from '../../context/userContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const UserLayout = ({ children }) => {
@@ -16,25 +16,30 @@ const UserLayout = ({ children }) => {
     const navigate = useNavigate();
 
     const dropdownRef = useRef(null);
+    const buttonRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            // Check if the click is outside both the button and dropdown
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+                buttonRef.current && !buttonRef.current.contains(event.target)
+            ) {
                 setDropdownOpen(false);
             }
         };
-    
+
         if (isDropdownOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         } else {
             document.removeEventListener("mousedown", handleClickOutside);
         }
-    
+
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [isDropdownOpen]);
-
+    
     const handleSignOut = async () => {
         try {
             const response = await axios.post('/api/auth/signout', {}, { withCredentials: true });
@@ -80,7 +85,7 @@ const UserLayout = ({ children }) => {
         <div className="flex flex-col h-screen">
 
             {/* Navbar */}
-            <header className="bg-white p-4 flex items-center justify-between z-40 shadow">
+            <header className="p-2 flex items-center justify-between z-40 shadow">
                 <div className="flex">
                     <div className='text-center md:text-left w-full me-2'>
                         <h1 className='text-[28px] mx-2 font-bold'>aab.</h1>
@@ -96,17 +101,17 @@ const UserLayout = ({ children }) => {
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg>
                             <span className="absolute w-2 h-2 top-0 right-0 rounded-full bg-customPrimary"></span>
                         </button>
-                        <button onClick={toggleUserSidebar} className="flex items-center relative space-x-2 focus:outline-none cursor-pointer m-2">
+                        <button onClick={toggleUserSidebar} className="md:hidden flex items-center relative space-x-2 focus:outline-none cursor-pointer m-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
                         </button>
                     </div>
 
                     <div className="relative">
-                        <button className="flex items-center space-x-2 focus:outline-none cursor-pointer" onClick={() => setDropdownOpen(!isDropdownOpen)}>
+                        <button className="flex items-center space-x-2 focus:outline-none cursor-pointer" ref={buttonRef} onClick={() => setDropdownOpen(!isDropdownOpen)}>
                             <img
                                 src="https://images.unsplash.com/photo-1735845078210-953081cee65d?q=80&w=2986&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                 alt="User Profile"
-                                className="w-10 h-10 rounded-full"
+                                className="w-8 h-8 rounded-full"
                             />
                         </button>
                         {isDropdownOpen && (
@@ -145,16 +150,16 @@ const UserLayout = ({ children }) => {
                 </div>
             </header>
             {/* Main Content */}
-            <div className="flex-1 flex flex-raw bg-gray-100">
+            <div className="flex-1 flex flex-raw bg-white">
                 {/* Sidebar */}
-                <aside className={`flex ${isSidebarOpen ? "block" : "hidden"} relative min-w-[260px] h-full p-4 transition-all duration-300 sidebar`}>
+                <aside className={`${isSidebarOpen ? "block" : "hidden"} relative min-w-[260px] h-full p-4 transition-all duration-300 sidebar bg-gray-50 border-r`}>
                     <ul className="overflow-hidden">
                         <li className="m-1">
-                            <a href="/" className="flex items-center justify-center py-3 px-2 rounded-md text-sm bg-customPrimary text-white cursor-pointer">
+                            <Link to="/" className="flex items-center justify-center py-3 px-2 rounded-md text-sm bg-customPrimary text-white cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-gauge menu-icon me-4"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg>
                                 <span className="menu-text">Dashboard</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right menu-text ml-auto"><path d="m9 18 6-6-6-6" /></svg>
-                            </a>
+                            </Link>
                         </li>
 
                         {/* Vendor */}
@@ -167,14 +172,14 @@ const UserLayout = ({ children }) => {
                             <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.vendor ? 'max-h-60' : 'max-h-0'}`}>
                                 <ul className="ms-14">
                                     <li className="text-start p-2">
-                                        <a href="/addvendor">
+                                        <Link to="/addvendor">
                                             Add New Vendor
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li className="text-start p-2">
-                                        <a href="/">
+                                        <Link to="/vendor">
                                             View/Edit Vendor
-                                        </a>
+                                        </Link>
                                     </li>
                                 </ul>
                             </div>
@@ -273,7 +278,7 @@ const UserLayout = ({ children }) => {
                         </li>
                     </ul>
                 </aside>
-                <main className="px-4 h-screen-minus-80 bg-white w-full overflow-hidden">
+                <main className="h-screen-minus-80 w-full overflow-hidden">
                     {children}
                 </main>
             </div>

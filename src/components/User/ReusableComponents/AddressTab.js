@@ -27,7 +27,7 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
         handleChange({ target: { name: 'shippingState', value: '' } });
       }
     }
-  }, [formData.shippingAddress.country , formData.shippingAddress.state, handleChange]);
+  }, [formData.shippingAddress.country, formData.shippingAddress.state, handleChange]);
 
   useEffect(() => {
     // If no valid state is found, clear the billingState
@@ -107,7 +107,7 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
       <div className="flex flex-col m-2">
         <div className="flex items-center">
           <p className="my-2 me-2 font-semibold">Billing Address</p>
-          <button type="button" onClick={copyShippingToBilling} className="text-customPrimary text-sm">
+          <button type="button" onClick={copyShippingToBilling} className="text-customPrimary text-start text-sm">
             Copy Shipping Address
           </button>
         </div>

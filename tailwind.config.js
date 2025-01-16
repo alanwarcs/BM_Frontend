@@ -18,7 +18,7 @@ module.exports = {
         // customPrimaryHover: '#00808c',
       },
       height: {
-        'screen-minus-80': 'calc(100vh - 80px)',
+        'screen-minus-80': 'calc(100vh - 58px)',
       },
     },
   },
