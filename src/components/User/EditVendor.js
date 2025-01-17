@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import UserLayout from './UserLayout'; // Import UserLayout for consistent page structure
 import AddressTab from './ReusableComponents/AddressTab';
 import TextInput from './ReusableComponents/TextInput';
@@ -10,70 +10,39 @@ import LoadingBar from '../LoadingBar'; // Import the LoadingBar component
 import Alert from '../Alert';
 import axios from 'axios';
 
-const AddVendor = () => {
-    const [activeTab, setActiveTab] = useState("address"); // Initial tab is "address"
+
+const EditVendor = () => {
+    const { id } = useParams();
+    const [vendor, setVendor] = useState(null);
+    const [activeTab, setActiveTab] = useState("address");
     const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
     const [alert, setAlert] = useState(null);
-    const [formData, setFormData] = useState({
-        vendorOrganizationName: '', // Vendor's organization name
-        primaryPerson: '', // Primary contact person
-        displayName: '', // Display name for the vendor
-        emailAddress: '', // Vendor's email address
-        phone: '', // Vendor's phone number
-
-        shippingAddress: {
-            addressLine1: '', // First line of shipping address
-            city: '', // Shipping city
-            state: '', // Shipping state
-            country: 'IN', // Default to India
-            postalCode: '', // Shipping postal code
-        },
-
-        billingAddress: {
-            addressLine1: '', // First line of billing address
-            city: '', // Billing city
-            state: '', // Billing state
-            country: 'IN', // Default to India
-            postalCode: '', // Billing postal code
-        },
-
-        taxDetails: {
-            taxStatus: '', // Tax status (e.g., GST Registered, Unregistered)
-            sourceState: '', // Source state
-            gstin: '', // GSTIN if GST Registered
-            panNumber: '', // PAN number
-        },
-
-        currency: 'INR', // Default currency
-        tags: '', // Tags for categorizing the vendor
-        notes: '', // Additional notes about the vendor
-
-        bankDetails: [
-            {
-                accountHolderName: '',
-                bankName: '',
-                ifscCode: '',
-                accountNumber: '',
-            },
-        ],
-
-        customFields: [
-            {
-                fieldName: '',
-                fieldValue: ''
-            },
-        ],
-    });
 
     const MAX_BANKS = 4; // Maximum allowed banks
     const MAX_CUSTOM_FIELDS = 5; // Maximum allowed custom fields
+
+    useEffect(() => {
+        const fetchVendor = async () => {
+            try {
+                const response = await axios.get(`/api/vendor/getVendorDetails/${id}`);
+                setVendor(response.data.vendorDetails); // Set vendorDetails to the state
+                setLoadingProgress(100);
+            } catch (error) {
+                console.error('Error fetching vendor data:', error);
+            }
+        };
+
+        if (id) {
+            fetchVendor();
+        }
+    }, [id]);
 
     const handleChange = (nameOrEvent, value) => {
         if (typeof nameOrEvent === "string") {
             // Handle nested fields like "taxDetails.gstin"
             if (nameOrEvent.includes('.')) {
                 const keys = nameOrEvent.split('.');
-                setFormData((prevData) => {
+                setVendor((prevData) => {
                     const updatedData = { ...prevData };
                     let nested = updatedData;
                     for (let i = 0; i < keys.length - 1; i++) {
@@ -84,7 +53,7 @@ const AddVendor = () => {
                 });
             } else {
                 // Handle top-level fields
-                setFormData((prevData) => ({
+                setVendor((prevData) => ({
                     ...prevData,
                     [nameOrEvent]: value,
                 }));
@@ -100,17 +69,57 @@ const AddVendor = () => {
         }
     };
 
+    const displayNameOptions = vendor
+        ? [
+            vendor.primaryPerson && { value: vendor.primaryPerson, label: vendor.primaryPerson },
+            vendor.vendorOrganizationName && { value: vendor.vendorOrganizationName, label: vendor.vendorOrganizationName },
+        ].filter(Boolean)
+        : []; // Return an empty array if vendor is null
+
 
     const copyShippingToBilling = () => {
-        setFormData((prev) => ({
+        setVendor((prev) => ({
             ...prev,
             billingAddress: prev.shippingAddress,
         }));
     };
 
+    // Handle Bank field
+    const handleBankChange = (index, field, value) => {
+        setVendor((prev) => {
+            const updatedBankDetails = [...prev.bankDetails];
+            updatedBankDetails[index] = {
+                ...updatedBankDetails[index],
+                [field]: value,
+            };
+            return { ...prev, bankDetails: updatedBankDetails };
+        });
+    };
+
+    // Add Bank with limit
+    const addBank = () => {
+        if (vendor.bankDetails.length < MAX_BANKS) {
+            setVendor((prev) => ({
+                ...prev,
+                bankDetails: [
+                    ...prev.bankDetails,
+                    { accountHolderName: "", bankName: "", ifscCode: "", accountNumber: "" },
+                ],
+            }));
+        } else {
+            alert(`You can only add up to ${MAX_BANKS} bank details.`);
+        }
+    };
+
+    // Remove a Bank
+    const removeBank = (index) => {
+        const updatedBankDetails = vendor.bankDetails.filter((_, i) => i !== index);
+        setVendor((prev) => ({ ...prev, bankDetails: updatedBankDetails }));
+    };
+
     // Handle custom field
     const handleCustomFieldChange = (index, field, value) => {
-        setFormData((prevData) => {
+        setVendor((prevData) => {
             const updatedCustomFields = [...prevData.customFields];
             updatedCustomFields[index][field] = value;
             return { ...prevData, customFields: updatedCustomFields };
@@ -119,7 +128,7 @@ const AddVendor = () => {
 
     // Add Custom Field with limit
     const addCustomField = () => {
-        setFormData((prevData) => {
+        setVendor((prevData) => {
             if (prevData.customFields.length < MAX_CUSTOM_FIELDS) {
                 return {
                     ...prevData,
@@ -134,253 +143,28 @@ const AddVendor = () => {
 
     // Remove a custom field
     const removeCustomField = (index) => {
-        setFormData((prevData) => {
+        setVendor((prevData) => {
             const updatedCustomFields = prevData.customFields.filter((_, i) => i !== index);
             return { ...prevData, customFields: updatedCustomFields };
         });
     };
 
-    const handleBankChange = (index, field, value) => {
-        setFormData((prev) => {
-            const updatedBankDetails = [...prev.bankDetails];
-            updatedBankDetails[index] = {
-                ...updatedBankDetails[index],
-                [field]: value,
-            };
-            return { ...prev, bankDetails: updatedBankDetails };
-        });
-    };
-
-    const addBank = () => {
-        if (formData.bankDetails.length < MAX_BANKS) {
-            setFormData((prev) => ({
-                ...prev,
-                bankDetails: [
-                    ...prev.bankDetails,
-                    { accountHolderName: "", bankName: "", ifscCode: "", accountNumber: "" },
-                ],
-            }));
-        } else {
-            alert(`You can only add up to ${MAX_BANKS} bank details.`);
-        }
-    };
-
-    const removeBank = (index) => {
-        const updatedBankDetails = formData.bankDetails.filter((_, i) => i !== index);
-        setFormData((prev) => ({ ...prev, bankDetails: updatedBankDetails }));
-    };
-
-    const displayNameOptions = [
-        formData.primaryPerson && { value: formData.primaryPerson, label: formData.primaryPerson },
-        formData.vendorOrganizationName && { value: formData.vendorOrganizationName, label: formData.vendorOrganizationName },
-    ].filter(Boolean);  // Filter out undefined or null values
-
-    // Form validation
-    const validateForm = () => {
-        // Regular expressions for validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
-
-        // Validate Display Name
-        if (!formData.displayName?.trim()) {
-            setAlert({
-                message: 'Display Name is required.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // Validate Email Address (if provided)
-        if (formData.emailAddress && !emailRegex.test(formData.emailAddress)) {
-            setAlert({
-                message: 'Invalid email address format.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // Validate Shipping Address
-        const { shippingAddress, billingAddress, taxDetails } = formData;
-
-        if (
-            !shippingAddress?.addressLine1?.trim() ||
-            !shippingAddress?.city?.trim() ||
-            !shippingAddress?.state?.trim() ||
-            !shippingAddress?.country?.trim()
-        ) {
-            setAlert({
-                message: 'Complete shipping address is required.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // Validate Shipping Address Pincode
-        if (!/^\d+$/.test(shippingAddress?.postalCode?.trim())) {
-            setAlert({
-                message: 'Invalid postal code for shipping address.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // Validate Billing Address
-        if (
-            !billingAddress?.addressLine1?.trim() ||
-            !billingAddress?.city?.trim() ||
-            !billingAddress?.state?.trim() ||
-            !billingAddress?.country?.trim()
-        ) {
-            setAlert({
-                message: 'Complete billing address is required.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // Validate Billing Address Pincode
-        if (!/^\d+$/.test(billingAddress?.postalCode?.trim())) {
-            setAlert({
-                message: 'Invalid postal code for billing address.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // Validate Tax Details
-        if (!taxDetails?.taxStatus) {
-            setAlert({
-                message: 'Tax status is required.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        if (taxDetails.taxStatus === 'gstRegistered') {
-            // Validate Source State
-            if (!taxDetails?.sourceState?.trim()) {
-                setAlert({
-                    message: 'Source state is required for GST registered entities.',
-                    type: 'error',
-                });
-                return false;
-            }
-
-            // Validate GSTIN Length and Format
-            if (!gstinRegex.test(taxDetails?.gstin?.trim())) {
-                setAlert({
-                    message: 'Invalid GSTIN format.',
-                    type: 'error',
-                });
-                return false;
-            }
-        }
-
-        // Validate Currency
-        if (!formData.currency) {
-            setAlert({
-                message: 'Currency is required.',
-                type: 'error',
-            });
-            return false;
-        }
-
-        // If all validations pass
-        return true;
-    };
+    if (!vendor) {
+        return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
+    }
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission behavior
-        setLoadingProgress(20);
-
-        // Validate the form
-        if (!validateForm()) {
-            setLoadingProgress(0); // Reset loading progress on failure
-            return;
-        }
-
-        setLoadingProgress(50);
-
-        try {
-            // Submit the form data
-            const response = await axios.post('/api/vendor/addVendors', formData);
-
-            if (response.status === 201) {
-                setAlert({
-                    message: 'Vendor added successfully!',
-                    type: 'success',
-                });
-
-                setLoadingProgress(100);
-
-                // Reset form data after successful submission
-                setFormData({
-                    vendorOrganizationName: '',
-                    primaryPerson: '',
-                    displayName: '',
-                    emailAddress: '',
-                    phone: '',
-                    shippingAddress: {
-                        addressLine1: '',
-                        city: '',
-                        state: '',
-                        country: 'IN',
-                        postalCode: '',
-                    },
-                    billingAddress: {
-                        addressLine1: '',
-                        city: '',
-                        state: '',
-                        country: 'IN',
-                        postalCode: '',
-                    },
-                    taxDetails: {
-                        taxStatus: '',
-                        sourceState: '',
-                        gstin: '',
-                        panNumber: '',
-                    },
-                    currency: 'INR',
-                    tags: '',
-                    notes: '',
-                    bankDetails: [
-                        {
-                            accountHolderName: '',
-                            bankName: '',
-                            ifscCode: '',
-                            accountNumber: '',
-                        },
-                    ],
-                    customFields: [
-                        {
-                            fieldName: '',
-                            fieldValue: '',
-                        },
-                    ],
-                });
-            }
-            // Hide progress bar after completion
-            setTimeout(() => {
-                setLoadingProgress(0); // Reset to hide the progress bar after a delay
-            }, 1000); // 1 second delay before hiding the bar
-
-        } catch (error) {
-            setAlert({
-                message: error.response?.data?.message || '500 - Internal server error.',
-                type: 'error',
-            });
-            setLoadingProgress(0); // Reset progress bar on failure
-        }
+        e.preventDefault();
     };
 
     return (
         <UserLayout>
             {/* Form Section */}
             {loadingProgress > 0 && <LoadingBar progress={loadingProgress} />}
-            <form onSubmit={handleSubmit} className="flex flex-col relative h-full w-full text-start">
+            <form onClick={handleSubmit} className="flex flex-col relative h-full w-full text-start">
                 {/* Page Header */}
                 <div className="flex flex-row items-center justify-between px-3 text-2xl text-start py-2">
-                    <p>Add Vendor</p>
+                    <p>Edit Vendor</p>
                     <Link to="/vendor" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">Vendors List</Link>
                 </div>
                 <hr />
@@ -390,7 +174,7 @@ const AddVendor = () => {
                         <TextInput
                             label="Organization/Business Name"
                             id="vendorOrganizationName"
-                            value={formData.vendorOrganizationName}
+                            value={vendor.vendorOrganizationName}
                             onChange={(e) => handleChange("vendorOrganizationName", e.target.value)}
                             placeholder="Enter organization/business name"
                         />
@@ -399,16 +183,17 @@ const AddVendor = () => {
                         <TextInput
                             label="Primary Person"
                             id="primaryPerson"
-                            value={formData.primaryPerson}
+                            value={vendor.primaryPerson}
                             onChange={(e) => handleChange("primaryPerson", e.target.value)}
                             placeholder="Enter primary person name"
                         />
+
                         {/* Display Name */}
                         <SelectInput
                             id="displayName"
                             label="Display Name"
                             required
-                            value={formData.displayName}
+                            value={vendor.displayName}
                             onChange={(e) => handleChange("displayName", e.target.value)}
                             options={displayNameOptions}
                         />
@@ -420,7 +205,7 @@ const AddVendor = () => {
                                 <TextInput
                                     label="Email Address"
                                     id="emailAddress"
-                                    value={formData.emailAddress}
+                                    value={vendor.emailAddress}
                                     onChange={(e) => handleChange("emailAddress", e.target.value)}
                                     placeholder="Enter email address"
                                     type="email"
@@ -429,7 +214,7 @@ const AddVendor = () => {
                                 <TextInput
                                     label="Phone"
                                     id="phone"
-                                    value={formData.phone}
+                                    value={vendor.phone}
                                     onChange={(e) => handleChange("phone", e.target.value)}
                                     placeholder="Enter phone number"
                                     type="text"
@@ -478,21 +263,22 @@ const AddVendor = () => {
 
                     {activeTab === "address" && (
                         <div className="block">
-                            <AddressTab formData={formData} handleChange={handleChange} copyShippingToBilling={copyShippingToBilling} />
+                            <AddressTab formData={vendor} handleChange={handleChange} copyShippingToBilling={copyShippingToBilling} />
                         </div>
                     )}
 
                     {activeTab === "tax" && (
-                        <TaxTab formData={formData} handleChange={handleChange} />
+                        <TaxTab formData={vendor} handleChange={handleChange} />
                     )}
 
                     {activeTab === "bank" && (
                         <div>
-                            {formData.bankDetails.map((bank, index) => (
+                            {vendor.bankDetails.map((bank, index) => (
                                 <div key={index} className="mb-4">
                                     <BankTab
                                         formData={bank}
                                         handleChange={(field, value) => handleBankChange(index, field, value)} // Pass index to handle dynamic updates
+
                                     />
                                     <button
                                         type="button"
@@ -503,7 +289,7 @@ const AddVendor = () => {
                                     </button>
                                 </div>
                             ))}
-                            {formData.bankDetails.length < MAX_BANKS && (
+                            {vendor.bankDetails.length < MAX_BANKS && (
                                 <div className='text-center'>
                                     <button
                                         type="button"
@@ -525,7 +311,7 @@ const AddVendor = () => {
                                 <SelectInput
                                     id="currency"
                                     label="Currency"
-                                    value={formData.currency}
+                                    value={vendor.currency}
                                     onChange={(e) => handleChange("currency", e.target.value)}
                                     options={[
                                         { value: 'INR', label: 'INR' },
@@ -536,7 +322,7 @@ const AddVendor = () => {
                                 <TextInput
                                     label="Tags"
                                     id="tags"
-                                    value={formData.tags}
+                                    value={vendor.tags}
                                     onChange={(e) => handleChange("tags", e.target.value)}
                                     placeholder="Enter Tags (separate by comma)"
                                     type="text"
@@ -551,7 +337,7 @@ const AddVendor = () => {
                                         id="notes"
                                         className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
                                         rows="4"
-                                        value={formData.notes}
+                                        value={vendor.notes}
                                         onChange={(e) => handleChange("notes", e.target.value)}
                                         placeholder="Enter any additional notes or information"
                                     ></textarea>
@@ -562,7 +348,7 @@ const AddVendor = () => {
 
                     {activeTab === "customFields" && (
                         <div>
-                            {formData.customFields.map((field, index) => (
+                            {vendor.customFields.map((field, index) => (
                                 <div key={index} className="p-4 mb-2">
                                     <TextInput
                                         id={`fieldName-${index}`}
@@ -585,7 +371,7 @@ const AddVendor = () => {
                                     </button>
                                 </div>
                             ))}
-                            {formData.customFields.length < MAX_CUSTOM_FIELDS && (
+                            {vendor.customFields.length < MAX_CUSTOM_FIELDS && (
                                 <div className='text-center'>
                                     <button
                                         type="button"
@@ -612,4 +398,4 @@ const AddVendor = () => {
     );
 };
 
-export default AddVendor;
+export default EditVendor;
