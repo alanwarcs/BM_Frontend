@@ -39,7 +39,7 @@ const Vendor = () => {
 
             const params = {
                 page,
-                limit: 10,
+                limit: 13,
                 ...appliedFilter,
             };
 
@@ -282,7 +282,7 @@ const Vendor = () => {
                                 {Object.values(selectedVendors).some((isSelected) => isSelected) && (
                                     <div className='flex flex-cols items-center'>
                                         <button onClick={togglePrintDropdown} className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition' ref={printButtonRef}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
                                         </button>
                                         {openFieldDropdown && (
                                             <form ref={fieldDropDownRef} className="absolute top-14 right-4 bg-white border rounded-md shadow-lg z-10 w-68" onSubmit={handlePrintSubmit}>
@@ -315,13 +315,13 @@ const Vendor = () => {
 
                 <hr />
 
-                <div className="text-center">
+                <div className="text-center h-full w-full overflow-scroll">
                     {vendors.length > 0 ? (
-                        <div className="relative overflow-visible">
-                            <table className="w-full text-sm text-left rtl:text-right">
+                        <div className="relative w-full h-full overflow-x-auto">
+                            <table className="w-full whitespace-nowrap text-sm text-left rtl:text-right">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                     <tr>
-                                        <th className="ps-4 py-2">
+                                        <th className="px-4 py-2">
                                             <input
                                                 type="checkbox"
                                                 onChange={(e) => {
@@ -335,7 +335,7 @@ const Vendor = () => {
                                                 checked={vendors.every((vendor) => selectedVendors[vendor._id])}
                                             />
                                         </th>
-                                        <th className="pe-6 py-2">Name</th>
+                                        <th className="px-6 py-2">Name</th>
                                         <th className="px-6 py-2">Company Name</th>
                                         <th className="px-6 py-2">Email</th>
                                         <th className="px-6 py-2">Phone</th>
@@ -345,7 +345,7 @@ const Vendor = () => {
                                 <tbody>
                                     {vendors.map((vendor) => (
                                         <tr key={vendor._id} className="bg-white border-b">
-                                            <td className="ps-4 py-2">
+                                            <td className="px-4 py-2">
                                                 <input
                                                     type="checkbox"
                                                     onChange={() => setSelectedVendors((prev) => ({
@@ -355,7 +355,7 @@ const Vendor = () => {
                                                     checked={!!selectedVendors[vendor._id]}
                                                 />
                                             </td>
-                                            <td className="pe-6 py-2 font-medium text-gray-900 whitespace-nowrap">
+                                            <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap">
                                                 {vendor.primaryPerson || '-'}
                                             </td>
                                             <td className="px-6 py-2">
@@ -363,54 +363,41 @@ const Vendor = () => {
                                             </td>
                                             <td className="px-6 py-2">{vendor.emailAddress || '-'}</td>
                                             <td className="px-6 py-2">{vendor.phone || '-'}</td>
-                                            <td className="px-6 py-2">
-                                                <div className="relative">
-                                                    <button
-                                                        className="text-gray-600 focus:outline-none"
-                                                        onClick={() =>
-                                                            setOpenDropdown((prev) => (prev === vendor._id ? null : vendor._id))
-                                                        }
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            width="20"
-                                                            height="20"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="2"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            className="lucide lucide-ellipsis-vertical"
+                                            <td className="relative px-6 py-2">
+                                                <button
+                                                    className="text-gray-600 focus:outline-none"
+                                                    onClick={() =>
+                                                        setOpenDropdown((prev) => (prev === vendor._id ? null : vendor._id))
+                                                    }
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ellipsis-vertical" >
+                                                        <circle cx="12" cy="12" r="1" />
+                                                        <circle cx="12" cy="5" r="1" />
+                                                        <circle cx="12" cy="19" r="1" />
+                                                    </svg>
+                                                </button>
+                                                {openDropdown === vendor._id && (
+                                                    <div className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
+                                                        <button
+                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
+                                                            onClick={() => navigate(`/editvendor/${vendor._id}`)}
                                                         >
-                                                            <circle cx="12" cy="12" r="1" />
-                                                            <circle cx="12" cy="5" r="1" />
-                                                            <circle cx="12" cy="19" r="1" />
-                                                        </svg>
-                                                    </button>
-                                                    {openDropdown === vendor._id && (
-                                                        <div className="absolute right-0 z-10 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
-                                                            <button
-                                                                className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                                onClick={() => navigate(`/editvendor/${vendor._id}`)}
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                                onClick={() => console.log(`View vendor ${vendor._id}`)}
-                                                            >
-                                                                View
-                                                            </button>
-                                                            <button
-                                                                className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
-                                                                onClick={() => deleteVendor(vendor._id)}
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
+                                                            onClick={() => navigate(`/vendor/${vendor._id}`)}
+                                                        >
+                                                            View
+                                                        </button>
+                                                        <button
+                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
+                                                            onClick={() => deleteVendor(vendor._id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -418,11 +405,12 @@ const Vendor = () => {
                             </table>
                         </div>
                     ) : (
-                        <div className='flex items-center justify-center h-40'>
+                        <div className="flex items-center justify-center h-40">
                             <p className="m-2 text-gray-400">No vendors found for this business.</p>
                         </div>
                     )}
                 </div>
+
                 {/* Pagination Controls */}
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
             </div>

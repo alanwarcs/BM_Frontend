@@ -11,3 +11,24 @@ html {
 .collapse-menu {
     transition: max-height 0.6s ease-in-out, padding 0.6s ease-in-out;
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    /* For Chrome, Safari, and Edge */
+}
+
+.table-container {
+    overflow-x: scroll;
+    /* Enable horizontal scroll */
+    overflow-y: visible;
+    /* Keep vertical overflow visible */
+    white-space: nowrap;
+    /* Ensures horizontal scrolling works as expected */
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    /* For Internet Explorer and Edge */
+    scrollbar-width: none;
+    /* For Firefox */
+}

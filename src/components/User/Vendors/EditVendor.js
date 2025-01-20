@@ -28,6 +28,11 @@ const EditVendor = () => {
                 const response = await axios.get(`/api/vendor/getVendorDetails/${id}`);
                 setVendor(response.data.vendorDetails);
                 setLoadingProgress(100);
+
+
+                setTimeout(() => {
+                    setLoadingProgress(0);
+                }, 1000);
             } catch (error) {
                 setAlert({
                     message: error.response?.data?.message || '500 - Internal server error.',
@@ -313,7 +318,7 @@ const EditVendor = () => {
 
                 <hr />
 
-                <div className='h-full overflow-scroll px-4'>
+                <div className='h-full overflow-y-scroll px-4 no-scrollbar'>
                     <div className='flex flex-wrap'>
                         {/* Organization/Business Name */}
                         <TextInput
@@ -369,7 +374,7 @@ const EditVendor = () => {
                     </div>
 
                     {/* Tab Navigation */}
-                    <div className="flex space-x-4 border-b">
+                    <div className="flex space-x-4 border-b w-full overflow-y-scroll scrollbar-hide">
                         <button
                             type="button"
                             className={`py-2 px-4 ${activeTab === "address" ? "border-b-2 border-customPrimary" : "text-gray-600"}`}
@@ -400,7 +405,7 @@ const EditVendor = () => {
                         </button>
                         <button
                             type="button"
-                            className={`py-2 px-4 ${activeTab === "customFields" ? "border-b-2 border-customPrimary" : "text-gray-600"}`}
+                            className={`py-2 px-4 whitespace-nowrap ${activeTab === "customFields" ? "border-b-2 border-customPrimary" : "text-gray-600"}`}
                             onClick={() => setActiveTab("customFields")}
                         >
                             Custom Fields

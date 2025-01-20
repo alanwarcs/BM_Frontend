@@ -11,6 +11,8 @@ import { UserProvider } from './context/userContext';
 import AddVendor from './components/User/Vendors/AddVendor';
 import Vendor from './components/User/Vendors/Vendor';
 import EditVendor from './components/User/Vendors/EditVendor';
+import ViewVendor from './components/User/Vendors/ViewVendor';
+
 function App() {
   return (
     <div className="App">
@@ -55,6 +57,10 @@ function App() {
             <Route
               path="/editvendor/:id"
               element={<ProtectedRoute component={EditVendor} isAuthenticatedPage={true} />}
+            />
+            <Route
+              path="/vendor/:id"
+              element={<ProtectedRoute component={ViewVendor} isAuthenticatedPage={true} />}
             />
 
             {/* Redirect to dashboard for unknown routes */}

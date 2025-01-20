@@ -430,7 +430,7 @@ const AddVendor = () => {
                     </div>
 
                     {/* Tab Navigation */}
-                    <div className="flex space-x-4 border-b">
+                    <div className="flex space-x-4 border-b w-full overflow-y-scroll scrollbar-hide">
                         <button
                             type="button"
                             className={`py-2 px-4 ${activeTab === "address" ? "border-b-2 border-customPrimary" : "text-gray-600"}`}
@@ -461,7 +461,7 @@ const AddVendor = () => {
                         </button>
                         <button
                             type="button"
-                            className={`py-2 px-4 ${activeTab === "customFields" ? "border-b-2 border-customPrimary" : "text-gray-600"}`}
+                            className={`py-2 px-4 whitespace-nowrap ${activeTab === "customFields" ? "border-b-2 border-customPrimary" : "text-gray-600"}`}
                             onClick={() => setActiveTab("customFields")}
                         >
                             Custom Fields

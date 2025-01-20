@@ -39,6 +39,24 @@ const UserLayout = ({ children }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [isDropdownOpen]);
+
+    // Automatically open the sidebar on larger screens (md and up)
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 768) { // Adjust the screen size for 'md' breakpoint
+                setSidebarOpen(true); // Open sidebar automatically for large screens
+            } else {
+                setSidebarOpen(false); // Optionally, you could keep this false for smaller screens
+            }
+        };
+
+        window.addEventListener("resize", handleResize);
+        handleResize(); // Check the initial window size on component mount
+
+        return () => {
+            window.removeEventListener("resize", handleResize);
+        };
+    }, []);
     
     const handleSignOut = async () => {
         try {
@@ -69,9 +87,9 @@ const UserLayout = ({ children }) => {
                 customer: false,
                 invoice: false,
             };
-    
+
             newState[section] = !prevState[section]; // Toggle the clicked section
-    
+
             return newState;
         });
     };
@@ -152,7 +170,7 @@ const UserLayout = ({ children }) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-raw bg-white">
                 {/* Sidebar */}
-                <aside className={`${isSidebarOpen ? "block" : "hidden"} relative min-w-[260px] h-full p-4 transition-all duration-300 sidebar bg-gray-50 border-r`}>
+                <aside className={`${isSidebarOpen ? "block" : "hidden"} absolute z-50 md:relative min-w-[260px] h-full p-4 transition-all duration-300 sidebar bg-gray-50 border-r`}>
                     <ul className="overflow-hidden">
                         <li className="m-1">
                             <Link to="/" className="flex items-center justify-center py-3 px-2 rounded-md text-sm bg-customPrimary text-white cursor-pointer">
@@ -213,7 +231,7 @@ const UserLayout = ({ children }) => {
                             <div onClick={() => toggleSection('customer')} className="flex items-center justify-center py-3 px-2 rounded-md text-sm text-gray-600 hover:bg-customPrimary hover:text-white cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user-round menu-icon me-4"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
                                 <span className="menu-text">Customer Management</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.customer ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.customer ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
                             </div>
                             <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.customer ? 'max-h-60' : 'max-h-0'}`}>
                                 <ul className="ms-14">
@@ -236,7 +254,7 @@ const UserLayout = ({ children }) => {
                             <div onClick={() => toggleSection('invoice')} className="flex items-center justify-center py-3 px-2 rounded-md text-sm text-gray-600 hover:bg-customPrimary hover:text-white cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-receipt-text menu-icon me-4"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M14 8H8" /><path d="M16 12H8" /><path d="M13 16H8" /></svg>
                                 <span className="menu-text">Invoice Management</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.invoice ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.invoice ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
                             </div>
                             <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.invoice ? 'max-h-60' : 'max-h-0'}`}>
                                 <ul className="ms-14">
