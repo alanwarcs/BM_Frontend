@@ -8,9 +8,9 @@ import Setup from './components/Setup';
 import Dashboard from './components/User/Dashboard';
 import CheckoutCart from './components/CheckoutCart';
 import { UserProvider } from './context/userContext';
-import AddVendor from './components/User/AddVendor';
-import Vendor from './components/User/Vendor';
-import EditVendor from './components/User/EditVendor';
+import AddVendor from './components/User/Vendors/AddVendor';
+import Vendor from './components/User/Vendors/Vendor';
+import EditVendor from './components/User/Vendors/EditVendor';
 function App() {
   return (
     <div className="App">

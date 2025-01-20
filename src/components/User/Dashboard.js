@@ -1,5 +1,5 @@
 import React from 'react';
-import UserLayout from './UserLayout'; // Import UserLayout
+import UserLayout from './ReusableComponents/UserLayout'
 
 const Dashboard = () => {
   return (

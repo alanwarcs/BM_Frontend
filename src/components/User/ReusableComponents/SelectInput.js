@@ -8,7 +8,7 @@ const SelectInput = ({ id, label, required, value, onChange, options }) => {
             </label>
             <select
                 id={id}
-                className="w-[250px] py-2 px-2 rounded-lg bg-gray-50 outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
+                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
                 value={value}
                 onChange={onChange}
             >
