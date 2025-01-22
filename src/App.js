@@ -12,6 +12,7 @@ import AddVendor from './components/User/Vendors/AddVendor';
 import Vendor from './components/User/Vendors/Vendor';
 import EditVendor from './components/User/Vendors/EditVendor';
 import ViewVendor from './components/User/Vendors/ViewVendor';
+import AddItem from './components/User/Items/addItem';
 
 function App() {
   return (
@@ -61,6 +62,11 @@ function App() {
             <Route
               path="/vendor/:id"
               element={<ProtectedRoute component={ViewVendor} isAuthenticatedPage={true} />}
+            />
+
+            <Route
+              path="/additem"
+              element={<ProtectedRoute component={AddItem} isAuthenticatedPage={true} />}
             />
 
             {/* Redirect to dashboard for unknown routes */}

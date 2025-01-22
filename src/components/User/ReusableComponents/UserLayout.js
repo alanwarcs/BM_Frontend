@@ -282,9 +282,9 @@ const UserLayout = ({ children }) => {
                             <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.stock ? 'max-h-60' : 'max-h-0'}`}>
                                 <ul className="ms-14">
                                     <li className="text-start p-2">
-                                        <a href="/">
+                                        <Link to="/additem">
                                             Add New Item
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li className="text-start p-2">
                                         <a href="/">
