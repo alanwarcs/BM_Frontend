@@ -22,35 +22,68 @@ const AddItem = () => {
 
         <hr />
 
-        <form className='h-full overflow-scroll bg-slate-50'>
+        <form className='h-full overflow-scroll'>
 
           <div className='flex flex-wrap p-4'>
-            <div className='flex items-center text-gray-700 text-sm'>
-              <p className="m-2">Type:</p>
-              <div className="flex items-center mx-2">
-                <input type="radio" id="services" name="itemType" value="Services" className="mr-2" />
-                <label htmlFor="services">Services</label>
+
+            {/* Item Type */}
+            <div className='text-gray-700 text-sm h-fit m-2'>
+              <div className='flex mb-2'>
+                <p>Type:</p>
+                <span className="text-red-500">*</span>
               </div>
-              <div className="flex items-center mx-2">
-                <input type="radio" id="product" name="itemType" value="Product" className="mr-2" />
-                <label htmlFor="product">Product</label>
+              <div className='flex h-[35px] items-center ms-4'>
+                <div className="flex items-center mx-2">
+                  <input type="radio" id="services" name="itemType" value="Services" className="mr-2" />
+                  <label htmlFor="services">Services</label>
+                </div>
+                <div className="flex items-center mx-2">
+                  <input type="radio" id="product" name="itemType" value="Product" className="mr-2" />
+                  <label htmlFor="product">Product</label>
+                </div>
               </div>
             </div>
 
+            {/* Item Name */}
             <TextInput
               label="Item Name"
               id="itemName"
               placeholder="Enter Item name"
+              required
             />
 
+            {/* Item Unit */}
             <SelectInput
               id="unit"
               label="Unit"
               options={[
                 { value: 'INR', label: 'INR' },
               ]}
+              required
             />
 
+            {/* Item Stock keeping Unit */}
+            <TextInput
+              label="SKU"
+              id="sku"
+              placeholder="Enter hsn/sac"
+            />
+
+
+            {/* Item hsn/sac */}
+            <TextInput
+              label="HSN/SAC"
+              id="hsnOrSac"
+              placeholder="Enter hsn/sac"
+            />
+
+            {/* Item Stock keeping Unit */}
+            <TextInput
+              label="Available Quantity"
+              id="availableQuantity"
+              placeholder="Enter Available Quantity"
+            />
+            {/* Item Discription */}
             <div className="flex flex-col m-2">
               <label htmlFor="description" className="block text-gray-700 text-sm mb-2">
                 Description:

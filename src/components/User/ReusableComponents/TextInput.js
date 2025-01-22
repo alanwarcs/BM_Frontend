@@ -9,7 +9,7 @@ const TextInput = ({ id, label, required, placeholder, value, onChange }) => {
       <input
         type="text"
         id={id}
-        className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
+        className="w-[250px] h-[35px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
         placeholder={placeholder}
         value={value}
         onChange={onChange}
