@@ -138,7 +138,7 @@ const AddItem = () => {
 
             {/* Tabs */}
             <div className="flex space-x-4 border-b w-full overflow-y-scroll scrollbar-hide">
-              {["Sell", "Purchase", "GST/Tax", "Stocks and Units", "Other"].map((tab) => (
+              {["Sell", "Purchase", "GST/Tax", "Units", "Stocks and Storage", "Other"].map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -248,8 +248,40 @@ const AddItem = () => {
               </div>
             )}
 
+            {/*Units */}
+            {activeTab === "Units" && (
+              <div className="block">
+                {/* Category */}
+                <SelectInput
+                  id="category"
+                  label="Category"
+                  value={formData.units.category}
+                  options={[
+                    { label: "Quantity", value: "Quantity" },
+                  ]}
+                />
+
+                {/* Unit */}
+                <SelectInput
+                  id="unit"
+                  label="Unit"
+                  value={formData.units.unit}
+                  options={[
+                    { label: "nos", value: "nos" },
+                  ]}
+                />
+              </div>
+            )}
+
             {/* Stocks and Units */}
-            {activeTab === "Stocks and Units" && (
+            {activeTab === "Stocks and Storage" && (
+              <div className="block">
+
+              </div>
+            )}
+
+            {/* Other */}
+            {activeTab === "Other" && (
               <div className="block">
 
               </div>
