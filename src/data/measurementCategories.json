@@ -1,0 +1,112 @@
+{
+    "measurementCategories": [
+        {
+            "categoryName": "Quantity",
+            "units": [
+                {
+                    "unitName": "nos",
+                    "UQC": "nos"
+                },
+                {
+                    "unitName": "pieces",
+                    "UQC": "pcs"
+                },
+                {
+                    "unitName": "units",
+                    "UQC": "unt"
+                },
+                {
+                    "unitName": "packs",
+                    "UQC": "pck"
+                },
+                {
+                    "unitName": "dozens",
+                    "UQC": "dz"
+                }
+            ]
+        },
+        {
+            "categoryName": "Dimension",
+            "units": [
+                {
+                    "unitName": "meters",
+                    "UQC": "mtr"
+                },
+                {
+                    "unitName": "centimeters",
+                    "UQC": "cm"
+                },
+                {
+                    "unitName": "millimeters",
+                    "UQC": "mm"
+                },
+                {
+                    "unitName": "inches",
+                    "UQC": "in"
+                },
+                {
+                    "unitName": "feet",
+                    "UQC": "ft"
+                },
+                {
+                    "unitName": "bags",
+                    "UQC": "bg"
+                },
+                {
+                    "unitName": "boxes",
+                    "UQC": "bx"
+                },
+                {
+                    "unitName": "bottles",
+                    "UQC": "btl"
+                },
+                {
+                    "unitName": "cubic meters",
+                    "UQC": "m3"
+                }
+            ]
+        },
+        {
+            "categoryName": "Weight",
+            "units": [
+                {
+                    "unitName": "kilograms",
+                    "UQC": "kg"
+                },
+                {
+                    "unitName": "grams",
+                    "UQC": "gm"
+                },
+                {
+                    "unitName": "pounds",
+                    "UQC": "lb"
+                },
+                {
+                    "unitName": "ounces",
+                    "UQC": "oz"
+                }
+            ]
+        },
+        {
+            "categoryName": "Volume",
+            "units": [
+                {
+                    "unitName": "liters",
+                    "UQC": "ltr"
+                },
+                {
+                    "unitName": "milliliters",
+                    "UQC": "ml"
+                },
+                {
+                    "unitName": "gallons",
+                    "UQC": "gal"
+                },
+                {
+                    "unitName": "cubic meters",
+                    "UQC": "m3"
+                }
+            ]
+        }
+    ]
+}

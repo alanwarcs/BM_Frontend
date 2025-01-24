@@ -19,6 +19,7 @@ const AddItem = () => {
     sellInfo: { price: 0, currency: "INR" },
     purchaseInfo: { purchasePrice: 0, purchaseCurrency: "INR", vendorId: "" },
     gst: { intraStateGST: 0, interStateGST: 0 },
+    taxPreference: "",
     sku: "",
     hsnOrSac: "",
     availableQuantity: 0,
@@ -137,7 +138,7 @@ const AddItem = () => {
 
             {/* Tabs */}
             <div className="flex space-x-4 border-b w-full overflow-y-scroll scrollbar-hide">
-              {["Sell", "Purchase", "GST", "Stocks and Units", "Other"].map((tab) => (
+              {["Sell", "Purchase", "GST/Tax", "Stocks and Units", "Other"].map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -151,7 +152,7 @@ const AddItem = () => {
 
             {/* Sell Tab */}
             {activeTab === "Sell" && (
-              <div>
+              <div className="block">
                 <TextInput
                   label="Sell Price"
                   id="sellPrice"
@@ -171,7 +172,7 @@ const AddItem = () => {
 
             {/* Purchase Tab */}
             {activeTab === "Purchase" && (
-              <div>
+              <div className="block">
                 <TextInput
                   label="Purchase Price"
                   id="purchasePrice"
@@ -202,29 +203,55 @@ const AddItem = () => {
               </div>
             )}
 
-            {activeTab === "GST" && (
-              <div className="flex flex-wrap p-4">
-                {/* IntraState GST */}
-                <TextInput
-                  label="IntraState GST"
-                  id="intraStateGST"
-                  placeholder="Enter IntraState GST"
-                  type="number"
+            {/* GST Tab */}
+            {activeTab === "GST/Tax" && (
+              <div className="block">
+                <SelectInput
+                  id="taxPreference"
+                  label="Tax Preference"
+                  value={formData.taxPreference}
                   required
+                  options={[
+                    { label: "GST Inclusive", value: "GST Inclusive" },
+                    { label: "GST Exclusive", value: "GST Exclusive" },
+                    { label: "No GST", value: "No GST" }
+                  ]}
+                />
+
+
+                <SelectInput
+                  id="intraStateGST"
+                  label="IntraState GST"
                   value={formData.gst.intraStateGST}
-                  onChange={(e) => handleNestedChange("gst", "intraStateGST", e.target.value)}
+                  options={[
+                    { label: "0%", value: "0" },
+                    { label: "5%", value: "5" },
+                    { label: "12%", value: "12" },
+                    { label: "18%", value: "18" },
+                    { label: "28%", value: "28" }
+                  ]}
                 />
 
                 {/* InterState GST */}
-                <TextInput
-                  label="InterState GST"
+                <SelectInput
                   id="interStateGST"
-                  placeholder="Enter InterState GST"
-                  type="number"
-                  required
+                  label="InterState GST"
                   value={formData.gst.interStateGST}
-                  onChange={(e) => handleNestedChange("gst", "interStateGST", e.target.value)}
+                  options={[
+                    { label: "0%", value: "0" },
+                    { label: "5%", value: "5" },
+                    { label: "12%", value: "12" },
+                    { label: "18%", value: "18" },
+                    { label: "28%", value: "28" }
+                  ]}
                 />
+              </div>
+            )}
+
+            {/* Stocks and Units */}
+            {activeTab === "Stocks and Units" && (
+              <div className="block">
+
               </div>
             )}
 
