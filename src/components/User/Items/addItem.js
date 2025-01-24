@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-// Assuming you're using Axios for API calls
+import measurementCategories from "../../../data/measurementCategories.json"; // Adjust the path as needed
 import axios from "axios";
 import { Link } from "react-router-dom";
 import TextInput from "../ReusableComponents/TextInput";
@@ -12,20 +12,31 @@ const AddItem = () => {
   const [activeTab, setActiveTab] = useState("Sell");
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [alert, setAlert] = useState(null);
+  const [vendors, setVendors] = useState([]); // List of vendors
   const [formData, setFormData] = useState({
-    businessId: "",
-    locationId: [],
-    units: [{ category: "", value: 0, unit: "", description: "", customAttributes: {} }],
-    sellInfo: { price: 0, currency: "INR" },
-    purchaseInfo: { purchasePrice: 0, purchaseCurrency: "INR", vendorId: "" },
-    gst: { intraStateGST: 0, interStateGST: 0 },
+    locationId: [{ location: "", quantity: 0 }],
+    units: [{ category: "", value: 0, unit: "", description: "" }],
+    sellInfo: {
+      price: 0,
+      currency: "INR"
+    },
+    purchaseInfo: {
+      purchasePrice: 0,
+      purchaseCurrency: "INR",
+      vendorId: ""
+    },
+    gst: {
+      intraStateGST: 0,
+      interStateGST: 0
+    },
     taxPreference: "",
     sku: "",
     hsnOrSac: "",
-    availableQuantity: 0,
     stockValue: 0,
+    itemName: "",
+    itemType: "Product",
+    description: ""
   });
-  const [vendors, setVendors] = useState([]); // List of vendors
 
   // Fetch vendors from backend
   useEffect(() => {
@@ -41,22 +52,103 @@ const AddItem = () => {
     fetchVendors();
   }, []);
 
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+  const handleChange = (field, value) => {
+    if (field.includes(".")) {
+      const [section, subField] = field.split(".");
+      setFormData((prev) => {
+        const updatedData = {
+          ...prev,
+          [section]: {
+            ...prev[section],
+            [subField]: value,
+          },
+        };
+
+        // Recalculate stockValue if purchasePrice or quantity changes
+        if (section === "purchaseInfo" && subField === "purchasePrice") {
+          updatedData.stockValue =
+            updatedData.locationId[0].quantity * parseFloat(value || 0);
+        } else if (section === "locationId" && subField === "quantity") {
+          updatedData.stockValue =
+            parseFloat(updatedData.purchaseInfo.purchasePrice || 0) * value;
+        }
+
+        return updatedData;
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
-  const handleNestedChange = (field, nestedField, value) => {
-    setFormData({
-      ...formData,
-      [field]: { ...formData[field], [nestedField]: value },
-    });
+  // Validate Form Fields
+  const validateForm = () => {
+    const errors = {};
+
+    // Item Name
+    if (!formData.itemName.trim()) {
+      errors.itemName = "Item Name is required.";
+    }
+
+    // Sell Info
+    if (!formData.sellInfo.price || formData.sellInfo.price <= 0) {
+      errors.sellInfoPrice = "Sell Price must be greater than 0.";
+    }
+
+    // Purchase Info
+    if (!formData.purchaseInfo.purchasePrice || formData.purchaseInfo.purchasePrice <= 0) {
+      errors.purchaseInfoPrice = "Purchase Price must be greater than 0.";
+    }
+
+    // GST Info
+    if (!formData.taxPreference) {
+      errors.taxPreference = "Tax Preference is required.";
+    }
+
+    if (formData.taxPreference === "GST Inclusive") {
+      if (!formData.gst.intraStateGST) {
+        errors.intraStateGST = "IntraState GST is required when Tax Preference is GST.";
+      }
+      if (!formData.gst.interStateGST) {
+        errors.interStateGST = "InterState GST is required when Tax Preference is GST.";
+      }
+    }
+
+    // Units
+    if (!formData.units.category) {
+      errors.unitsCategory = "Category is required.";
+    }
+    if (!formData.units.value || formData.units.value <= 0) {
+      errors.unitsValue = "Value must be greater than 0.";
+    }
+    if (!formData.units.unit) {
+      errors.unitsUnit = "Unit is required.";
+    }
+
+    // Stocks and Storage
+    if (!formData.stockValue && formData.stockValue !== 0) {
+      errors.stockValue = "Stock Value is required.";
+    } else if (formData.stockValue < 0) {
+      errors.stockValue = "Stock Value cannot be negative.";
+    }
+    // Return errors object
+    return errors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setLoadingProgress(50);
+    const validationErrors = validateForm();
 
-    // Simulate submission
+    if (Object.keys(validationErrors).length > 0) {
+      setAlert({ message: "Please fill all required fields.", type: "error" });
+      console.log(validationErrors);
+      return;
+    }
+
+    setLoadingProgress(50);
+    console.log(formData);
     setTimeout(() => {
       setLoadingProgress(100);
       setAlert({ message: "Item added successfully!", type: "success" });
@@ -93,7 +185,8 @@ const AddItem = () => {
                     name="itemType"
                     value="Services"
                     className="mr-2"
-                    onChange={(e) => handleInputChange("type", e.target.value)}
+                    checked={formData.itemType === "Services"}
+                    onChange={(e) => handleChange("itemType", e.target.value)}
                   />
                   <label htmlFor="services">Services</label>
                 </div>
@@ -104,11 +197,13 @@ const AddItem = () => {
                     name="itemType"
                     value="Product"
                     className="mr-2"
-                    onChange={(e) => handleInputChange("type", e.target.value)}
+                    checked={formData.itemType === "Product"}
+                    onChange={(e) => handleChange("itemType", e.target.value)}
                   />
                   <label htmlFor="product">Product</label>
                 </div>
               </div>
+
             </div>
 
             {/* Item Name */}
@@ -116,29 +211,32 @@ const AddItem = () => {
               label="Item Name"
               id="itemName"
               placeholder="Enter Item name"
+              value={formData.itemName}
               required
-              onChange={(e) => handleInputChange("itemName", e.target.value)}
+              onChange={(e) => handleChange("itemName", e.target.value)}
             />
 
             {/* SKU */}
             <TextInput
               label="SKU"
               id="sku"
+              value={formData.sku}
               placeholder="Enter SKU"
-              onChange={(e) => handleInputChange("sku", e.target.value)}
+              onChange={(e) => handleChange("sku", e.target.value)}
             />
 
             {/* HSN/SAC */}
             <TextInput
               label="HSN/SAC"
               id="hsnOrSac"
+              value={formData.hsnOrSac}
               placeholder="Enter HSN/SAC"
-              onChange={(e) => handleInputChange("hsnOrSac", e.target.value)}
+              onChange={(e) => handleChange("hsnOrSac", e.target.value)}
             />
 
             {/* Tabs */}
             <div className="flex space-x-4 border-b w-full overflow-y-scroll scrollbar-hide">
-              {["Sell", "Purchase", "GST/Tax", "Units", "Stocks and Storage", "Other"].map((tab) => (
+              {["Sell", "Purchase", "GST/Tax", "Units", "Stocks and Storage"].map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -156,16 +254,19 @@ const AddItem = () => {
                 <TextInput
                   label="Sell Price"
                   id="sellPrice"
+                  value={formData.sellInfo.price}
                   type="number"
                   placeholder="Enter Sell Price"
                   required
-                  onChange={(e) => handleNestedChange("sellInfo", "price", e.target.value)}
+                  onChange={(e) => handleChange("sellInfo.price", e.target.value)}
                 />
                 <SelectInput
                   id="sellCurrency"
                   label="Sell Currency"
-                  options={[{ value: "INR", label: "INR" }, { value: "USD", label: "USD" }]} // Add more currencies as needed
-                  onChange={(e) => handleNestedChange("sellInfo", "currency", e.target.value)}
+                  value={formData.sellInfo.currency}
+                  required
+                  options={[{ value: "INR", label: "INR" }]}
+                  onChange={(e) => handleChange("sellInfo.currency", e.target.value)}
                 />
               </div>
             )}
@@ -177,28 +278,28 @@ const AddItem = () => {
                   label="Purchase Price"
                   id="purchasePrice"
                   type="number"
+                  value={formData.purchaseInfo.purchasePrice}
                   placeholder="Enter Purchase Price"
                   required
-                  onChange={(e) => handleNestedChange("purchaseInfo", "purchasePrice", e.target.value)}
+                  onChange={(e) => handleChange("purchaseInfo.purchasePrice", e.target.value)}
                 />
                 <SelectInput
                   id="purchaseCurrency"
                   label="Purchase Currency"
                   options={[{ value: "INR", label: "INR" }]}
-                  onChange={(e) => handleNestedChange("purchaseInfo", "purchaseCurrency", e.target.value)}
-                  value={formData.purchaseInfo.purchaseCurrency} // Ensure the value reflects the current state
+                  onChange={(e) => handleChange("purchaseInfo.purchaseCurrency", e.target.value)}
+                  required
+                  value={formData.purchaseInfo.purchaseCurrency}
                 />
-
-                {/* Preferred Vendor */}
                 <SelectInput
                   id="vendorId"
                   label="Preferred Vendor"
                   options={vendors.map((vendor) => ({
                     value: vendor._id,
-                    label: vendor.displayName, // Ensure the correct field is used for display
+                    label: vendor.displayName,
                   }))}
-                  onChange={(e) => handleNestedChange("purchaseInfo", "vendorId", e.target.value)}
-                  value={formData.purchaseInfo.vendorId || ""} // Set to empty if no vendor is selected
+                  onChange={(e) => handleChange("purchaseInfo.vendorId", e.target.value)}
+                  value={formData.purchaseInfo.vendorId || ""}
                 />
               </div>
             )}
@@ -216,8 +317,8 @@ const AddItem = () => {
                     { label: "GST Exclusive", value: "GST Exclusive" },
                     { label: "No GST", value: "No GST" }
                   ]}
+                  onChange={(e) => handleChange("taxPreference", e.target.value)}
                 />
-
 
                 <SelectInput
                   id="intraStateGST"
@@ -230,9 +331,9 @@ const AddItem = () => {
                     { label: "18%", value: "18" },
                     { label: "28%", value: "28" }
                   ]}
+                  onChange={(e) => handleChange("gst.intraStateGST", e.target.value)}
                 />
 
-                {/* InterState GST */}
                 <SelectInput
                   id="interStateGST"
                   label="InterState GST"
@@ -244,46 +345,116 @@ const AddItem = () => {
                     { label: "18%", value: "18" },
                     { label: "28%", value: "28" }
                   ]}
+                  onChange={(e) => handleChange("gst.interStateGST", e.target.value)}
                 />
               </div>
             )}
 
-            {/*Units */}
+            {/* Units */}
             {activeTab === "Units" && (
               <div className="block">
-                {/* Category */}
+
+                <SelectInput
+                  id="taxPreference"
+                  label="Tax Preference"
+                  value={formData.taxPreference}
+                  required
+                  options={[
+                    { label: "GST Inclusive", value: "GST Inclusive" },
+                    { label: "GST Exclusive", value: "GST Exclusive" },
+                    { label: "No GST", value: "No GST" }
+                  ]}
+                  onChange={(e) => handleChange("taxPreference", e.target.value)}
+                />
+
                 <SelectInput
                   id="category"
                   label="Category"
                   value={formData.units.category}
-                  options={[
-                    { label: "Quantity", value: "Quantity" },
-                  ]}
+                  required
+                  options={measurementCategories.measurementCategories.map(category => ({
+                    label: category.categoryName,
+                    value: category.categoryName.toLowerCase(),
+                  }))}
+                  onChange={(e) => handleChange("units.category", e.target.value)}
                 />
 
-                {/* Unit */}
-                <SelectInput
-                  id="unit"
-                  label="Unit"
-                  value={formData.units.unit}
-                  options={[
-                    { label: "nos", value: "nos" },
-                  ]}
+                <TextInput
+                  label="Value"
+                  id="value"
+                  type="number"
+                  value={formData.units.value}
+                  placeholder="Enter Value"
+                  required
+                  onChange={(e) => handleChange("units.value", e.target.value)}
+                />
+
+                {/* Show the unit options based on selected category */}
+                {formData.units.category && (
+                  <SelectInput
+                    id="unit"
+                    label="Unit"
+                    value={formData.units.unit}
+                    required
+                    options={measurementCategories.measurementCategories
+                      .find(category => category.categoryName.toLowerCase() === formData.units.category)
+                      ?.units.map(unit => ({
+                        label: `${unit.unitName} (${unit.UQC})`, // Fixed the concatenation
+                        value: unit.UQC,
+                      })) || []}
+                      onChange={(e) => handleChange("units.unit", e.target.value)}
+                  />
+                )}
+
+                <TextInput
+                  label="Description"
+                  id="description"
+                  value={formData.units.description}
+                  placeholder="Enter Description"
+                  onChange={(e) => handleChange("units.description", e.target.value)}
                 />
               </div>
             )}
 
-            {/* Stocks and Units */}
+            {/* Stocks and Storage */}
             {activeTab === "Stocks and Storage" && (
               <div className="block">
+                {/* Quantity */}
+                <TextInput
+                  label="Quantity"
+                  id="quantity"
+                  value={formData.locationId.quantity}
+                  type="number"
+                  placeholder="Enter Quantity"
+                  required
+                  onChange={(e) => handleChange("locationId.quantity", e.target.value)}
+                />
 
-              </div>
-            )}
+                {/* Stock Value */}
+                <TextInput
+                  label="Stock Value"
+                  id="stockValue"
+                  type="number"
+                  value={formData.stockValue}
+                  placeholder="Enter Stock Value"
+                  required
+                  disabled
+                  onChange={(e) => handleChange("stockValue", e.target.value)}
+                />
 
-            {/* Other */}
-            {activeTab === "Other" && (
-              <div className="block">
-
+                {/* Location */}
+                <SelectInput
+                  id="location"
+                  label="Location"
+                  value={formData.locationId.location}
+                  options={[
+                    { label: "", value: "" },
+                    { label: "New York", value: "new_york" },
+                    { label: "Los Angeles", value: "los_angeles" },
+                    { label: "Chicago", value: "chicago" },
+                  ]}
+                  onChange={(e) => handleChange("locationId.location", e.target.value)}
+                />
               </div>
             )}
 
