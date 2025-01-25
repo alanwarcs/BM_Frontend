@@ -38,8 +38,8 @@ const AddItem = () => {
     description: ""
   });
 
-  const MAX_UNITS = 5;
-  const MAX_LOCATION = 5;
+  const MAX_UNITS = 4;
+  const MAX_STORAGE = 4;
 
   // Fetch vendors from backend
   useEffect(() => {
@@ -60,52 +60,98 @@ const AddItem = () => {
       if (prevData.units.length < MAX_UNITS) {
         return {
           ...prevData,
-          customFields: [...prevData.units, { fieldName: '', fieldValue: '' }],
+          units: [...prevData.units, { category: "", value: 0, unit: "", description: "" }],
         };
       } else {
-        alert(`You can only add up to ${MAX_UNITS} custom fields.`);
+        setAlert({ message: `You can only add up to ${MAX_UNITS} units.`, type: "error" });
         return prevData;
       }
     });
-  }
+  };
 
-  //Remove Custom detail
   const removeUnits = (index) => {
     setFormData((prevData) => {
-      const updatedCustomFields = prevData.units.filter((_, i) => i !== index);
-      return { ...prevData, customFields: updatedCustomFields };
+      const updatedUnits = prevData.units.filter((_, i) => i !== index);
+      return { ...prevData, units: updatedUnits };
     });
   };
 
-  const handleChange = (field, value) => {
-    if (field.includes(".")) {
-      const [section, subField] = field.split(".");
-      setFormData((prev) => {
-        const updatedData = {
-          ...prev,
-          [section]: {
-            ...prev[section],
-            [subField]: value,
-          },
+  // Add Storage Location
+  const addStorageLocation = () => {
+    setFormData((prevData) => {
+      const currentLocations = prevData.locationId || [];
+      if (currentLocations.length < MAX_STORAGE) {
+        return {
+          ...prevData,
+          locationId: [...currentLocations, { location: "", quantity: 0 }]
         };
+      } else {
+        setAlert({ message: `You can only add up to ${MAX_STORAGE} storage locations.`, type: "error" });
+        return prevData;
+      }
+    });
+  };
 
-        // Recalculate stockValue if purchasePrice or quantity changes
-        if (section === "purchaseInfo" && subField === "purchasePrice") {
-          updatedData.stockValue =
-            updatedData.locationId[0].quantity * parseFloat(value || 0);
-        } else if (section === "locationId" && subField === "quantity") {
-          updatedData.stockValue =
-            parseFloat(updatedData.purchaseInfo.purchasePrice || 0) * value;
+  // Remove Storage Location
+  const removeStorageLocation = (index) => {
+    setFormData((prevData) => {
+      // Filter out the location being removed
+      const updatedLocations = prevData.locationId.filter((_, i) => i !== index);
+
+      // Recalculate total quantity based on the remaining locations
+      const totalQuantity = updatedLocations.reduce(
+        (total, location) => total + (parseFloat(location.quantity) || 0),
+        0
+      );
+
+      // Calculate the stock value based on purchasePrice and totalQuantity
+      const purchasePrice = parseFloat(prevData.purchaseInfo.purchasePrice) || 0;
+      const stockValue = purchasePrice * totalQuantity;
+
+      // Return updated form data
+      return {
+        ...prevData,
+        locationId: updatedLocations,
+        totalQuantity,
+        stockValue,
+      };
+    });
+  };
+
+  const handleChange = (path, value) => {
+    setFormData((prevData) => {
+      const keys = path.split(".");
+      const updatedData = { ...prevData };
+
+      let current = updatedData;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (key.endsWith("]")) {
+          const [k, index] = key.slice(0, -1).split("[");
+          current = current[k][parseInt(index)];
+        } else {
+          current = current[key];
         }
+      }
 
-        return updatedData;
-      });
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
+      const lastKey = keys[keys.length - 1];
+      current[lastKey] = value;
+
+      // Calculate total quantity by summing up all the quantities in the locationId array
+      const totalQuantity = updatedData.locationId.reduce(
+        (total, location) => total + (parseFloat(location.quantity) || 0),
+        0
+      );
+
+      // Calculate stock value if purchasePrice and totalQuantity are available
+      const purchasePrice = parseFloat(updatedData.purchaseInfo.purchasePrice) || 0;
+      const stockValue = purchasePrice * totalQuantity;
+
+      updatedData.totalQuantity = totalQuantity; // Update total quantity in the form data
+      updatedData.stockValue = stockValue; // Update stock value in the form data
+
+      return updatedData;
+    });
   };
 
   // Validate Form Fields
@@ -228,7 +274,6 @@ const AddItem = () => {
                   <label htmlFor="product">Product</label>
                 </div>
               </div>
-
             </div>
 
             {/* Item Name */}
@@ -257,6 +302,18 @@ const AddItem = () => {
               value={formData.hsnOrSac}
               placeholder="Enter HSN/SAC"
               onChange={(e) => handleChange("hsnOrSac", e.target.value)}
+            />
+
+            {/* Stock Value */}
+            <TextInput
+              label="Stock Value"
+              id="stockValue"
+              type="number"
+              value={formData.stockValue}
+              placeholder="Enter Stock Value"
+              required
+              disabled
+              onChange={(e) => handleChange("stockValue", e.target.value)}
             />
 
             {/* Tabs */}
@@ -377,99 +434,124 @@ const AddItem = () => {
 
             {/* Units */}
             {activeTab === "Units" && (
-              <div className="block">
+              <div className="flex flex-wrap">
+                {formData.units.map((unit, index) => (
+                  <div key={index} className="block">
+                    {/* Category Select */}
+                    <SelectInput
+                      id={`category-${index}`}
+                      label="Category"
+                      value={unit.category || ""}
+                      required
+                      options={measurementCategories.measurementCategories.map((category) => ({
+                        label: category.categoryName,
+                        value: category.categoryName.toLowerCase(),
+                      }))}
+                      onChange={(e) => handleChange(`units[${index}].category`, e.target.value)}
+                    />
 
-                <SelectInput
-                  id="category"
-                  label="Category"
-                  value={formData.units.category || ""}
-                  required
-                  options={measurementCategories.measurementCategories.map(category => ({
-                    label: category.categoryName,
-                    value: category.categoryName.toLowerCase(),
-                  }))}
-                  onChange={(e) => handleChange("units.category", e.target.value)}
-                />
+                    {/* Value Input */}
+                    <TextInput
+                      label="Value"
+                      id={`value-${index}`}
+                      type="number"
+                      value={unit.value || ""}
+                      placeholder="Enter Value"
+                      required
+                      onChange={(e) => handleChange(`units[${index}].value`, e.target.value)}
+                    />
 
-                <TextInput
-                  label="Value"
-                  id="value"
-                  type="number"
-                  value={formData.units.value}
-                  placeholder="Enter Value"
-                  required
-                  onChange={(e) => handleChange("units.value", e.target.value)}
-                />
+                    {/* Unit Select */}
+                    {unit.category && (
+                      <SelectInput
+                        id={`unit-${index}`}
+                        label="Unit"
+                        value={unit.unit || ""}
+                        required
+                        options={
+                          measurementCategories.measurementCategories
+                            .find((category) => category.categoryName.toLowerCase() === unit.category)
+                            ?.units.map((u) => ({
+                              label: `${u.unitName} (${u.UQC})`,
+                              value: u.UQC,
+                            })) || []
+                        }
+                        onChange={(e) => handleChange(`units[${index}].unit`, e.target.value)}
+                      />
+                    )}
 
-                {/* Show the unit options based on selected category */}
-                {formData.units.category && (
-                  <SelectInput
-                    id="unit"
-                    label="Unit"
-                    value={formData.units.unit || ""}
-                    required
-                    options={measurementCategories.measurementCategories
-                      .find(category => category.categoryName.toLowerCase() === formData.units.category)
-                      ?.units.map(unit => ({
-                        label: `${unit.unitName} (${unit.UQC})`, // Fixed the concatenation
-                        value: unit.UQC,
-                      })) || []}
-                    onChange={(e) => handleChange("units.unit", e.target.value)}
-                  />
+                    {/* Description Input */}
+                    <TextInput
+                      label="Description"
+                      id={`description-${index}`}
+                      value={unit.description || ""}
+                      placeholder="Enter Description"
+                      onChange={(e) => handleChange(`units[${index}].description`, e.target.value)}
+                    />
+
+                    {/* Remove Unit Button */}
+                    <button
+                      type="button"
+                      className="text-red-500 text-sm px-2"
+                      onClick={() => removeUnits(index)}
+                    >
+                      Remove Unit
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add Unit Button */}
+                {formData.units.length < MAX_UNITS && (
+                  <div onClick={addUnits} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-300 text-sm hover:underline cursor-pointer">
+                    <p>
+                      + Add Another Unit
+                    </p>
+                  </div>
                 )}
-
-                <TextInput
-                  label="Description"
-                  id="description"
-                  value={formData.units.description}
-                  placeholder="Enter Description"
-                  onChange={(e) => handleChange("units.description", e.target.value)}
-                />
               </div>
             )}
 
             {/* Stocks and Storage */}
             {activeTab === "Stocks and Storage" && (
-              <div className="block">
-                {/* Quantity */}
-                <TextInput
-                  label="Quantity"
-                  id="quantity"
-                  value={formData.locationId.quantity}
-                  type="number"
-                  placeholder="Enter Quantity"
-                  required
-                  onChange={(e) => handleChange("locationId.quantity", e.target.value)}
-                />
+              <div className="flex flex-wrap">
+                {formData.locationId && formData.locationId.map((locationId, index) => (
+                  <div key={index} className="block">
+                    <SelectInput
+                      id={`storage-${index}-location`}
+                      label="Location"
+                      value={locationId.location || ""}
+                      required
+                      onChange={(e) => handleChange(`locationId[${index}].location`, e.target.value)}
+                      options={[
+                        { label: "warehouse", value: "Warehouse" },
+                      ]}
+                    />
 
-                {/* Stock Value */}
-                <TextInput
-                  label="Stock Value"
-                  id="stockValue"
-                  type="number"
-                  value={formData.stockValue}
-                  placeholder="Enter Stock Value"
-                  required
-                  disabled
-                  onChange={(e) => handleChange("stockValue", e.target.value)}
-                />
-
-                {/* Location */}
-                <SelectInput
-                  id="location"
-                  label="Location"
-                  value={formData.locationId.location}
-                  options={[
-                    { label: "", value: "" },
-                    { label: "New York", value: "new_york" },
-                    { label: "Los Angeles", value: "los_angeles" },
-                    { label: "Chicago", value: "chicago" },
-                  ]}
-                  onChange={(e) => handleChange("locationId.location", e.target.value)}
-                />
+                    <TextInput
+                      id={`storage-${index}-quantity`}
+                      type="number"
+                      label="Quantity"
+                      placeholder="Quantity"
+                      value={locationId.quantity}
+                      onChange={(e) => handleChange(`locationId[${index}].quantity`, e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="ml-2 p-1 text-red-500"
+                      onClick={() => removeStorageLocation(index)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {/* Add Unit Button */}
+                {formData.locationId?.length < MAX_UNITS && (
+                  <div onClick={addStorageLocation} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-300 text-sm hover:underline cursor-pointer">
+                    <p>+ Add Another Unit</p>
+                  </div>
+                )}
               </div>
             )}
-
           </div>
 
           {/* Submit Button */}
@@ -479,12 +561,12 @@ const AddItem = () => {
             </button>
           </div>
         </form>
-      </div>
+      </div >
 
       {/* Alert */}
       {alert && <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />}
-    </UserLayout>
+    </UserLayout >
   );
 };
 
-export default AddItem;
+export default AddItem
