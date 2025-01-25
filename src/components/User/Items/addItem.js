@@ -38,6 +38,9 @@ const AddItem = () => {
     description: ""
   });
 
+  const MAX_UNITS = 5;
+  const MAX_LOCATION = 5;
+
   // Fetch vendors from backend
   useEffect(() => {
     const fetchVendors = async () => {
@@ -51,6 +54,28 @@ const AddItem = () => {
 
     fetchVendors();
   }, []);
+
+  const addUnits = () => {
+    setFormData((prevData) => {
+      if (prevData.units.length < MAX_UNITS) {
+        return {
+          ...prevData,
+          customFields: [...prevData.units, { fieldName: '', fieldValue: '' }],
+        };
+      } else {
+        alert(`You can only add up to ${MAX_UNITS} custom fields.`);
+        return prevData;
+      }
+    });
+  }
+
+  //Remove Custom detail
+  const removeUnits = (index) => {
+    setFormData((prevData) => {
+      const updatedCustomFields = prevData.units.filter((_, i) => i !== index);
+      return { ...prevData, customFields: updatedCustomFields };
+    });
+  };
 
   const handleChange = (field, value) => {
     if (field.includes(".")) {
@@ -355,22 +380,9 @@ const AddItem = () => {
               <div className="block">
 
                 <SelectInput
-                  id="taxPreference"
-                  label="Tax Preference"
-                  value={formData.taxPreference}
-                  required
-                  options={[
-                    { label: "GST Inclusive", value: "GST Inclusive" },
-                    { label: "GST Exclusive", value: "GST Exclusive" },
-                    { label: "No GST", value: "No GST" }
-                  ]}
-                  onChange={(e) => handleChange("taxPreference", e.target.value)}
-                />
-
-                <SelectInput
                   id="category"
                   label="Category"
-                  value={formData.units.category}
+                  value={formData.units.category || ""}
                   required
                   options={measurementCategories.measurementCategories.map(category => ({
                     label: category.categoryName,
@@ -394,7 +406,7 @@ const AddItem = () => {
                   <SelectInput
                     id="unit"
                     label="Unit"
-                    value={formData.units.unit}
+                    value={formData.units.unit || ""}
                     required
                     options={measurementCategories.measurementCategories
                       .find(category => category.categoryName.toLowerCase() === formData.units.category)
@@ -402,7 +414,7 @@ const AddItem = () => {
                         label: `${unit.unitName} (${unit.UQC})`, // Fixed the concatenation
                         value: unit.UQC,
                       })) || []}
-                      onChange={(e) => handleChange("units.unit", e.target.value)}
+                    onChange={(e) => handleChange("units.unit", e.target.value)}
                   />
                 )}
 

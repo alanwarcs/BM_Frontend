@@ -34,6 +34,22 @@
                 {
                     "unitName": "bottles",
                     "UQC": "btl"
+                },
+                {
+                    "unitName": "cartons",
+                    "UQC": "crt"
+                },
+                {
+                    "unitName": "containers",
+                    "UQC": "cnt"
+                },
+                {
+                    "unitName": "rolls",
+                    "UQC": "roll"
+                },
+                {
+                    "unitName": "pairs",
+                    "UQC": "pr"
                 }
             ]
         },
@@ -61,8 +77,24 @@
                     "UQC": "ft"
                 },
                 {
+                    "unitName": "yards",
+                    "UQC": "yd"
+                },
+                {
+                    "unitName": "square meters",
+                    "UQC": "m2"
+                },
+                {
+                    "unitName": "square feet",
+                    "UQC": "ft2"
+                },
+                {
                     "unitName": "cubic meters",
                     "UQC": "m3"
+                },
+                {
+                    "unitName": "cubic feet",
+                    "UQC": "ft3"
                 }
             ]
         },
@@ -84,6 +116,14 @@
                 {
                     "unitName": "ounces",
                     "UQC": "oz"
+                },
+                {
+                    "unitName": "tons",
+                    "UQC": "ton"
+                },
+                {
+                    "unitName": "milligrams",
+                    "UQC": "mg"
                 }
             ]
         },
@@ -105,6 +145,84 @@
                 {
                     "unitName": "cubic meters",
                     "UQC": "m3"
+                },
+                {
+                    "unitName": "cubic centimeters",
+                    "UQC": "cm3"
+                },
+                {
+                    "unitName": "barrels",
+                    "UQC": "bbl"
+                },
+                {
+                    "unitName": "pints",
+                    "UQC": "pt"
+                },
+                {
+                    "unitName": "quarts",
+                    "UQC": "qt"
+                }
+            ]
+        },
+        {
+            "categoryName": "Time",
+            "units": [
+                {
+                    "unitName": "seconds",
+                    "UQC": "sec"
+                },
+                {
+                    "unitName": "minutes",
+                    "UQC": "min"
+                },
+                {
+                    "unitName": "hours",
+                    "UQC": "hr"
+                },
+                {
+                    "unitName": "days",
+                    "UQC": "day"
+                },
+                {
+                    "unitName": "weeks",
+                    "UQC": "wk"
+                },
+                {
+                    "unitName": "months",
+                    "UQC": "mon"
+                },
+                {
+                    "unitName": "years",
+                    "UQC": "yr"
+                }
+            ]
+        },
+        {
+            "categoryName": "Energy",
+            "units": [
+                {
+                    "unitName": "joules",
+                    "UQC": "j"
+                },
+                {
+                    "unitName": "kilojoules",
+                    "UQC": "kj"
+                },
+                {
+                    "unitName": "calories",
+                    "UQC": "cal"
+                },
+                {
+                    "unitName": "kilocalories",
+                    "UQC": "kcal"
+                },
+                {
+                    "unitName": "watts",
+                    "UQC": "w"
+                },
+                {
+                    "unitName": "kilowatts",
+                    "UQC": "kw"
                 }
             ]
         }
