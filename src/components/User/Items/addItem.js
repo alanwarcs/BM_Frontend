@@ -14,6 +14,8 @@ const AddItem = () => {
   const [alert, setAlert] = useState(null);
   const [vendors, setVendors] = useState([]); // List of vendors
   const [formData, setFormData] = useState({
+    itemName: "",
+    itemType: "Product",
     locationId: [{ location: "", quantity: 0 }],
     units: [{ category: "", value: 0, unit: "", description: "" }],
     sellInfo: {
@@ -33,9 +35,6 @@ const AddItem = () => {
     sku: "",
     hsnOrSac: "",
     stockValue: 0,
-    itemName: "",
-    itemType: "Product",
-    description: ""
   });
 
   const MAX_UNITS = 4;
@@ -154,76 +153,190 @@ const AddItem = () => {
     });
   };
 
-  // Validate Form Fields
   const validateForm = () => {
     const errors = {};
 
     // Item Name
     if (!formData.itemName.trim()) {
-      errors.itemName = "Item Name is required.";
+      setAlert({
+        message: 'Item Name is required.',
+        type: 'error',
+      });
+      return false;
     }
 
     // Sell Info
     if (!formData.sellInfo.price || formData.sellInfo.price <= 0) {
-      errors.sellInfoPrice = "Sell Price must be greater than 0.";
+      setAlert({
+        message: 'Sell Price must be greater than 0.',
+        type: 'error',
+      });
+      return false;
     }
 
     // Purchase Info
     if (!formData.purchaseInfo.purchasePrice || formData.purchaseInfo.purchasePrice <= 0) {
-      errors.purchaseInfoPrice = "Purchase Price must be greater than 0.";
+      setAlert({
+        message: 'Purchase Price must be greater than 0.',
+        type: 'error',
+      });
+      return false;
     }
 
     // GST Info
     if (!formData.taxPreference) {
-      errors.taxPreference = "Tax Preference is required.";
+      setAlert({
+        message: 'Tax Preference is required.',
+        type: 'error',
+      });
+      return false;
     }
 
     if (formData.taxPreference === "GST Inclusive") {
       if (!formData.gst.intraStateGST) {
-        errors.intraStateGST = "IntraState GST is required when Tax Preference is GST.";
+        setAlert({
+          message: 'IntraState GST is required when Tax Preference is GST.',
+          type: 'error',
+        });
+        return false;
       }
       if (!formData.gst.interStateGST) {
-        errors.interStateGST = "InterState GST is required when Tax Preference is GST.";
+        setAlert({
+          message: 'InterState GST is required when Tax Preference is GST.',
+          type: 'error',
+        });
+        return false;
       }
     }
 
-    // Units
-    if (!formData.units.category) {
-      errors.unitsCategory = "Category is required.";
+    // Units Validation
+    if (formData.units.length === 0) {
+      setAlert({
+        message: 'At least one unit is required.',
+        type: 'error',
+      });
+      return false;
+    } else {
+      formData.units.forEach((unit, index) => {
+        if (!unit.category) {
+          errors[`unitsCategory${index}`] = `Category is required for unit ${index + 1}.`;
+          setAlert({
+            message: `Category is required for unit ${index + 1}.`,
+            type: 'error',
+          });
+          return false;
+        }
+        if (!unit.unit) {
+          errors[`unitsUnit${index}`] = `Unit is required for unit ${index + 1}.`;
+          setAlert({
+            message: `Unit is required for unit ${index + 1}.`,
+            type: 'error',
+          });
+          return false;
+        }
+      });
     }
-    if (!formData.units.value || formData.units.value <= 0) {
-      errors.unitsValue = "Value must be greater than 0.";
-    }
-    if (!formData.units.unit) {
-      errors.unitsUnit = "Unit is required.";
+
+    // Storage Locations Validation
+    if (formData.locationId.length > 1) {
+      formData.locationId.forEach((location, index) => {
+        if (!location.location.trim()) {
+          errors[`location${index}`] = `Location is required for storage.`;
+          setAlert({
+            message: `Location is required for storage at location ${index + 1}.`,
+            type: 'error',
+          });
+          return false;
+        }
+        if (!location.quantity || location.quantity <= 0) {
+          errors[`quantity${index}`] = `Quantity must be greater than 0 for location ${index + 1}.`;
+          setAlert({
+            message: `Quantity must be greater than 0 for location ${index + 1}.`,
+            type: 'error',
+          });
+          return false;
+        }
+      });
     }
 
     // Stocks and Storage
     if (!formData.stockValue && formData.stockValue !== 0) {
-      errors.stockValue = "Stock Value is required.";
+      setAlert({
+        message: 'Stock Value is required.',
+        type: 'error',
+      });
+      return false;
     } else if (formData.stockValue < 0) {
-      errors.stockValue = "Stock Value cannot be negative.";
+      setAlert({
+        message: 'Stock Value cannot be negative.',
+        type: 'error',
+      });
+      return false;
     }
-    // Return errors object
+
     return errors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validateForm();
 
-    if (Object.keys(validationErrors).length > 0) {
-      setAlert({ message: "Please fill all required fields.", type: "error" });
-      console.log(validationErrors);
+    if (!validateForm()) {
+      setLoadingProgress(0);
       return;
     }
 
     setLoadingProgress(50);
-    console.log(formData);
-    setTimeout(() => {
-      setLoadingProgress(100);
-      setAlert({ message: "Item added successfully!", type: "success" });
-    }, 2000);
+
+    try {
+      const response = await fetch("/api/item/addItem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        setLoadingProgress(100);
+        setAlert({ message: "Item added successfully!", type: "success" });
+        setFormData({
+          itemName: "",
+          itemType: "Product",
+          locationId: [{ location: "", quantity: 0 }],
+          units: [{ category: "", value: 0, unit: "", description: "" }],
+          sellInfo: {
+            price: 0,
+            currency: "INR",
+          },
+          purchaseInfo: {
+            purchasePrice: 0,
+            purchaseCurrency: "INR",
+            vendorId: "",
+          },
+          gst: {
+            intraStateGST: 0,
+            interStateGST: 0,
+          },
+          taxPreference: "",
+          sku: "",
+          hsnOrSac: "",
+          stockValue: 0,
+        });
+
+        setTimeout(() => {
+          setLoadingProgress(0);
+          setAlert({ message: "Item added successfully!", type: "success" });
+        }, 1000);
+
+      } else {
+        setAlert({ message: result.message || "Failed to add item!", type: "error" });
+        setLoadingProgress(0);
+      }
+    } catch (error) {
+      setAlert({ message: "An error occurred while adding the item.", type: "error" });
+      setLoadingProgress(0);
+    }
   };
 
   return (
@@ -233,15 +346,20 @@ const AddItem = () => {
       <div className="flex flex-col relative h-full w-full text-start">
         <div className="flex flex-row items-center justify-between px-3 text-2xl py-2">
           <p>Add Item</p>
-          <Link to="/items" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
-            Items List
-          </Link>
+          <div className="flex">
+            <Link to="/items" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
+              Items List
+            </Link>
+            <Link to="/location" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
+              + Add New Location
+            </Link>
+          </div>
         </div>
 
         <hr />
 
         <form className="h-full overflow-scroll" onSubmit={handleSubmit}>
-          <div className="flex flex-wrap p-4">
+          <div className="flex flex-wrap p-4 mb-10">
             {/* Item Type */}
             <div className="text-gray-700 text-sm h-fit m-2">
               <div className="flex mb-2">
@@ -346,7 +464,6 @@ const AddItem = () => {
                   id="sellCurrency"
                   label="Sell Currency"
                   value={formData.sellInfo.currency}
-                  required
                   options={[{ value: "INR", label: "INR" }]}
                   onChange={(e) => handleChange("sellInfo.currency", e.target.value)}
                 />
@@ -370,7 +487,6 @@ const AddItem = () => {
                   label="Purchase Currency"
                   options={[{ value: "INR", label: "INR" }]}
                   onChange={(e) => handleChange("purchaseInfo.purchaseCurrency", e.target.value)}
-                  required
                   value={formData.purchaseInfo.purchaseCurrency}
                 />
                 <SelectInput
@@ -457,7 +573,6 @@ const AddItem = () => {
                       type="number"
                       value={unit.value || ""}
                       placeholder="Enter Value"
-                      required
                       onChange={(e) => handleChange(`units[${index}].value`, e.target.value)}
                     />
 
@@ -502,7 +617,7 @@ const AddItem = () => {
 
                 {/* Add Unit Button */}
                 {formData.units.length < MAX_UNITS && (
-                  <div onClick={addUnits} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-300 text-sm hover:underline cursor-pointer">
+                  <div onClick={addUnits} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
                     <p>
                       + Add Another Unit
                     </p>
@@ -520,7 +635,7 @@ const AddItem = () => {
                       id={`storage-${index}-location`}
                       label="Location"
                       value={locationId.location || ""}
-                      required
+                      required={formData.locationId.length > 1} // Add required conditionally
                       onChange={(e) => handleChange(`locationId[${index}].location`, e.target.value)}
                       options={[
                         { label: "warehouse", value: "Warehouse" },
@@ -533,11 +648,13 @@ const AddItem = () => {
                       label="Quantity"
                       placeholder="Quantity"
                       value={locationId.quantity}
+                      required={formData.locationId.length > 1} // Add required conditionally
                       onChange={(e) => handleChange(`locationId[${index}].quantity`, e.target.value)}
                     />
+
                     <button
                       type="button"
-                      className="ml-2 p-1 text-red-500"
+                      className=" p-1 text-sm text-red-500"
                       onClick={() => removeStorageLocation(index)}
                     >
                       Remove
@@ -546,7 +663,7 @@ const AddItem = () => {
                 ))}
                 {/* Add Unit Button */}
                 {formData.locationId?.length < MAX_UNITS && (
-                  <div onClick={addStorageLocation} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-300 text-sm hover:underline cursor-pointer">
+                  <div onClick={addStorageLocation} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
                     <p>+ Add Another Unit</p>
                   </div>
                 )}

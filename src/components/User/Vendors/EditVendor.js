@@ -482,11 +482,11 @@ const EditVendor = () => {
                                 {/* Notes */}
                                 <div className="flex flex-col m-2">
                                     <label htmlFor="notes" className="block text-gray-700 text-sm mb-2">
-                                        Notes:
+                                        Notes
                                     </label>
                                     <textarea
                                         id="notes"
-                                        className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
+                                        className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                                         rows="4"
                                         value={vendor.notes}
                                         onChange={(e) => handleChange("notes", e.target.value)}
