@@ -12,7 +12,7 @@ const AddItem = () => {
   const [activeTab, setActiveTab] = useState("Sell");
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [alert, setAlert] = useState(null);
-  const [vendors, setVendors] = useState([]); // List of vendors
+  const [vendors, setVendors] = useState([]);
   const [formData, setFormData] = useState({
     itemName: "",
     itemType: "Product",
