@@ -347,8 +347,8 @@ const AddItem = () => {
         <div className="flex flex-row items-center justify-between px-3 text-2xl py-2">
           <p>Add Item</p>
           <div className="flex">
-            <Link to="/location" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
-              + Add New Location
+            <Link to="/addstorage" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
+              + Add Storage
             </Link>
             <Link to="/items" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
               Items List
