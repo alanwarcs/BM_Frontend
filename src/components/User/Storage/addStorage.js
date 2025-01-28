@@ -11,11 +11,11 @@ const AddStorage = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState({
+    storageType: "",
     storageName: "",
-    capacity: "",
     storageAddress: "",
-    capacityUnit: "units", // Default unit
-    storageType: "warehouse", // Default type
+    capacity: "",
+    capacityUnit: "",
   });
 
   // Handle form field changes
@@ -39,7 +39,7 @@ const AddStorage = () => {
       setLoadingProgress(50);
 
       // Send data to the backend
-      const response = await axios.post("/api/storage", formData);
+      const response = await axios.post("/api/storage/addstorage", formData);
       setLoadingProgress(100);
 
       if (response.data.success) {
@@ -49,9 +49,13 @@ const AddStorage = () => {
           storageName: "",
           capacity: "",
           storageAddress: "",
-          capacityUnit: "units",
-          storageType: "warehouse",
+          capacityUnit: "",
+          storageType: "",
         });
+
+        setTimeout(() => {
+          setLoadingProgress(0);
+        }, 1000);
       } else {
         setAlert({ message: response.data.message || "Failed to add storage.", type: "error" });
       }
