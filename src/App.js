@@ -13,6 +13,7 @@ import Vendor from './components/User/Vendors/Vendor';
 import EditVendor from './components/User/Vendors/EditVendor';
 import ViewVendor from './components/User/Vendors/ViewVendor';
 import AddItem from './components/User/Items/addItem';
+import Storage from './components/User/Storage/Storage';
 import AddStorage from './components/User/Storage/addStorage';
 
 function App() {
@@ -70,6 +71,11 @@ function App() {
               element={<ProtectedRoute component={AddItem} isAuthenticatedPage={true} />}
             />
             
+            <Route
+              path="/storage"
+              element={<ProtectedRoute component={Storage} isAuthenticatedPage={true} />}
+            />
+
             <Route
               path="/addstorage"
               element={<ProtectedRoute component={AddStorage} isAuthenticatedPage={true} />}

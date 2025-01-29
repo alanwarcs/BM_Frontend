@@ -77,7 +77,7 @@ const AddStorage = () => {
           <p>Add Storage</p>
           <div className="flex">
             <Link
-              to="/storage-list"
+              to="/storage"
               className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400"
             >
               Storage List
