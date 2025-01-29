@@ -15,8 +15,6 @@ const Storage = () => {
     const [selectedrStorage, setSelectedStorage] = useState({});
     const [openDropdown, setOpenDropdown] = useState(null);
     const [openFilterDropdown, setOpenFilterDropdown] = useState(false);
-    const [openFieldDropdown, setOpenFieldDropdown] = useState(false);
-    const [selectedFields, setSelectedFields] = useState([]);
     const [appliedFilter, setAppliedFilter] = useState({});
     const [filter, setFilter] = useState({
         search: '',
@@ -28,7 +26,6 @@ const Storage = () => {
     const filterRef = useRef(null);
     const filterButtonRef = useRef(null);
     const printButtonRef = useRef(null);
-    const fieldDropDownRef = useRef(null);
 
     // Fetch all Storage's or based on Filter and search
     const fetchStorage = useCallback(async (page = 1) => {
@@ -61,7 +58,7 @@ const Storage = () => {
             setTimeout(() => setLoadingProgress(0), 1000);
         }
     }, [appliedFilter]);
-    console.log(storage);
+
     //Handle Click Outside Ref
     const handleClickOutside = (event) => {
         // Close filter dropdown if clicking outside
@@ -73,16 +70,22 @@ const Storage = () => {
         ) {
             setOpenFilterDropdown(false);
         }
+    };
 
-        // Close field dropdown if clicking outside
-        if (
-            fieldDropDownRef.current &&
-            !fieldDropDownRef.current.contains(event.target) &&
-            printButtonRef.current &&
-            !printButtonRef.current.contains(event.target)
-        ) {
-            setOpenFieldDropdown(false);
-        }
+    //If User made changers on Filter Set Filter
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilter((prevFilter) => ({
+            ...prevFilter,
+            [name]: value,
+        }));
+    };
+
+    //Apply Filters and set all filter to applyFilter and fatch data
+    const handleApplyFilters = (e) => {
+        e.preventDefault();
+        setAppliedFilter(filter);
+        setCurrentPage(1);
     };
 
     // Fetch data on component mount and when filters or currentPage change
@@ -98,6 +101,12 @@ const Storage = () => {
         };
     }, []);
 
+    //Handle page change in Pagination
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     return (
         <UserLayout>
@@ -116,7 +125,7 @@ const Storage = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-search"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
                             </button>
                             {openFilterDropdown && (
-                                <form className='flex absolute items-end top-10 right-0 mt-2 p-2 z-10 bg-white border rounded-md shadow' ref={filterRef}>
+                                <form onSubmit={handleApplyFilters} className='flex absolute items-end top-10 right-0 mt-2 p-2 z-10 bg-white border rounded-md shadow' ref={filterRef}>
                                     <div className='flex items-end'>
                                         <div className="flex flex-col m-2">
                                             <label htmlFor="Search" className="block text-gray-700 text-sm mb-2">
@@ -129,7 +138,7 @@ const Storage = () => {
                                                 className="w-[250px] h-[35px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
                                                 placeholder="Search"
                                                 value={filter.search}
-
+                                                onChange={handleFilterChange}
                                             />
                                         </div>
                                         <div className="flex flex-col m-2">
@@ -141,7 +150,7 @@ const Storage = () => {
                                                 name="storageType" // Add this
                                                 className="w-[250px] h-[35px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
                                                 value={filter.storageType}
-
+                                                onChange={handleFilterChange}
                                             >
                                                 <option value="" disabled>Select</option>
                                                 <option value="warehouse">Warehouse</option>
@@ -159,10 +168,129 @@ const Storage = () => {
                             )}
                         </div>
 
+                        {selectedrStorage && (
+                            <div className="flex flex-cols items-center">
+                                {Object.values(selectedrStorage).some((isSelected) => isSelected) && (
+                                    <div className='flex flex-cols items-center'>
+                                        <button className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition' ref={printButtonRef}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
+                                        </button>
+                                        <button className='flex items-center relative m-1 rounded-md text-red-500 text-sm font-light hover:outline-none transition'>
+                                            <div className='flex items-center p-2'>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                     </div>
                 </div>
 
                 <hr />
+
+                <div className="text-center h-full w-full overflow-scroll">
+                    {storage.length > 0 ? (
+                        <div className="relative w-full h-full overflow-x-auto">
+                            <table className="w-full whitespace-nowrap text-sm text-left rtl:text-right">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2">
+                                            <input
+                                                type="checkbox"
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    const allSelected = storage.reduce((acc, storage) => {
+                                                        acc[storage._id] = checked;
+                                                        return acc;
+                                                    }, {});
+                                                    setSelectedStorage(allSelected);
+                                                }}
+                                                checked={storage.every((storage) => selectedrStorage[storage._id])}
+                                            />
+                                        </th>
+                                        <th className="px-6 py-2">Storage Name</th>
+                                        <th className="px-6 py-2">Storage Type</th>
+                                        <th className="px-6 py-2">Address</th>
+                                        <th className="px-6 py-2">Capicity</th>
+                                        <th className="px-6 py-2"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {storage.map((storage) => (
+                                        <tr key={storage._id} className="bg-white border-b">
+                                            <td className="px-4 py-2">
+                                                <input
+                                                    type="checkbox"
+                                                    onChange={() => setSelectedStorage((prev) => ({
+                                                        ...prev,
+                                                        [storage._id]: !prev[storage._id],
+                                                    }))}
+                                                    checked={!!selectedrStorage[storage._id]}
+                                                />
+                                            </td>
+                                            <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap">
+                                                {storage.storageName || '-'}
+                                            </td>
+                                            <td className="px-6 py-2">
+                                                {storage.storageType || '-'}
+                                            </td>
+                                            <td className="px-6 py-2">{storage.storageAddress || '-'}</td>
+                                            <td className="px-6 py-2">
+                                                {storage.capacity ? `${storage.capacity} ${storage.capacityUnit}` : '-'}
+                                            </td>
+
+                                            <td className="relative px-6 py-2">
+                                                <button
+                                                    className="text-gray-600 focus:outline-none"
+                                                    onClick={() =>
+                                                        setOpenDropdown((prev) => (prev === storage._id ? null : storage._id))
+                                                    }
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ellipsis-vertical" >
+                                                        <circle cx="12" cy="12" r="1" />
+                                                        <circle cx="12" cy="5" r="1" />
+                                                        <circle cx="12" cy="19" r="1" />
+                                                    </svg>
+                                                </button>
+                                                {openDropdown === storage._id && (
+                                                    <div className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
+                                                        <button
+                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
+                                                            onClick={() => navigate(`/editstorage/${storage._id}`)}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
+                                                            onClick={() => navigate(`/storage/${storage._id}`)}
+                                                        >
+                                                            View
+                                                        </button>
+                                                        <button
+                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
+                                                        // onClick={() => deleteVendor(storage._id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-40">
+                            <p className="m-2 text-gray-400">No Storage found for this business.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Pagination Controls */}
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
             </div>
 
             {alert && <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />}
