@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import UserLayout from '../ReusableComponents/UserLayout';
+import TextInput from "../ReusableComponents/TextInput";
+import SelectInput from "../ReusableComponents/SelectInput";
 import LoadingBar from '../../LoadingBar';
 import Pagination from '../ReusableComponents/Pagination';
 import Alert from '../../Alert';
@@ -12,7 +14,8 @@ const Storage = () => {
     const [storage, setStorage] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [selectedrStorage, setSelectedStorage] = useState({});
+    const [selectedStorage, setSelectedStorage] = useState({});
+    const [selectedStorageToView, setSelectedStorageToView] = useState();
     const [openDropdown, setOpenDropdown] = useState(null);
     const [openFilterDropdown, setOpenFilterDropdown] = useState(false);
     const [appliedFilter, setAppliedFilter] = useState({});
@@ -21,11 +24,8 @@ const Storage = () => {
         storageType: '',
     });
 
-    const navigate = useNavigate();
-
     const filterRef = useRef(null);
     const filterButtonRef = useRef(null);
-    const printButtonRef = useRef(null);
 
     // Fetch all Storage's or based on Filter and search
     const fetchStorage = useCallback(async (page = 1) => {
@@ -108,6 +108,65 @@ const Storage = () => {
         }
     };
 
+    // Function to delete all storage
+    const deleteStorage = async (storageId) => {
+        try {
+            setLoadingProgress(30);
+            const response = await axios.delete(`/api/storage/deleteStorage/${storageId}`);
+            setLoadingProgress(70);
+
+            if (response.data.success) {
+                setAlert({ message: 'storage deleted successfully!', type: 'success' });
+                fetchStorage(currentPage);
+            } else {
+                setAlert({ message: response.data.message, type: 'error' });
+            }
+            setLoadingProgress(100);
+            setTimeout(() => setLoadingProgress(0), 1000);
+        } catch (error) {
+            setLoadingProgress(100);
+            setAlert({ message: 'Error deleting storage. Please try again.', type: 'error' });
+        }
+    };
+
+    // Function to delete selected Storage
+    const deleteSelectedStorage = async () => {
+        try {
+            const selectedIds = Object.keys(selectedStorage).filter(
+                (storageId) => selectedStorage[storageId]
+            );
+
+            if (selectedIds.length === 0) {
+                setAlert({ message: 'No storage selected for deletion.', type: 'warning' });
+                return;
+            }
+
+            const isConfirmed = window.confirm("Are you sure you want to delete the selected storage?");
+            if (!isConfirmed) {
+                return;
+            }
+
+            setLoadingProgress(30);
+
+            const deletePromises = selectedIds.map((storageId) =>
+                axios.delete(`/api/storage/deleteStorage/${storageId}`)
+            );
+
+            await Promise.all(deletePromises);
+
+            setAlert({ message: 'Selected storage deleted successfully!', type: 'success' });
+            fetchStorage(currentPage);
+        } catch (error) {
+            setAlert({
+                message: error.response?.data?.message || 'Error deleting selected storage. Please try again.',
+                type: 'error',
+            });
+        } finally {
+            setLoadingProgress(100);
+            setTimeout(() => setLoadingProgress(0), 1000);
+        }
+    };
+
     return (
         <UserLayout>
             {loadingProgress > 0 && loadingProgress < 100 && <LoadingBar progress={loadingProgress} />}
@@ -168,14 +227,11 @@ const Storage = () => {
                             )}
                         </div>
 
-                        {selectedrStorage && (
+                        {selectedStorage && (
                             <div className="flex flex-cols items-center">
-                                {Object.values(selectedrStorage).some((isSelected) => isSelected) && (
+                                {Object.values(selectedStorage).some((isSelected) => isSelected) && (
                                     <div className='flex flex-cols items-center'>
-                                        <button className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition' ref={printButtonRef}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
-                                        </button>
-                                        <button className='flex items-center relative m-1 rounded-md text-red-500 text-sm font-light hover:outline-none transition'>
+                                        <button onClick={deleteSelectedStorage} className='flex items-center relative m-1 rounded-md text-red-500 text-sm font-light hover:outline-none transition'>
                                             <div className='flex items-center p-2'>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
                                             </div>
@@ -207,7 +263,7 @@ const Storage = () => {
                                                     }, {});
                                                     setSelectedStorage(allSelected);
                                                 }}
-                                                checked={storage.every((storage) => selectedrStorage[storage._id])}
+                                                checked={storage.every((storage) => selectedStorage[storage._id])}
                                             />
                                         </th>
                                         <th className="px-6 py-2">Storage Name</th>
@@ -227,7 +283,7 @@ const Storage = () => {
                                                         ...prev,
                                                         [storage._id]: !prev[storage._id],
                                                     }))}
-                                                    checked={!!selectedrStorage[storage._id]}
+                                                    checked={!!selectedStorage[storage._id]}
                                                 />
                                             </td>
                                             <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap">
@@ -258,19 +314,13 @@ const Storage = () => {
                                                     <div className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                            onClick={() => navigate(`/editstorage/${storage._id}`)}
+                                                            onClick={() => setSelectedStorageToView(storage._id)}
                                                         >
                                                             Edit
                                                         </button>
                                                         <button
-                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                            onClick={() => navigate(`/storage/${storage._id}`)}
-                                                        >
-                                                            View
-                                                        </button>
-                                                        <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
-                                                        // onClick={() => deleteVendor(storage._id)}
+                                                            onClick={() => deleteStorage(storage._id)}
                                                         >
                                                             Delete
                                                         </button>
@@ -288,6 +338,82 @@ const Storage = () => {
                         </div>
                     )}
                 </div>
+
+                {selectedStorageToView && (
+                    <div className='flex absolute items-center justify-center w-full h-full bg-black bg-opacity-50 z-20'>
+                        <div className=' bg-white rounded-md m-1 p-4'>
+                            <div className='flex items-center justify-between w-full'>
+                                <p className='text-xl font-medium'>Edit Storage</p>
+                                <button onClick={() => setSelectedStorageToView()}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-x"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
+                                </button>
+                            </div>
+                            <form className='block w-fit'>
+                                <div className='flex flex-col md:flex-row w-fit'>
+                                    {/* Storage Type */}
+                                    <SelectInput
+                                        id="storageType"
+                                        label="Storage Type"
+                                        required
+                                        options={[
+                                            { value: "warehouse", label: "Warehouse" },
+                                            { value: "cold storage", label: "Cold Storage" },
+                                            { value: "retail store", label: "Retail Store" },
+                                            { value: "distribution center", label: "Distribution Center" },
+                                            { value: "other", label: "Other" },
+                                        ]}
+                                    />
+                                    {/* Storage Name */}
+                                    <TextInput
+                                        label="Storage Name"
+                                        id="storageName"
+                                        placeholder="Enter storage name"
+                                        required
+                                    />
+                                </div>
+
+                                <div className='flex flex-col md:flex-row w-fit'>
+                                    {/* Capacity */}
+                                    <TextInput
+                                        label="Capacity"
+                                        id="capacity"
+                                        placeholder="Enter capacity"
+                                        type="number"
+                                    />
+                                    {/* Capacity Unit */}
+                                    <SelectInput
+                                        id="capacityUnit"
+                                        label="Capacity Unit"
+                                        required
+                                        options={[
+                                            { value: "units", label: "Units" },
+                                            { value: "kg", label: "Kilograms" },
+                                            { value: "liters", label: "Liters" },
+                                            { value: "cubic meters", label: "Cubic Meters" },
+                                        ]}
+                                    />
+                                </div>
+                                {/* Address */}
+                                <div className="flex flex-col m-2 w-fit">
+                                    <label htmlFor="storageAddress" className="block text-gray-700 text-sm mb-2">
+                                        Address
+                                    </label>
+                                    <textarea
+                                        id="storageAddress"
+                                        className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+                                        rows="4"
+                                        placeholder="Enter storage address"
+                                        required
+                                    ></textarea>
+                                </div>
+
+                                <button type="submit" className="rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-2 px-2 text-white text-[16px]">
+                                    Submit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 {/* Pagination Controls */}
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
