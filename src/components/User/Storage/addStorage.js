@@ -21,23 +21,70 @@ const AddStorage = () => {
   // Handle form field changes
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData({ ...formData, [id]: value });
+
+    // Update form data
+    let updatedFormData = { ...formData, [id]: value };
+
+    // Clear capacityUnit if capacity is empty or 0
+    if (id === "capacity" && (!value || value <= 0)) {
+      updatedFormData = { ...updatedFormData, capacityUnit: null };
+    }
+
+    // Update the form data state
+    setFormData(updatedFormData);
+  };
+
+  // Validate Form Fields
+  const validateForm = () => {
+    if (!formData.storageType?.trim()) {
+      setAlert({
+        message: 'Storage Type is required.',
+        type: 'error',
+      });
+      return false;
+    }
+
+    if (!formData.storageName?.trim()) {
+      setAlert({
+        message: 'Storage Name is required.',
+        type: 'error',
+      });
+      return false;
+    }
+
+    if (formData.capacity && (isNaN(formData.capacity) || formData.capacity <= 0)) {
+      setAlert({
+        message: 'Capacity must be a positive number.',
+        type: 'error',
+      });
+      return false;
+    }
+
+    if (formData.capacity?.trim() && !formData.capacityUnit?.trim()) {
+      setAlert({
+        message: 'Capacity Unit is required if capacity is provided.',
+        type: 'error',
+      });
+      return false;
+    }
+
+    return true;
   };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setLoadingProgress(30);
 
+    if (!validateForm()) {
+      setLoadingProgress(0);
+      return;
+    }
+
+    setLoadingProgress(50);
+
     try {
-      // Validate form data
-      if (!formData.storageName || !formData.capacity || !formData.storageAddress) {
-        setAlert({ message: "All fields are required!", type: "error" });
-        return;
-      }
-
-      setLoadingProgress(50);
-
       // Send data to the backend
       const response = await axios.post("/api/storage/addstorage", formData);
       setLoadingProgress(100);
@@ -96,7 +143,7 @@ const AddStorage = () => {
               id="storageType"
               label="Storage Type"
               required
-              value={formData.storageType}
+              value={formData.storageType || ""}
               onChange={handleChange}
               options={[
                 { value: "warehouse", label: "Warehouse" },
@@ -131,9 +178,10 @@ const AddStorage = () => {
             <SelectInput
               id="capacityUnit"
               label="Capacity Unit"
-              required
-              value={formData.capacityUnit}
+              required={!!formData.capacity}  // Conditionally required
+              value={formData.capacityUnit || ""}
               onChange={handleChange}
+              disabled={!formData.capacity}  // Disable if capacity is empty or 0
               options={[
                 { value: "units", label: "Units" },
                 { value: "kg", label: "Kilograms" },
@@ -154,7 +202,6 @@ const AddStorage = () => {
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                 rows="4"
                 placeholder="Enter storage address"
-                required
               ></textarea>
             </div>
           </div>

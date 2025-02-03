@@ -191,6 +191,7 @@ const Vendor = () => {
             setAlert({ message: 'Error printing vendor. Please try again.', type: 'error' });
         }
     };
+    
     const handlePrintSubmit = (e) => {
         e.preventDefault();
         handlePrintSelectedVendors(selectedVendors, selectedFields);

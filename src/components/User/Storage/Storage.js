@@ -179,10 +179,52 @@ const Storage = () => {
         }
     };
 
+    // Validate Form Fields
+    const validateForm = () => {
+        if (!selectedStorageToView?.storageType) {
+            setAlert({
+                message: 'Storage Type is required.',
+                type: 'error',
+            });
+            return false;
+        }
+
+        if (!selectedStorageToView?.storageName) {
+            setAlert({
+                message: 'Storage Name is required.',
+                type: 'error',
+            });
+            return false;
+        }
+
+        if (selectedStorageToView?.capacity && (isNaN(selectedStorageToView?.capacity) || selectedStorageToView?.capacity <= 0)) {
+            setAlert({
+                message: 'Capacity must be a positive number.',
+                type: 'error',
+            });
+            return false;
+        }
+
+        if (selectedStorageToView?.capacity && !selectedStorageToView?.capacityUnit) {
+            setAlert({
+                message: 'Capacity Unit is required if capacity is provided.',
+                type: 'error',
+            });
+            return false;
+        }
+
+        return true;
+    };
+
     // Function to Update selected Storage
     const handleUpdateSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission
-
+        e.preventDefault();
+        setLoadingProgress(30);
+        if (!validateForm()) {
+            setLoadingProgress(0);
+            return;
+        }
+        setLoadingProgress(50);
         try {
             if (!selectedStorageToView?._id) {
                 setAlert({ message: "Storage ID is missing.", type: "error" });
@@ -424,13 +466,22 @@ const Storage = () => {
                                         placeholder="Enter capacity"
                                         type="number"
                                         value={selectedStorageToView?.capacity || ''}
-                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, capacity: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setSelectedStorageToView({
+                                                ...selectedStorageToView,
+                                                capacity: value,
+                                                // Clear capacityUnit if capacity is empty or 0
+                                                capacityUnit: value ? selectedStorageToView.capacityUnit : null,
+                                            });
+                                        }}
                                     />
                                     <SelectInput
                                         id="capacityUnit"
                                         label="Capacity Unit"
-                                        required
+                                        required={!!selectedStorageToView?.capacity}
                                         value={selectedStorageToView?.capacityUnit || ''}
+                                        disabled={!selectedStorageToView?.capacity}  // Disable if capacity is empty or 0
                                         options={[
                                             { value: "units", label: "Units" },
                                             { value: "kg", label: "Kilograms" },
@@ -450,7 +501,6 @@ const Storage = () => {
                                         className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                                         rows="4"
                                         placeholder="Enter storage address"
-                                        required
                                         value={selectedStorageToView?.storageAddress || ''}
                                         onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageAddress: e.target.value })}
                                     ></textarea>

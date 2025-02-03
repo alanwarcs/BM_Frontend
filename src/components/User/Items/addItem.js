@@ -12,6 +12,7 @@ const AddItem = () => {
   const [activeTab, setActiveTab] = useState("Sell");
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [alert, setAlert] = useState(null);
+  const [storage, setStorage] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [formData, setFormData] = useState({
     itemName: "",
@@ -40,7 +41,7 @@ const AddItem = () => {
   const MAX_UNITS = 4;
   const MAX_STORAGE = 4;
 
-  // Fetch vendors from backend
+  // Fetch vendors and storages from backend
   useEffect(() => {
     const fetchVendors = async () => {
       try {
@@ -51,6 +52,16 @@ const AddItem = () => {
       }
     };
 
+    const fetchStorage = async () => {
+      try {
+        const response = await axios.get('/api/storage/'); // Replace with your actual endpoint
+        setStorage(response.data.data.storage);
+      } catch (error) {
+        setAlert({ message: "Failed to load storage.", type: "error" });  // Changed error message here
+      }
+    };
+
+    fetchStorage();
     fetchVendors();
   }, []);
 
@@ -617,7 +628,7 @@ const AddItem = () => {
 
                 {/* Add Unit Button */}
                 {formData.units.length < MAX_UNITS && (
-                  <div onClick={addUnits} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
+                  <div onClick={addUnits} className="flex justify-center items-center max-h-20 m-10 p-10 border border-dashed border-gray-300 rounded-md text-center bg-gray-50 text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
                     <p>
                       + Add Another Unit
                     </p>
@@ -637,9 +648,10 @@ const AddItem = () => {
                       value={locationId.location || ""}
                       required={formData.locationId.length > 1} // Add required conditionally
                       onChange={(e) => handleChange(`locationId[${index}].location`, e.target.value)}
-                      options={[
-                        { label: "warehouse", value: "Warehouse" },
-                      ]}
+                      options={storage.map((storage) => ({
+                        value: storage._id,
+                        label: storage.storageName,
+                      }))}
                     />
 
                     <TextInput
@@ -663,7 +675,7 @@ const AddItem = () => {
                 ))}
                 {/* Add Unit Button */}
                 {formData.locationId?.length < MAX_UNITS && (
-                  <div onClick={addStorageLocation} className="flex justify-center items-center m-10 p-10 border border-dashed border-gray-300 rounded-md text-center text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
+                  <div onClick={addStorageLocation} className="flex justify-center items-center max-h-20 m-10 p-10 border border-dashed border-gray-300 rounded-md text-center bg-gray-50 text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
                     <p>+ Add Another Unit</p>
                   </div>
                 )}
