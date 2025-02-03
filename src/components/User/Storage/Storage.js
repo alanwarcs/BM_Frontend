@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import UserLayout from '../ReusableComponents/UserLayout';
 import TextInput from "../ReusableComponents/TextInput";
 import SelectInput from "../ReusableComponents/SelectInput";
@@ -26,6 +26,8 @@ const Storage = () => {
 
     const filterRef = useRef(null);
     const filterButtonRef = useRef(null);
+    const editorRef = useRef(null);
+    const editorButtonRef = useRef(null);
 
     // Fetch all Storage's or based on Filter and search
     const fetchStorage = useCallback(async (page = 1) => {
@@ -59,7 +61,7 @@ const Storage = () => {
         }
     }, [appliedFilter]);
 
-    //Handle Click Outside Ref
+    // Updated handleClickOutside
     const handleClickOutside = (event) => {
         // Close filter dropdown if clicking outside
         if (
@@ -69,6 +71,16 @@ const Storage = () => {
             !filterButtonRef.current.contains(event.target)
         ) {
             setOpenFilterDropdown(false);
+        }
+
+        // Close edit dropdown if clicking outside
+        if (
+            editorRef.current &&
+            !editorRef.current.contains(event.target) &&
+            editorButtonRef.current &&
+            !editorButtonRef.current.contains(event.target)
+        ) {
+            setOpenDropdown(null);  // Corrected usage of setter function
         }
     };
 
@@ -167,6 +179,36 @@ const Storage = () => {
         }
     };
 
+    // Function to Update selected Storage
+    const handleUpdateSubmit = async (e) => {
+        e.preventDefault(); // Prevent default form submission
+
+        try {
+            if (!selectedStorageToView?._id) {
+                setAlert({ message: "Storage ID is missing.", type: "error" });
+                return;
+            }
+
+            const response = await axios.put(
+                `/api/storage/updateStorage/${selectedStorageToView._id}`, // API endpoint
+                selectedStorageToView // Data to be updated
+            );
+
+            if (response.data.success) {
+                setAlert({ message: "Storage updated successfully!", type: "success" });
+                setSelectedStorageToView(null); // Close the modal after successful update
+
+                // Refetch the storage list upon successful update
+                fetchStorage(currentPage); // Pass the current page to keep the pagination intact
+            } else {
+                setAlert({ message: "Failed to update storage.", type: "error" });
+            }
+        } catch (error) {
+            console.error('Error updating storage:', error);
+            setAlert({ message: "An error occurred while updating storage.", type: "error" });
+        }
+    };
+
     return (
         <UserLayout>
             {loadingProgress > 0 && loadingProgress < 100 && <LoadingBar progress={loadingProgress} />}
@@ -249,7 +291,7 @@ const Storage = () => {
                 <div className="text-center h-full w-full overflow-scroll">
                     {storage.length > 0 ? (
                         <div className="relative w-full h-full overflow-x-auto">
-                            <table className="w-full whitespace-nowrap text-sm text-left rtl:text-right">
+                            <table className="w-full whitespace-nowrap text-sm text-left rtl:text-right capitalize">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-2">
@@ -299,6 +341,7 @@ const Storage = () => {
 
                                             <td className="relative px-6 py-2">
                                                 <button
+                                                    ref={editorButtonRef}
                                                     className="text-gray-600 focus:outline-none"
                                                     onClick={() =>
                                                         setOpenDropdown((prev) => (prev === storage._id ? null : storage._id))
@@ -311,10 +354,10 @@ const Storage = () => {
                                                     </svg>
                                                 </button>
                                                 {openDropdown === storage._id && (
-                                                    <div className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
+                                                    <div ref={editorRef} className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                            onClick={() => setSelectedStorageToView(storage._id)}
+                                                            onClick={() => setSelectedStorageToView(storage)}
                                                         >
                                                             Edit
                                                         </button>
@@ -341,20 +384,20 @@ const Storage = () => {
 
                 {selectedStorageToView && (
                     <div className='flex absolute items-center justify-center w-full h-full bg-black bg-opacity-50 z-20'>
-                        <div className=' bg-white rounded-md m-1 p-4'>
+                        <div className='bg-white rounded-md m-1 p-4'>
                             <div className='flex items-center justify-between w-full'>
                                 <p className='text-xl font-medium'>Edit Storage</p>
-                                <button onClick={() => setSelectedStorageToView()}>
+                                <button onClick={() => setSelectedStorageToView(null)}>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-x"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
                                 </button>
                             </div>
-                            <form className='block w-fit'>
+                            <form onSubmit={handleUpdateSubmit} className='block w-fit'>
                                 <div className='flex flex-col md:flex-row w-fit'>
-                                    {/* Storage Type */}
                                     <SelectInput
                                         id="storageType"
                                         label="Storage Type"
                                         required
+                                        value={selectedStorageToView?.storageType || ''}
                                         options={[
                                             { value: "warehouse", label: "Warehouse" },
                                             { value: "cold storage", label: "Cold Storage" },
@@ -362,38 +405,42 @@ const Storage = () => {
                                             { value: "distribution center", label: "Distribution Center" },
                                             { value: "other", label: "Other" },
                                         ]}
+                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageType: e.target.value })}
                                     />
-                                    {/* Storage Name */}
                                     <TextInput
                                         label="Storage Name"
                                         id="storageName"
                                         placeholder="Enter storage name"
                                         required
+                                        value={selectedStorageToView?.storageName || ''}
+                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageName: e.target.value })}
                                     />
                                 </div>
 
                                 <div className='flex flex-col md:flex-row w-fit'>
-                                    {/* Capacity */}
                                     <TextInput
                                         label="Capacity"
                                         id="capacity"
                                         placeholder="Enter capacity"
                                         type="number"
+                                        value={selectedStorageToView?.capacity || ''}
+                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, capacity: e.target.value })}
                                     />
-                                    {/* Capacity Unit */}
                                     <SelectInput
                                         id="capacityUnit"
                                         label="Capacity Unit"
                                         required
+                                        value={selectedStorageToView?.capacityUnit || ''}
                                         options={[
                                             { value: "units", label: "Units" },
                                             { value: "kg", label: "Kilograms" },
                                             { value: "liters", label: "Liters" },
                                             { value: "cubic meters", label: "Cubic Meters" },
                                         ]}
+                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, capacityUnit: e.target.value })}
                                     />
                                 </div>
-                                {/* Address */}
+
                                 <div className="flex flex-col m-2 w-fit">
                                     <label htmlFor="storageAddress" className="block text-gray-700 text-sm mb-2">
                                         Address
@@ -404,6 +451,8 @@ const Storage = () => {
                                         rows="4"
                                         placeholder="Enter storage address"
                                         required
+                                        value={selectedStorageToView?.storageAddress || ''}
+                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageAddress: e.target.value })}
                                     ></textarea>
                                 </div>
 

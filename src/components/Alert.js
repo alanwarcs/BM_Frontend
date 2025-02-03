@@ -26,7 +26,7 @@ const Alert = ({ message, type, handleClose }) => {
 
     return (
         <div
-            className={`fixed bottom-4 right-4 z-10 max-w-[600px] p-2 ${alertStyles} text-white items-center border-0 rounded-lg justify-center text-[14px] mx-2 flex transition-transform duration-200 ease-in-out transform ${
+            className={`fixed bottom-4 right-4 z-50 max-w-[600px] p-2 ${alertStyles} text-white items-center border-0 rounded-lg justify-center text-[14px] mx-2 flex transition-transform duration-200 ease-in-out transform ${
                 visible ? 'translate-x-0' : 'translate-x-full'
             }`}
         >

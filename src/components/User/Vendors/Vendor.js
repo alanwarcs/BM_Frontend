@@ -31,6 +31,8 @@ const Vendor = () => {
     const filterButtonRef = useRef(null);
     const printButtonRef = useRef(null);
     const fieldDropDownRef = useRef(null);
+    const editorRef = useRef(null);
+    const editorButtonRef = useRef(null);
 
     // Fetch all vendor's or based on Filter and search
     const fetchVendors = useCallback(async (page = 1) => {
@@ -84,6 +86,16 @@ const Vendor = () => {
             !printButtonRef.current.contains(event.target)
         ) {
             setOpenFieldDropdown(false);
+        }
+
+        // Close edit dropdown if clicking outside
+        if (
+            editorRef.current &&
+            !editorRef.current.contains(event.target) &&
+            editorButtonRef.current &&
+            !editorButtonRef.current.contains(event.target)
+        ) {
+            setOpenDropdown(null);  // Corrected usage of setter function
         }
     };
 
@@ -365,6 +377,7 @@ const Vendor = () => {
                                             <td className="px-6 py-2">{vendor.phone || '-'}</td>
                                             <td className="relative px-6 py-2">
                                                 <button
+                                                    ref={editorButtonRef}
                                                     className="text-gray-600 focus:outline-none"
                                                     onClick={() =>
                                                         setOpenDropdown((prev) => (prev === vendor._id ? null : vendor._id))
@@ -377,7 +390,7 @@ const Vendor = () => {
                                                     </svg>
                                                 </button>
                                                 {openDropdown === vendor._id && (
-                                                    <div className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
+                                                    <div ref={editorRef} className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
                                                             onClick={() => navigate(`/editvendor/${vendor._id}`)}

@@ -291,6 +291,11 @@ const UserLayout = ({ children }) => {
                                             View/Manage Inventory
                                         </a>
                                     </li>
+                                    <li className="text-start p-2">
+                                        <Link to="/storage">
+                                            Storage
+                                        </Link>
+                                    </li>
                                 </ul>
                             </div>
                         </li>
