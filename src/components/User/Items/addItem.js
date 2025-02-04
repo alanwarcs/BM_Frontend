@@ -12,27 +12,17 @@ const AddItem = () => {
   const [activeTab, setActiveTab] = useState("Sell");
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [alert, setAlert] = useState(null);
-  const [storage, setStorage] = useState([]);
+  const [availableStorage, setAvailableStorage] = useState([]); // Renamed to avoid conflict
   const [vendors, setVendors] = useState([]);
   const [formData, setFormData] = useState({
     itemName: "",
     itemType: "Product",
-    locationId: [{ location: "", quantity: 0 }],
+    storage: [{ storage: "", quantity: 0 }],
     units: [{ category: "", value: 0, unit: "", description: "" }],
-    sellInfo: {
-      price: 0,
-      currency: "INR"
-    },
-    purchaseInfo: {
-      purchasePrice: 0,
-      purchaseCurrency: "INR",
-      vendorId: ""
-    },
-    gst: {
-      intraStateGST: 0,
-      interStateGST: 0
-    },
-    taxPreference: "",
+    sellInfo: { price: 0, currency: "INR" },
+    purchaseInfo: { purchasePrice: 0, purchaseCurrency: "INR", vendorId: "" },
+    gst: { intraStateGST: 0, interStateGST: 0 },
+    taxPreference: "No GST",
     sku: "",
     hsnOrSac: "",
     stockValue: 0,
@@ -55,7 +45,7 @@ const AddItem = () => {
     const fetchStorage = async () => {
       try {
         const response = await axios.get('/api/storage/getList'); // Replace with your actual endpoint
-        setStorage(response.data.data.storage);
+        setAvailableStorage(response.data.data.storage);
       } catch (error) {
         setAlert({ message: "Failed to load storage.", type: "error" });  // Changed error message here
       }
@@ -64,9 +54,6 @@ const AddItem = () => {
     fetchStorage();
     fetchVendors();
   }, []);
-
-  console.log(vendors);
-  console.log(storage);
 
   const addUnits = () => {
     setFormData((prevData) => {
@@ -92,11 +79,11 @@ const AddItem = () => {
   // Add Storage Location
   const addStorageLocation = () => {
     setFormData((prevData) => {
-      const currentLocations = prevData.locationId || [];
+      const currentLocations = prevData.storage || [];
       if (currentLocations.length < MAX_STORAGE) {
         return {
           ...prevData,
-          locationId: [...currentLocations, { location: "", quantity: 0 }]
+          storage: [...currentLocations, { storage: "", quantity: 0 }]
         };
       } else {
         setAlert({ message: `You can only add up to ${MAX_STORAGE} storage locations.`, type: "error" });
@@ -109,11 +96,11 @@ const AddItem = () => {
   const removeStorageLocation = (index) => {
     setFormData((prevData) => {
       // Filter out the location being removed
-      const updatedLocations = prevData.locationId.filter((_, i) => i !== index);
+      const updatedLocations = prevData.storage.filter((_, i) => i !== index);
 
       // Recalculate total quantity based on the remaining locations
       const totalQuantity = updatedLocations.reduce(
-        (total, location) => total + (parseFloat(location.quantity) || 0),
+        (total, storage) => total + (parseFloat(storage.quantity) || 0),
         0
       );
 
@@ -124,7 +111,7 @@ const AddItem = () => {
       // Return updated form data
       return {
         ...prevData,
-        locationId: updatedLocations,
+        storage: updatedLocations,
         totalQuantity,
         stockValue,
       };
@@ -150,9 +137,9 @@ const AddItem = () => {
       const lastKey = keys[keys.length - 1];
       current[lastKey] = value;
 
-      // Calculate total quantity by summing up all the quantities in the locationId array
-      const totalQuantity = updatedData.locationId.reduce(
-        (total, location) => total + (parseFloat(location.quantity) || 0),
+      // Calculate total quantity by summing up all the quantities in the location Id array
+      const totalQuantity = updatedData.storage.reduce(
+        (total, storage) => total + (parseFloat(storage.quantity) || 0),
         0
       );
 
@@ -179,10 +166,36 @@ const AddItem = () => {
       return false;
     }
 
+    // Item Type
+    if (!formData.itemType) {
+      setAlert({
+        message: 'Item Type is required.',
+        type: 'error',
+      });
+      return false;
+    }
+
+    // Tax Preference
+    if (!formData.taxPreference) {
+      setAlert({
+        message: 'Tax Preference is required.',
+        type: 'error',
+      });
+      return false;
+    }
+
     // Sell Info
     if (!formData.sellInfo.price || formData.sellInfo.price <= 0) {
       setAlert({
         message: 'Sell Price must be greater than 0.',
+        type: 'error',
+      });
+      return false;
+    }
+
+    if (!formData.sellInfo.currency) {
+      setAlert({
+        message: 'Currency is required for Sell Price.',
         type: 'error',
       });
       return false;
@@ -197,40 +210,34 @@ const AddItem = () => {
       return false;
     }
 
+    if (!formData.purchaseInfo.purchaseCurrency) {
+      setAlert({
+        message: 'Currency is required for Purchase Price.',
+        type: 'error',
+      });
+      return false;
+    }
+
     // GST Info
-    if (!formData.taxPreference) {
-      setAlert({
-        message: 'Tax Preference is required.',
-        type: 'error',
-      });
-      return false;
-    }
-
     if (formData.taxPreference === "GST Inclusive") {
-      if (!formData.gst.intraStateGST) {
+      if (!formData.gst.intraStateGST || formData.gst.intraStateGST <= 0) {
         setAlert({
-          message: 'IntraState GST is required when Tax Preference is GST.',
+          message: 'IntraState GST must be a positive number when Tax Preference is GST Inclusive.',
           type: 'error',
         });
         return false;
       }
-      if (!formData.gst.interStateGST) {
+      if (!formData.gst.interStateGST || formData.gst.interStateGST <= 0) {
         setAlert({
-          message: 'InterState GST is required when Tax Preference is GST.',
+          message: 'InterState GST must be a positive number when Tax Preference is GST Inclusive.',
           type: 'error',
         });
         return false;
       }
     }
-
     // Units Validation
-    if (formData.units.length === 0) {
-      setAlert({
-        message: 'At least one unit is required.',
-        type: 'error',
-      });
-      return false;
-    } else {
+    if (formData.units.length > 1) {
+      // If there are multiple units, validate each one
       formData.units.forEach((unit, index) => {
         if (!unit.category) {
           errors[`unitsCategory${index}`] = `Category is required for unit ${index + 1}.`;
@@ -249,20 +256,28 @@ const AddItem = () => {
           return false;
         }
       });
+    } else if (formData.units.length === 0) {
+      // If no units are provided, allow it to pass without error
+      return true;
+    } else {
+      // If there is exactly one unit, skip validation for category and unit
+      return true;
     }
 
     // Storage Locations Validation
-    if (formData.locationId.length > 1) {
-      formData.locationId.forEach((location, index) => {
-        if (!location.location.trim()) {
-          errors[`location${index}`] = `Location is required for storage.`;
+    if (formData.storage.length > 0) {
+      formData.storage.forEach((storage, index) => {
+        // If location is provided, check for validity
+        if (storage.storage && !storage.storage.trim()) {
+          errors[`storage${index}`] = `Location is required for storage at location ${index + 1}.`;
           setAlert({
             message: `Location is required for storage at location ${index + 1}.`,
             type: 'error',
           });
           return false;
         }
-        if (!location.quantity || location.quantity <= 0) {
+        // If quantity is provided, check for validity
+        if (storage.quantity && (storage.quantity <= 0)) {
           errors[`quantity${index}`] = `Quantity must be greater than 0 for location ${index + 1}.`;
           setAlert({
             message: `Quantity must be greater than 0 for location ${index + 1}.`,
@@ -273,7 +288,7 @@ const AddItem = () => {
       });
     }
 
-    // Stocks and Storage
+    // Stock Value Validation
     if (!formData.stockValue && formData.stockValue !== 0) {
       setAlert({
         message: 'Stock Value is required.',
@@ -317,22 +332,12 @@ const AddItem = () => {
         setFormData({
           itemName: "",
           itemType: "Product",
-          locationId: [{ location: "", quantity: 0 }],
+          storage: [{ storage: "", quantity: 0 }],
           units: [{ category: "", value: 0, unit: "", description: "" }],
-          sellInfo: {
-            price: 0,
-            currency: "INR",
-          },
-          purchaseInfo: {
-            purchasePrice: 0,
-            purchaseCurrency: "INR",
-            vendorId: "",
-          },
-          gst: {
-            intraStateGST: 0,
-            interStateGST: 0,
-          },
-          taxPreference: "",
+          sellInfo: { price: 0, currency: "INR" },
+          purchaseInfo: { purchasePrice: 0, purchaseCurrency: "INR", vendorId: "" },
+          gst: { intraStateGST: 0, interStateGST: 0 },
+          taxPreference: "No GST",
           sku: "",
           hsnOrSac: "",
           stockValue: 0,
@@ -567,19 +572,6 @@ const AddItem = () => {
               <div className="flex flex-wrap">
                 {formData.units.map((unit, index) => (
                   <div key={index} className="block">
-                    {/* Category Select */}
-                    <SelectInput
-                      id={`category-${index}`}
-                      label="Category"
-                      value={unit.category || ""}
-                      required
-                      options={measurementCategories.measurementCategories.map((category) => ({
-                        label: category.categoryName,
-                        value: category.categoryName.toLowerCase(),
-                      }))}
-                      onChange={(e) => handleChange(`units[${index}].category`, e.target.value)}
-                    />
-
                     {/* Value Input */}
                     <TextInput
                       label="Value"
@@ -590,13 +582,28 @@ const AddItem = () => {
                       onChange={(e) => handleChange(`units[${index}].value`, e.target.value)}
                     />
 
+                    {/* Category Select */}
+                    <SelectInput
+                      id={`category-${index}`}
+                      label="Category"
+                      value={unit.category || ""}
+                      required={unit.value > 0}  // Only required if value is entered
+                      disabled={unit.value <= 0} // Disable if value is not entered
+                      options={measurementCategories.measurementCategories.map((category) => ({
+                        label: category.categoryName,
+                        value: category.categoryName.toLowerCase(),
+                      }))}
+                      onChange={(e) => handleChange(`units[${index}].category`, e.target.value)}
+                    />
+
                     {/* Unit Select */}
                     {unit.category && (
                       <SelectInput
                         id={`unit-${index}`}
                         label="Unit"
                         value={unit.unit || ""}
-                        required
+                        required={unit.value > 0}  // Only required if value is entered
+                        disabled={unit.value <= 0} // Disable if value is not entered
                         options={
                           measurementCategories.measurementCategories
                             .find((category) => category.categoryName.toLowerCase() === unit.category)
@@ -643,17 +650,17 @@ const AddItem = () => {
             {/* Stocks and Storage */}
             {activeTab === "Stocks and Storage" && (
               <div className="flex flex-wrap">
-                {formData.locationId && formData.locationId.map((locationId, index) => (
+                {formData.storage && formData.storage.map((storage, index) => (
                   <div key={index} className="block">
                     <SelectInput
-                      id={`storage-${index}-location`}
-                      label="Location"
-                      value={locationId.location || ""}
-                      required={formData.locationId.length > 1} // Add required conditionally
-                      onChange={(e) => handleChange(`locationId[${index}].location`, e.target.value)}
-                      options={storage.map((storage) => ({
-                        value: storage._id,
-                        label: storage.storageName,
+                      id={`storage-${index}-storage`}
+                      label="Storage"
+                      value={storage.storage || ""}
+                      required={formData.storage.length > 1} // Add required conditionally
+                      onChange={(e) => handleChange(`storage[${index}].storage`, e.target.value)}
+                      options={availableStorage.map((availableStorage) => ({
+                        value: availableStorage._id,
+                        label: availableStorage.storageName,
                       }))}
                     />
 
@@ -662,9 +669,9 @@ const AddItem = () => {
                       type="number"
                       label="Quantity"
                       placeholder="Quantity"
-                      value={locationId.quantity}
-                      required={formData.locationId.length > 1} // Add required conditionally
-                      onChange={(e) => handleChange(`locationId[${index}].quantity`, e.target.value)}
+                      value={storage.quantity}
+                      required={formData.storage.length > 1} // Add required conditionally
+                      onChange={(e) => handleChange(`storage[${index}].quantity`, e.target.value)}
                     />
 
                     <button
@@ -677,7 +684,7 @@ const AddItem = () => {
                   </div>
                 ))}
                 {/* Add Unit Button */}
-                {formData.locationId?.length < MAX_UNITS && (
+                {formData.storage?.length < MAX_UNITS && (
                   <div onClick={addStorageLocation} className="flex justify-center items-center max-h-20 m-10 p-10 border border-dashed border-gray-300 rounded-md text-center bg-gray-50 text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
                     <p>+ Add Another Unit</p>
                   </div>

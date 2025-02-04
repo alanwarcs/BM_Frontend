@@ -164,103 +164,111 @@ const EditVendor = () => {
     const validateForm = () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
-
+    
         if (!vendor.displayName?.trim()) {
-            setAlert({
-                message: 'Display Name is required.',
-                type: 'error',
-            });
+            setAlert({ message: 'Display Name is required.', type: 'error' });
             return false;
         }
-
+    
         if (vendor.emailAddress && !emailRegex.test(vendor.emailAddress)) {
-            setAlert({
-                message: 'Invalid email address format.',
-                type: 'error',
-            });
+            setAlert({ message: 'Invalid email address format.', type: 'error' });
             return false;
         }
-
-        const { shippingAddress, billingAddress, taxDetails } = vendor;
-
+    
+        const { shippingAddress, billingAddress, taxDetails, bankDetails, customFields } = vendor;
+    
+        // Shipping Address Validation
         if (
             !shippingAddress?.addressLine1?.trim() ||
             !shippingAddress?.city?.trim() ||
             !shippingAddress?.state?.trim() ||
             !shippingAddress?.country?.trim()
         ) {
-            setAlert({
-                message: 'Complete shipping address is required.',
-                type: 'error',
-            });
+            setAlert({ message: 'Complete shipping address is required.', type: 'error' });
             return false;
         }
-
+    
         if (!/^\d+$/.test(shippingAddress?.postalCode?.trim())) {
-            setAlert({
-                message: 'Invalid postal code for shipping address.',
-                type: 'error',
-            });
+            setAlert({ message: 'Invalid postal code for shipping address.', type: 'error' });
             return false;
         }
-
+    
+        // Billing Address Validation
         if (
             !billingAddress?.addressLine1?.trim() ||
             !billingAddress?.city?.trim() ||
             !billingAddress?.state?.trim() ||
             !billingAddress?.country?.trim()
         ) {
-            setAlert({
-                message: 'Complete billing address is required.',
-                type: 'error',
-            });
+            setAlert({ message: 'Complete billing address is required.', type: 'error' });
             return false;
         }
-
+    
         if (!/^\d+$/.test(billingAddress?.postalCode?.trim())) {
-            setAlert({
-                message: 'Invalid postal code for billing address.',
-                type: 'error',
-            });
+            setAlert({ message: 'Invalid postal code for billing address.', type: 'error' });
             return false;
         }
-
+    
+        // Tax Details Validation
         if (!taxDetails?.taxStatus) {
-            setAlert({
-                message: 'Tax status is required.',
-                type: 'error',
-            });
+            setAlert({ message: 'Tax status is required.', type: 'error' });
             return false;
         }
-
+    
         if (taxDetails.taxStatus === 'gstRegistered') {
             if (!taxDetails?.sourceState?.trim()) {
-                setAlert({
-                    message: 'Source state is required for GST registered entities.',
-                    type: 'error',
-                });
+                setAlert({ message: 'Source state is required for GST registered entities.', type: 'error' });
                 return false;
             }
-
+    
             if (!gstinRegex.test(taxDetails?.gstin?.trim())) {
-                setAlert({
-                    message: 'Invalid GSTIN format.',
-                    type: 'error',
-                });
+                setAlert({ message: 'Invalid GSTIN format.', type: 'error' });
                 return false;
             }
         }
-
+    
         if (!vendor.currency) {
-            setAlert({
-                message: 'Currency is required.',
-                type: 'error',
-            });
+            setAlert({ message: 'Currency is required.', type: 'error' });
             return false;
         }
-
+    
+        if (vendor.notes && vendor.notes.length > 500) {
+            setAlert({ message: 'Notes cannot exceed 500 characters.', type: 'error' });
+            return false;
+        }
+    
+        // **Bank Details Validation (No Empty Fields Allowed)**
+        for (let i = 1; i < bankDetails.length; i++) {
+            const { accountHolderName, bankName, ifscCode, accountNumber } = bankDetails[i];
+            if (
+                !accountHolderName?.trim() ||
+                !bankName?.trim() ||
+                !ifscCode?.trim() ||
+                !accountNumber?.trim()
+            ) {
+                setAlert({
+                    message: `All fields are required in Bank Details (Entry ${i + 1}).`,
+                    type: 'error',
+                });
+                return false;
+            }
+        }
+    
+        // **Custom Fields Validation (No Empty Fields Allowed)**
+        for (let i = 1; i < customFields.length; i++) {
+            const { fieldName, fieldValue } = customFields[i];
+            if (!fieldName?.trim() || !fieldValue?.trim()) {
+                setAlert({
+                    message: `All fields are required in Custom Fields (Entry ${i + 1}).`,
+                    type: 'error',
+                });
+                return false;
+            }
+        }
+    
         return true;
     };
+    
 
     //Handle Updated Chnage Submit
     const handleSubmit = async (e) => {
@@ -423,7 +431,7 @@ const EditVendor = () => {
                     )}
 
                     {activeTab === "bank" && (
-                        <div>
+                        <div className="flex flex-wrap">
                             {vendor.bankDetails.map((bank, index) => (
                                 <div key={index} className="mb-4">
                                     <BankTab
@@ -441,14 +449,10 @@ const EditVendor = () => {
                                 </div>
                             ))}
                             {vendor.bankDetails.length < MAX_BANKS && (
-                                <div className='text-center'>
-                                    <button
-                                        type="button"
-                                        className="text-gray-400 text-sm hover:underline"
-                                        onClick={addBank}
-                                    >
+                                <div onClick={addBank} className="flex justify-center items-center max-h-20 m-10 p-10 border border-dashed border-gray-300 rounded-md text-center bg-gray-50 text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
+                                    <p>
                                         + Add Another Bank
-                                    </button>
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -492,15 +496,18 @@ const EditVendor = () => {
                                         onChange={(e) => handleChange("notes", e.target.value)}
                                         placeholder="Enter any additional notes or information"
                                     ></textarea>
+                                   <div className='w-full text-end'>
+                                        <p className='text-[12px] text-gray-500'>Max 500 Character</p>
+                                   </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {activeTab === "customFields" && (
-                        <div>
+                        <div className="flex flex-wrap">
                             {vendor.customFields.map((field, index) => (
-                                <div key={index} className="p-4 mb-2">
+                                <div key={index} className="mb-2">
                                     <TextInput
                                         id={`fieldName-${index}`}
                                         label="Field Name"
@@ -523,14 +530,10 @@ const EditVendor = () => {
                                 </div>
                             ))}
                             {vendor.customFields.length < MAX_CUSTOM_FIELDS && (
-                                <div className='text-center'>
-                                    <button
-                                        type="button"
-                                        onClick={addCustomField}
-                                        className="text-gray-400 text-sm hover:underline"
-                                    >
+                                <div onClick={addCustomField} className="flex justify-center items-center max-h-20 m-10 p-10 border border-dashed border-gray-300 rounded-md text-center bg-gray-50 text-gray-400 text-sm hover:border-customPrimary cursor-pointer">
+                                    <p>
                                         + Add Custom Field
-                                    </button>
+                                    </p>
                                 </div>
                             )}
                         </div>

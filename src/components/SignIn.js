@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
 import { useUser } from '../context/userContext';
 import LoadingBar from './LoadingBar'; // Import the LoadingBar component
 import Alert from './Alert';
@@ -129,7 +129,7 @@ const SignIn = () => {
               </button>
             </div>
             <span className='my-5 text-center text-[14px]'>
-              <p>Don't have an account? <a href="/" className='font-semibold text-customPrimary'>Register Now</a></p>
+              <p>Don't have an account? <Link to="/signup" className='font-semibold text-customPrimary'>Register Now</Link></p>
             </span>
           </div>
         </form>

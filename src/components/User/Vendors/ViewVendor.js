@@ -80,7 +80,7 @@ const ViewVendor = () => {
 
             {activeTab === "overview" && (
                 <div className="flex flex-wrap w-full h-full mb-10 overflow-scroll">
-                    <div className="h-full text-gray-700 bg-slate-50 border-r px-4 py-2 w-72">
+                    <div className="h-fit min-h-full mb-28 text-gray-700 bg-slate-50 border-r px-4 py-2 w-72">
                         <div className='text-start text-md py-2 px-1'>
                             {vendor.displayName}
                         </div>
@@ -144,7 +144,7 @@ const ViewVendor = () => {
                         <hr />
                         {openSections.bank && (
                             <div
-                                className={`flex overflow-hidden transition-all duration-300 ease-in-out ${openSections.bank ? 'max-h-screen' : 'max-h-0'
+                                className={`flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${openSections.bank ? 'max-h-screen' : 'max-h-0'
                                     }`}
                             >
                                 {vendor.bankDetails.map((bank, index) => (
@@ -175,16 +175,16 @@ const ViewVendor = () => {
                         <hr />
                         {openSections.customDetails && (
                             <div
-                                className={`flex overflow-hidden transition-all duration-300 ease-in-out ${openSections.customDetails ? 'max-h-screen' : 'max-h-0'
+                                className={`flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${openSections.customDetails ? 'max-h-screen' : 'max-h-0'
                                     }`}
                             >
                                 {vendor.customFields.map((customDetails, index) => (
-                                    <div key={index} className="flex text-start text-sm py-2">
+                                    <div key={index} className="flex flex-col text-start text-sm">
                                         <div className='flex flex-col text-start text-sm text-gray-500 py-2'>
                                             <p>{customDetails.fieldName || ''}</p>
                                         </div>
-                                        <div className='flex flex-col text-start text-sm py-2 ps-2'>
-                                            <p>{customDetails.fieldValue || ''}</p>
+                                        <div className='flex flex-col text-start text-sm ps-2'>
+                                            <p className='break-words max-w-full'>{customDetails.fieldValue || ''}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -197,7 +197,7 @@ const ViewVendor = () => {
                         <hr />
                         {openSections.other && (
                             <div
-                                className={`flex overflow-hidden transition-all duration-300 ease-in-out ${openSections.other ? 'max-h-screen' : 'max-h-0'
+                                className={`flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${openSections.other ? 'max-h-screen' : 'max-h-0'
                                     }`}
                             >
                                 <div className="flex text-start text-sm py-2">
@@ -206,6 +206,14 @@ const ViewVendor = () => {
                                     </div>
                                     <div className='flex flex-col text-start text-sm py-2 ps-2'>
                                         <p>{vendor.currency || '-'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col text-start text-sm py-2">
+                                    <div className='flex flex-col text-start text-sm text-gray-500 py-2'>
+                                        <p>Notes</p>
+                                    </div>
+                                    <div className='flex text-start text-sm py-2 ps-2'>
+                                        <p className='break-words max-w-full'>{vendor.notes || '-'}</p>
                                     </div>
                                 </div>
                             </div>

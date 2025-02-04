@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
 import { useUser } from '../context/userContext';
 import PhoneCodeSelector from './PhoneCodeSelector'; // Import the PhoneCodeSelector component
 import LoadingBar from './LoadingBar'; // Import the LoadingBar component
@@ -177,7 +177,7 @@ const SignUp = () => {
                             </button>
                         </div>
                         <span className='mt-5 text-center text-[14px]'>
-                            <p>Already have account? <a href="/" className='font-semibold hover:underline'>Login Now</a></p>
+                            <p>Already have account? <Link to="/signin" className='font-semibold hover:underline'>Login Now</Link></p>
                         </span>
                     </div>
                 </form>

@@ -81,7 +81,7 @@ const CheckoutCart = () => {
                     contact: user?.phone || '',
                 },
                 theme: {
-                    color: '#feebdb', // Customize the color of the Razorpay widget
+                    color: '#014C93', // Customize the color of the Razorpay widget
                 },
             };
 

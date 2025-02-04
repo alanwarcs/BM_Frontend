@@ -246,7 +246,6 @@ const Storage = () => {
                 setAlert({ message: "Failed to update storage.", type: "error" });
             }
         } catch (error) {
-            console.error('Error updating storage:', error);
             setAlert({ message: "An error occurred while updating storage.", type: "error" });
         }
     };
