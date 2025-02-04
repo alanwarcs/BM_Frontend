@@ -45,8 +45,8 @@ const AddItem = () => {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        const response = await axios.get('/api/vendor/vendors'); // Replace with your actual endpoint
-        setVendors(response.data.data.vendors);
+        const response = await axios.get('/api/vendor/vendors/list'); // Replace with your actual endpoint
+        setVendors(response.data.data);
       } catch (error) {
         setAlert({ message: "Failed to load vendors.", type: "error" });
       }
@@ -54,7 +54,7 @@ const AddItem = () => {
 
     const fetchStorage = async () => {
       try {
-        const response = await axios.get('/api/storage/'); // Replace with your actual endpoint
+        const response = await axios.get('/api/storage/getList'); // Replace with your actual endpoint
         setStorage(response.data.data.storage);
       } catch (error) {
         setAlert({ message: "Failed to load storage.", type: "error" });  // Changed error message here
@@ -64,6 +64,9 @@ const AddItem = () => {
     fetchStorage();
     fetchVendors();
   }, []);
+
+  console.log(vendors);
+  console.log(storage);
 
   const addUnits = () => {
     setFormData((prevData) => {
@@ -504,7 +507,7 @@ const AddItem = () => {
                   id="vendorId"
                   label="Preferred Vendor"
                   options={vendors.map((vendor) => ({
-                    value: vendor._id,
+                    value: vendor.id,
                     label: vendor.displayName,
                   }))}
                   onChange={(e) => handleChange("purchaseInfo.vendorId", e.target.value)}
