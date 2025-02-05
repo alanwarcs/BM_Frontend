@@ -18,7 +18,7 @@ const AddItem = () => {
     itemName: "",
     itemType: "Product",
     storage: [{ storage: "", quantity: 0 }],
-    units: [{ category: "", value: 0, unit: "", description: "" }],
+    units: [{ category: "", value: "", unit: "", description: "" }],
     sellInfo: { price: 0, currency: "INR" },
     purchaseInfo: { purchasePrice: 0, purchaseCurrency: "INR", vendorId: "" },
     gst: { intraStateGST: 0, interStateGST: 0 },
