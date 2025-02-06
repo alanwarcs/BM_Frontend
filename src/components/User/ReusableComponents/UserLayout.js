@@ -287,9 +287,9 @@ const UserLayout = ({ children }) => {
                                         </Link>
                                     </li>
                                     <li className="text-start p-2">
-                                        <a href="/">
+                                        <Link to="/items">
                                             View/Manage Inventory
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li className="text-start p-2">
                                         <Link to="/storage">

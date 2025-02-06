@@ -15,6 +15,7 @@ import ViewVendor from './components/User/Vendors/ViewVendor';
 import AddItem from './components/User/Items/addItem';
 import Storage from './components/User/Storage/Storage';
 import AddStorage from './components/User/Storage/addStorage';
+import Items from './components/User/Items/Item';
 
 function App() {
   return (
@@ -70,7 +71,12 @@ function App() {
               path="/additem"
               element={<ProtectedRoute component={AddItem} isAuthenticatedPage={true} />}
             />
-            
+
+            <Route
+              path="/items"
+              element={<ProtectedRoute component={Items} isAuthenticatedPage={true} />}
+            />
+
             <Route
               path="/storage"
               element={<ProtectedRoute component={Storage} isAuthenticatedPage={true} />}
