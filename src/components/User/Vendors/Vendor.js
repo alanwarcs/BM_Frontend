@@ -191,7 +191,7 @@ const Vendor = () => {
             setAlert({ message: 'Error printing vendor. Please try again.', type: 'error' });
         }
     };
-    
+
     const handlePrintSubmit = (e) => {
         e.preventDefault();
         handlePrintSelectedVendors(selectedVendors, selectedFields);
@@ -250,29 +250,36 @@ const Vendor = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-search"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
                             </button>
                             {openFilterDropdown && (
-                                <form onSubmit={handleApplyFilters} className='flex absolute items-end top-10 right-0 mt-2 p-2 z-10 bg-white border rounded-md shadow' ref={filterRef}>
-                                    <div className='flex items-end'>
-                                        <div className="flex flex-col m-2">
-                                            <label htmlFor="Search" className="block text-gray-700 text-sm mb-2">
+                                <form
+                                    onSubmit={handleApplyFilters}
+                                    className="absolute top-12 right-0 mt-2 p-4 z-10 bg-white border border-gray-200 rounded-lg shadow-lg"
+                                    ref={filterRef}
+                                >
+                                    <div className="flex items-end gap-4">
+                                        {/* Search Input */}
+                                        <div className="flex flex-col">
+                                            <label htmlFor="Search" className="block text-gray-700 text-sm font-medium mb-1">
                                                 Search
                                             </label>
                                             <input
                                                 type="text"
                                                 id="Search"
-                                                name="search" // Add this
+                                                name="search"
                                                 className="w-[250px] h-[35px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
                                                 placeholder="Search"
                                                 value={filter.search}
                                                 onChange={handleFilterChange}
                                             />
                                         </div>
-                                        <div className="flex flex-col m-2">
-                                            <label htmlFor="gstFilter" className="block text-gray-700 text-sm mb-2">
+
+                                        {/* GST Filter Dropdown */}
+                                        <div className="flex flex-col">
+                                            <label htmlFor="gstFilter" className="block text-gray-700 text-sm font-medium mb-1">
                                                 GST Preference
                                             </label>
                                             <select
                                                 id="gstFilter"
-                                                name="gstRegistered" // Add this
+                                                name="gstRegistered"
                                                 className="w-[250px] h-[35px] py-2 px-2 rounded-lg outline outline-1 outline-customSecondary focus:outline-2 focus:outline-customSecondary text-gray-700 text-[14px]"
                                                 value={filter.gstRegistered}
                                                 onChange={handleFilterChange}
@@ -282,7 +289,12 @@ const Vendor = () => {
                                                 <option value="unregistered">Unregistered</option>
                                             </select>
                                         </div>
-                                        <button type="submit" className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 p-2 text-white text-sm'>
+
+                                        {/* Apply Button */}
+                                        <button
+                                            type="submit"
+                                            className="h-10 px-4 rounded-lg bg-customPrimary hover:bg-customPrimaryHover text-white text-sm font-medium transition-colors"
+                                        >
                                             Apply
                                         </button>
                                     </div>
@@ -291,33 +303,86 @@ const Vendor = () => {
                         </div>
 
                         {selectedVendors && (
-                            <div className="flex flex-cols items-center">
+                            <div className="flex items-center gap-2">
                                 {Object.values(selectedVendors).some((isSelected) => isSelected) && (
-                                    <div className='flex flex-cols items-center'>
-                                        <button onClick={togglePrintDropdown} className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition' ref={printButtonRef}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
-                                        </button>
-                                        {openFieldDropdown && (
-                                            <form ref={fieldDropDownRef} className="absolute top-14 right-4 bg-white border rounded-md shadow-lg z-10 w-68" onSubmit={handlePrintSubmit}>
-                                                <div className='overflow-y-scroll'>
-                                                    {fieldOptions.map((field) => (
-                                                        <div key={field} onClick={() => handleFieldSelect(field)} className={`flex flex-wrap cursor-pointer p-2 hover:bg-gray-100 ${selectedFields.includes(field) ? 'bg-gray-100' : ''}`}>
-                                                            <input type="checkbox" checked={selectedFields.includes(field)} readOnly className="mr-2" />
-                                                            <label className='text-base'>{field}</label>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className='flex justify-end w-full bg-white '>
-                                                    <button type="submit" className='rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 p-2 text-white text-sm'>
-                                                        Apply
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        )}
-                                        <button onClick={deleteSelectedVendors} className='flex items-center relative m-1 rounded-md text-red-500 text-sm font-light hover:outline-none transition'>
-                                            <div className='flex items-center p-2'>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
-                                            </div>
+                                    <div className="flex items-center gap-1">
+                                        {/* Print Button and Dropdown */}
+                                        <div className="relative" ref={printButtonRef}>
+                                            <button
+                                                onClick={togglePrintDropdown}
+                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 text-gray-600 hover:text-gray-900"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    className="stroke-current"
+                                                >
+                                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                                    <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
+                                                    <rect x="6" y="14" width="12" height="8" rx="1" />
+                                                </svg>
+                                            </button>
+
+                                            {openFieldDropdown && (
+                                                <form
+                                                    ref={fieldDropDownRef}
+                                                    className="absolute top-12 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-10 w-64 overflow-hidden"
+                                                    onSubmit={handlePrintSubmit}
+                                                >
+                                                    <div className="max-h-64 overflow-y-auto p-2">
+                                                        {fieldOptions.map((field) => (
+                                                            <label
+                                                                key={field}
+                                                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedFields.includes(field)}
+                                                                    onChange={() => handleFieldSelect(field)}
+                                                                    className="mr-2"
+                                                                />
+                                                                <span className="text-sm font-medium text-gray-700">{field}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                    <div className="border-t border-gray-100 p-2">
+                                                        <button
+                                                            type="submit"
+                                                            className="w-full py-2 px-4 bg-customPrimary text-white text-sm font-medium rounded-md transition-colors duration-200"
+                                                        >
+                                                            Apply Selection
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            )}
+                                        </div>
+
+                                        {/* Delete Button */}
+                                        <button
+                                            onClick={deleteSelectedVendors}
+                                            className="p-2 hover:bg-red-50 rounded-lg transition-colors duration-200 text-red-600 hover:text-red-700"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="20"
+                                                height="20"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                className="stroke-current"
+                                            >
+                                                <path d="M3 6h18" />
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                                <line x1="10" x2="10" y1="11" y2="17" />
+                                                <line x1="14" x2="14" y1="11" y2="17" />
+                                            </svg>
                                         </button>
                                     </div>
                                 )}
@@ -391,7 +456,7 @@ const Vendor = () => {
                                                     </svg>
                                                 </button>
                                                 {openDropdown === vendor._id && (
-                                                    <div ref={editorRef} className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24">
+                                                    <div ref={editorRef} className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24 overflow-hidden">
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
                                                             onClick={() => navigate(`/editvendor/${vendor._id}`)}
