@@ -36,20 +36,20 @@ const Item = () => {
         try {
             setLoadingProgress(30);
             const params = { page, limit: 13, ...appliedFilter };
-    
+
             const response = await axios.get('/api/item/', { params });
             setLoadingProgress(70);
-    
+
             if (response.data.success) {
                 const fetchedItems = response.data.data.items || [];
                 setItems(fetchedItems);
                 setCurrentPage(page);
                 setTotalPages(response.data.data.pagination?.totalPages || 1);
-    
+
                 //Set min/max stock values dynamically
                 setMinStock(response.data.data.minStockValue);
                 setMaxStock(response.data.data.maxStockValue);
-    
+
                 setFilter(prev => ({
                     ...prev,
                     maxValue: response.data.data.maxStockValue,
@@ -131,6 +131,86 @@ const Item = () => {
         setCurrentPage(1);
     };
 
+    // Function to delete all items
+    const deleteItem = async (itemsId) => {
+        try {
+            setLoadingProgress(30);
+            const response = await axios.delete(`/api/item/items/${itemsId}`);
+            setLoadingProgress(70);
+
+            if (response.data.success) {
+                setAlert({ message: 'Item deleted successfully!', type: 'success' });
+                fetchItems(currentPage);
+            } else {
+                setAlert({ message: response.data.message, type: 'error' });
+            }
+            setLoadingProgress(100);
+            setTimeout(() => setLoadingProgress(0), 1000);
+        } catch (error) {
+            setLoadingProgress(100);
+            setAlert({ message: 'Error deleting item. Please try again.', type: 'error' });
+        }
+    };
+
+    // Function to delete selected items
+    const deleteSelectedItems = async () => {
+        try {
+            const selectedIds = Object.keys(selectedItem).filter(
+                (itemsId) => selectedItem[itemsId]
+            );
+
+            if (selectedIds.length === 0) {
+                setAlert({ message: 'No items selected for deletion.', type: 'warning' });
+                return;
+            }
+
+            const isConfirmed = window.confirm("Are you sure you want to delete the selected items?");
+            if (!isConfirmed) {
+                return;
+            }
+
+            setLoadingProgress(30);
+
+            const deletePromises = selectedIds.map((itemsId) =>
+                axios.delete(`/api/item/items/${itemsId}`)
+            );
+
+            await Promise.all(deletePromises);
+
+            setAlert({ message: 'Selected items deleted successfully!', type: 'success' });
+            fetchItems(currentPage);
+        } catch (error) {
+            setAlert({
+                message: error.response?.data?.message || 'Error deleting selected items. Please try again.',
+                type: 'error',
+            });
+        } finally {
+            setLoadingProgress(100);
+            setTimeout(() => setLoadingProgress(0), 1000);
+        }
+    };
+
+    // Print selected items
+    const printSelectedItems = async (selectedItem) => {
+        try {
+            const response = await axios.post('/api/item/printList', {
+                selectedItems: selectedItem,
+            });
+
+            const printWindow = window.open('', '', 'width=800,height=600');
+
+            printWindow.document.write(response.data);
+            printWindow.document.close();
+
+            printWindow.print();
+
+        } catch (error) {
+            setLoadingProgress(100);
+            console.log(error);
+            setAlert({ message: 'Error printing item. Please try again.', type: 'error' });
+        }
+    };
+    
     return (
         <UserLayout>
             {loadingProgress > 0 && loadingProgress < 100 && <LoadingBar progress={loadingProgress} />}
@@ -240,11 +320,11 @@ const Item = () => {
                             <div className="flex flex-cols items-center">
                                 {Object.values(selectedItem).some((isSelected) => isSelected) && (
                                     <div className='flex flex-cols items-center'>
-                                        <button className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition'>
+                                        <button onClick={() => printSelectedItems(selectedItem)}  className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition'>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
                                         </button>
 
-                                        <button className='flex items-center relative m-1 rounded-md text-red-500 text-sm font-light hover:outline-none transition'>
+                                        <button onClick={deleteSelectedItems} className='flex items-center relative m-1 rounded-md text-red-500 text-sm font-light hover:outline-none transition'>
                                             <div className='flex items-center p-2'>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
                                             </div>
@@ -338,7 +418,7 @@ const Item = () => {
                                                         </button>
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
-                                                        // onClick={() => deleteitem(item._id)}
+                                                            onClick={() => deleteItem(item._id)}
                                                         >
                                                             Delete
                                                         </button>
