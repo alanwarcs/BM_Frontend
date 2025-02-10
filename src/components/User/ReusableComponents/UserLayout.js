@@ -182,78 +182,45 @@ const UserLayout = ({ children }) => {
 
                         {/* Vendor */}
                         <li className="m-1">
-                            <div onClick={() => toggleSection('vendor')} className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
+                            <Link to="/vendor" className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-package menu-icon me-4"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" /><path d="m7.5 4.27 9 5.15" /></svg>
-                                <span className="menu-text">Vendor Management</span>
+                                <span className="menu-text">Vendors</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.vendor ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
-                            </div>
-                            <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.vendor ? 'max-h-60' : 'max-h-0'}`}>
-                                <ul className="ms-14">
-                                    <li className="text-start p-2">
-                                        <Link to="/addvendor">
-                                            Add New Vendor
-                                        </Link>
-                                    </li>
-                                    <li className="text-start p-2">
-                                        <Link to="/vendor">
-                                            View/Edit Vendor
-                                        </Link>
-                                    </li>
-                                </ul>
-                            </div>
+                            </Link>
                         </li>
 
                         {/* Purchase Order */}
                         <li className="m-1">
-                            <div onClick={() => toggleSection('po')} className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
+                            <Link to="/" className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-library-big menu-icon me-4"><rect width="8" height="18" x="3" y="3" rx="1" /><path d="M7 3v18" /><path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z" /></svg>
                                 <span className="menu-text">Purchase Order</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.po ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
-                            </div>
-                            <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.po ? 'max-h-60' : 'max-h-0'}`}>
-                                <ul className="ms-14">
-                                    <li className="text-start p-2">
-                                        <a href="/">
-                                            Create Purchase Order
-                                        </a>
-                                    </li>
-                                    <li className="text-start p-2">
-                                        <a href="/">
-                                            View/Edit Purchase Order
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            </Link>
                         </li>
 
                         {/* Customer */}
                         <li className="m-1">
-                            <div onClick={() => toggleSection('customer')} className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
+                            <Link to="/" className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user-round menu-icon me-4"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
-                                <span className="menu-text">Customer Management</span>
+                                <span className="menu-text">Customers</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.customer ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
-                            </div>
-                            <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.customer ? 'max-h-60' : 'max-h-0'}`}>
-                                <ul className="ms-14">
-                                    <li className="text-start p-2">
-                                        <a href="/">
-                                            Add New Customer
-                                        </a>
-                                    </li>
-                                    <li className="text-start p-2">
-                                        <a href="/">
-                                            View/Edit Customer
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            </Link>
                         </li>
 
+                        {/* Items */}
+                        <li className="m-1">
+                            <Link to="/items" className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="lucide lucide-shopping-basket menu-icon me-4"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
+                                <span className="menu-text">Items</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300"><path d="m9 18 6-6-6-6" /></svg>
+                            </Link>
+                        </li>
+                        
                         {/* Invoice */}
                         <li className="m-1">
                             <div onClick={() => toggleSection('invoice')} className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-receipt-text menu-icon me-4"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M14 8H8" /><path d="M16 12H8" /><path d="M13 16H8" /></svg>
-                                <span className="menu-text">Invoice Management</span>
+                                <span className="menu-text">Invoices</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.invoice ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
                             </div>
                             <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.invoice ? 'max-h-60' : 'max-h-0'}`}>
@@ -276,19 +243,14 @@ const UserLayout = ({ children }) => {
                         <li className="m-1">
                             <div onClick={() => toggleSection('stock')} className="flex items-center justify-center p-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-warehouse menu-icon me-4"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z" /><path d="M6 18h12" /><path d="M6 14h12" /><rect width="12" height="12" x="6" y="10" /></svg>
-                                <span className="menu-text">Stock Management</span>
+                                <span className="menu-text">Stocks</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-chevron-right menu-text ml-auto transform transition-transform duration-300 ${collapsedState.stock ? 'rotate-90' : 'rotate-0'}`} ><path d="m9 18 6-6-6-6" /></svg>
                             </div>
                             <div className={`collapse-menu overflow-hidden transition-max-height text-sm text-gray-600 ${collapsedState.stock ? 'max-h-60' : 'max-h-0'}`}>
                                 <ul className="ms-14">
                                     <li className="text-start p-2">
-                                        <Link to="/additem">
-                                            Add New Item
-                                        </Link>
-                                    </li>
-                                    <li className="text-start p-2">
                                         <Link to="/items">
-                                            View/Manage Inventory
+                                            Inventory
                                         </Link>
                                     </li>
                                     <li className="text-start p-2">
