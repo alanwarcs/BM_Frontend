@@ -23,7 +23,7 @@ const Vendor = () => {
         gstRegistered: '',
     });
 
-    const fieldOptions = ['Organization Name', 'Primary Person Name', 'Email', 'Phone', 'Shipping Address', 'Billing Address', 'GSTIN', 'Source State', 'PAN Number']; // Available fields
+    const fieldOptions = ['Organization Name', 'Primary Person Name', 'Email', 'Phone', 'Shipping Address', 'Billing Address']; // Available fields
 
     const navigate = useNavigate();
 
