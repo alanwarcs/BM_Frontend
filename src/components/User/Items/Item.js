@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import UserLayout from '../ReusableComponents/UserLayout';
 import Pagination from '../ReusableComponents/Pagination';
 import LoadingBar from '../../LoadingBar';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Alert from '../../Alert';
 import axios from 'axios';
 
@@ -25,6 +25,7 @@ const Item = () => {
         taxPreference: [],
     });
 
+    const navigate = useNavigate();
 
     const filterRef = useRef(null);
     const filterButtonRef = useRef(null);
@@ -210,7 +211,7 @@ const Item = () => {
             setAlert({ message: 'Error printing item. Please try again.', type: 'error' });
         }
     };
-    
+
     return (
         <UserLayout>
             {loadingProgress > 0 && loadingProgress < 100 && <LoadingBar progress={loadingProgress} />}
@@ -320,7 +321,7 @@ const Item = () => {
                             <div className="flex flex-cols items-center">
                                 {Object.values(selectedItem).some((isSelected) => isSelected) && (
                                     <div className='flex flex-cols items-center'>
-                                        <button onClick={() => printSelectedItems(selectedItem)}  className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition'>
+                                        <button onClick={() => printSelectedItems(selectedItem)} className='flex items-center relative m-1 p-2 bg-gray-100 rounded-md text-sm font-light hover:outline-none transition'>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></svg>
                                         </button>
 
@@ -412,7 +413,7 @@ const Item = () => {
                                                     <div ref={editorRef} className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24 overflow-hidden">
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                        // onClick={() => setSelecteditemToView(item)}
+                                                            onClick={() => navigate(`/edititem/${item._id}`)}
                                                         >
                                                             Edit
                                                         </button>

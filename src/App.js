@@ -12,10 +12,11 @@ import AddVendor from './components/User/Vendors/AddVendor';
 import Vendor from './components/User/Vendors/Vendor';
 import EditVendor from './components/User/Vendors/EditVendor';
 import ViewVendor from './components/User/Vendors/ViewVendor';
-import AddItem from './components/User/Items/addItem';
+import AddItem from './components/User/Items/AddItem';
 import Storage from './components/User/Storage/Storage';
 import AddStorage from './components/User/Storage/addStorage';
 import Items from './components/User/Items/Item';
+import EditItem from './components/User/Items/EditItem';
 
 function App() {
   return (
@@ -75,6 +76,11 @@ function App() {
             <Route
               path="/items"
               element={<ProtectedRoute component={Items} isAuthenticatedPage={true} />}
+            />
+
+            <Route
+              path="/edititem/:id"
+              element={<ProtectedRoute component={EditItem} isAuthenticatedPage={true} />}
             />
 
             <Route
