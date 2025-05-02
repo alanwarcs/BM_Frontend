@@ -17,6 +17,7 @@ import Storage from './components/User/Storage/Storage';
 import AddStorage from './components/User/Storage/addStorage';
 import Items from './components/User/Items/Item';
 import EditItem from './components/User/Items/EditItem';
+import ViewItem from './components/User/Items/ViewItem';
 
 function App() {
   return (
@@ -81,6 +82,12 @@ function App() {
             <Route
               path="/edititem/:id"
               element={<ProtectedRoute component={EditItem} isAuthenticatedPage={true} />}
+            />
+
+
+            <Route
+              path="/viewitem/:id"
+              element={<ProtectedRoute component={ViewItem} isAuthenticatedPage={true} />}
             />
 
             <Route
