@@ -18,6 +18,7 @@ import AddStorage from './components/User/Storage/addStorage';
 import Items from './components/User/Items/Item';
 import EditItem from './components/User/Items/EditItem';
 import ViewItem from './components/User/Items/ViewItem';
+import Inventory from './components/User/Inventory/Inventory';
 
 function App() {
   return (
@@ -98,6 +99,11 @@ function App() {
             <Route
               path="/addstorage"
               element={<ProtectedRoute component={AddStorage} isAuthenticatedPage={true} />}
+            />
+
+            <Route
+              path="/inventory"
+              element={<ProtectedRoute component={Inventory} isAuthenticatedPage={true} />}
             />
 
             {/* Redirect to dashboard for unknown routes */}

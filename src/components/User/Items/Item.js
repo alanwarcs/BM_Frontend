@@ -364,6 +364,7 @@ const Item = () => {
                                         <th className="px-6 py-2">Selling Price</th>
                                         <th className="px-6 py-2">Purchase Price</th>
                                         <th className="px-6 py-2">Tax Preference</th>
+                                        <th className="px-6 py-2">Available Qty</th>
                                         <th className="px-6 py-2">Stock Value</th>
                                         <th className="px-6 py-2"></th>
                                     </tr>
@@ -394,6 +395,9 @@ const Item = () => {
                                                     : '-'}
                                             </td>
                                             <td className="px-6 py-2">{item.taxPreference || '-'}</td>
+                                            <td className="px-6 py-2">
+                                                {item.storage ? item.storage.reduce((total, storage) => total + (storage.quantity || 0), 0) : 0}
+                                            </td>
                                             <td className="px-6 py-2">
                                                 {item.stockValue ? `${item.stockValue} Units` : '-'}
                                             </td>
