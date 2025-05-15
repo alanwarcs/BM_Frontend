@@ -4,7 +4,7 @@ import UserLayout from "../ReusableComponents/UserLayout";
 const Inventory = () => {
     return (
         <UserLayout>
-            <div className="flex flex-col relative h-full w-full text-start">
+            <div className='w-full h-screen flex justify-center items-center'>
                 Inventory
             </div>
         </UserLayout>

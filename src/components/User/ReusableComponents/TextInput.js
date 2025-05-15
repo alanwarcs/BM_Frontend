@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TextInput = ({ id, label, required, placeholder, value, onChange, type = "text", disabled = false }) => {
+const TextInput = ({ id, label, required, placeholder, value, onChange, type = "text", disabled = false,   ...rest }) => {
   return (
     <div className="flex flex-col m-2">
       <label htmlFor={id} className="block text-gray-700 text-sm mb-2">
@@ -16,6 +16,7 @@ const TextInput = ({ id, label, required, placeholder, value, onChange, type = "
         value={value}
         onChange={onChange}
         disabled={disabled} // Pass the 'disabled' prop
+        {...rest}
       />
     </div>
   );

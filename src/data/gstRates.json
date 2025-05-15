@@ -1,0 +1,84 @@
+{
+    "gstRates": [
+      {
+        "totalRate": 5,
+        "description": "5% GST",
+        "intraState": {
+          "cgst": {
+            "rate": 2.5,
+            "description": "2.5% CGST"
+          },
+          "sgst": {
+            "rate": 2.5,
+            "description": "2.5% SGST"
+          }
+        },
+        "interState": {
+          "igst": {
+            "rate": 5,
+            "description": "5% IGST"
+          }
+        }
+      },
+      {
+        "totalRate": 12,
+        "description": "12% GST",
+        "intraState": {
+          "cgst": {
+            "rate": 6,
+            "description": "6% CGST"
+          },
+          "sgst": {
+            "rate": 6,
+            "description": "6% SGST"
+          }
+        },
+        "interState": {
+          "igst": {
+            "rate": 12,
+            "description": "12% IGST"
+          }
+        }
+      },
+      {
+        "totalRate": 18,
+        "description": "18% GST",
+        "intraState": {
+          "cgst": {
+            "rate": 9,
+            "description": "9% CGST"
+          },
+          "sgst": {
+            "rate": 9,
+            "description": "9% SGST"
+          }
+        },
+        "interState": {
+          "igst": {
+            "rate": 18,
+            "description": "18% IGST"
+          }
+        }
+      },
+      {
+        "totalRate": 28,
+        "description": "28% GST",
+        "intraState": {
+          "cgst": {
+            "rate": 14,
+            "description": "14% CGST"
+          },
+          "sgst": {
+            "rate": 14,
+            "description": "14% SGST"
+          }
+        },
+        "interState": {
+          "igst": {
+            "rate": 28,
+            "description": "28% IGST"
+          }
+        }
+      }
+    ]
+  }

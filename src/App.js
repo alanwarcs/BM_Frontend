@@ -19,6 +19,8 @@ import Items from './components/User/Items/Item';
 import EditItem from './components/User/Items/EditItem';
 import ViewItem from './components/User/Items/ViewItem';
 import Inventory from './components/User/Inventory/Inventory';
+import PurchaseOrder from './components/User/PurchaseOrders/PurchaseOrder';
+import CreatePurchaseorder from './components/User/PurchaseOrders/CreatePurchaseorder';
 
 function App() {
   return (
@@ -104,6 +106,16 @@ function App() {
             <Route
               path="/inventory"
               element={<ProtectedRoute component={Inventory} isAuthenticatedPage={true} />}
+            />
+
+            <Route
+              path='/purchaseorder'
+              element={<ProtectedRoute component={PurchaseOrder} isAuthenticatedPage={true} />} 
+            />
+
+            <Route 
+              path='/createpurchaseorder'
+              element={<ProtectedRoute component={CreatePurchaseorder} isAuthenticatedPage={true} />}
             />
 
             {/* Redirect to dashboard for unknown routes */}

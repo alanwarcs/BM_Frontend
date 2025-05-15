@@ -87,7 +87,7 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
           value={formData.shippingAddress.state}
           onChange={(e) => handleChange('shippingAddress.state', e.target.value)} // Pass explicitly
           options={shippingStates.map(state => ({
-            value: state.isoCode,
+            value: state.name,
             label: state.name,
           }))}
         />

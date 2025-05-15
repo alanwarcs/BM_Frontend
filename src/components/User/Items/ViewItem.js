@@ -4,17 +4,13 @@ import LoadingBar from '../../LoadingBar';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import Alert from '../../Alert';
 import axios from 'axios';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const ViewItem = () => {
     const { id } = useParams();
     const [loadingProgress, setLoadingProgress] = useState(0);
     const [alert, setAlert] = useState(null);
     const [item, setItem] = useState(null);
-    const [vendor, setVendor] = useState(null);
-    const [storageDetails, setStorageDetails] = useState(null);
-    const [showStatistics, setShowStatistics] = useState(false);
-    const [tooltip, setTooltip] = useState({ show: false, message: '', x: 0, y: 0 });
+    const [vendor, setVendor] = useState(null);;
     const navigate = useNavigate();
 
     // Fetch vendors and storages from backend
@@ -35,21 +31,9 @@ const ViewItem = () => {
                     setVendor(vendorResponse.data.vendorDetails);
                 }
 
-                // Fetch Storage Details
-                if (response.data.itemDetails.storage && response.data.itemDetails.storage.length > 0) {
-                    const storageDetailsPromises = response.data.itemDetails.storage.map(async (storageItem) => {
-                        try {
-                            const storageResponse = await axios.get(`/api/storage/getStorageDetails/${storageItem.storage}`);
-                            return storageResponse.data.storage; // Assuming the API returns a structure like { storage: { ... } }
-                        } catch (error) {
-                            return null; // Return null in case of an error
-                        }
-                    });
-
-                    // Wait for all promises to resolve
-                    const storageDetailsResults = await Promise.all(storageDetailsPromises);
-                    // Filter out any null results (failed fetches)
-                    setStorageDetails(storageDetailsResults.filter(result => result !== null));
+                if (response.data.itemDetails.storage.storage) {
+                    const vendorResponse = await axios.get(`/api/vendor/getVendorDetails/${response.data.itemDetails.purchaseInfo.vendorId}`);
+                    setVendor(vendorResponse.data.vendorDetails);
                 }
 
             } catch (error) {
@@ -63,35 +47,6 @@ const ViewItem = () => {
 
     }, [id]);
 
-    const data = [
-        { name: 'Day 1', sales: 500 },
-        { name: 'Day 2', sales: 3000 },
-        { name: 'Day 3', sales: 2000 },
-        { name: 'Day 4', sales: 2780 },
-        { name: 'Day 5', sales: 1890 },
-        { name: 'Day 6', sales: 2390 },
-        { name: 'Day 7', sales: 3490 },
-    ];
-
-    const revenueData = [
-        { year: '2020', revenue: 20000 },
-        { year: '2021', revenue: 10000 },
-        { year: '2022', revenue: 40000 },
-        { year: '2023', revenue: 30000 },
-    ];
-
-    const handleInfoClick = (message, event) => {
-        setTooltip({
-            show: true,
-            message: message,
-            x: event.clientX,
-            y: event.clientY,
-        });
-    };
-
-    const handleMouseLeave = () => {
-        setTooltip({ show: false, message: '', x: 0, y: 0 });
-    };
 
     if (!item) {
         return <div className='flex h-screen items-center justify-center'>Loading...</div>; // Optionally show a loading indicator
@@ -108,15 +63,12 @@ const ViewItem = () => {
                 <div className="flex flex-row items-center justify-between px-3 text-2xl py-2">
                     <p>Item Details</p>
                     <div className="flex">
+                        <Link to="/addstorage" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
+                            Statistics
+                        </Link>
                         <Link to="/items" className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400">
                             Items
                         </Link>
-                        <button
-                            className='p-2 m-1 bg-gray-100 rounded-md text-sm font-light outline outline-gray-200 hover:outline-gray-400'
-                            onClick={() => setShowStatistics(!showStatistics)}
-                        >
-                            {showStatistics ? 'Hide Statistics' : 'Show Statistics'}
-                        </button>
                     </div>
                 </div>
 
@@ -170,7 +122,7 @@ const ViewItem = () => {
                 <hr />
 
                 <div className='flex flex-row bg-gray-50 h-full overflow-scroll'>
-                    <div className='flex flex-col items-center justify-between w-full m-2'>
+                    <div className='flex flex-col items-center justify-between width m-2'>
                         <div className='w-full p-3'>
                             <p className='font-semibold pb-2'>Total Stock Value</p>
                             <span className='flex text-2xl'>
@@ -185,7 +137,7 @@ const ViewItem = () => {
                         <div className='flex flex-col items-center justify-center w-full m-2'>
                             <div className='w-full p-3'>
                                 <p className='font-semibold pb-2'>Details</p>
-                                <div className="text-sm mx-auto">
+                                <div className="max-w-xl text-sm mx-auto">
                                     {/* Name */}
                                     <div className="flex items-center mb-1">
                                         <span className="w-32 font-medium text-gray-600">Name:</span>
@@ -245,7 +197,7 @@ const ViewItem = () => {
                         <div className='flex flex-col items-center justify-center w-full m-2'>
                             <div className='w-full p-3'>
                                 <p className='font-semibold pb-2'>Tax</p>
-                                <div className="text-sm mx-auto">
+                                <div className="max-w-xl text-sm mx-auto">
                                     {/* Tax Preference */}
                                     <div className="flex items-center">
                                         <span className="w-32 font-medium text-gray-600">Tax Preference</span>
@@ -279,31 +231,31 @@ const ViewItem = () => {
                         <div className='flex flex-col items-center justify-center w-full m-2'>
                             <div className='w-full p-3'>
                                 <p className='font-semibold pb-2'>Units</p>
-                                <div className="w-fit space-y-4">
-                                    <div className="overflow-scroll rounded-md mb-2 border border-gray-200">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-100 rounded-t-md">
-                                                <tr>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Sr No.</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Category</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Value</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Unit</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Description</th>
+                            </div>
+                            <div className="w-full space-y-4">
+                                <div className="overflow-hidden rounded-md mb-2 border border-gray-200">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-100 rounded-t-md">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Sr No.</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Category</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Value</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Unit</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-100">
+                                            {item.units.map((unit, index) => (
+                                                <tr key={index}>
+                                                    <td className="px-4 py-2 text-gray-800 capitalize">{index + 1}</td>
+                                                    <td className="px-4 py-2 text-gray-800 capitalize">{unit.category || '—'}</td>
+                                                    <td className="px-4 py-2 text-gray-800">{unit.value ?? '—'}</td>
+                                                    <td className="px-4 py-2 text-gray-800">{unit.unit || '—'}</td>
+                                                    <td className="px-4 py-2 text-gray-800 capitalize">{unit.description || '—'}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-100">
-                                                {item.units.map((unit, index) => (
-                                                    <tr key={index}>
-                                                        <td className="px-4 py-2 text-gray-800 capitalize">{index + 1}</td>
-                                                        <td className="px-4 py-2 text-gray-800 capitalize">{unit.category || '—'}</td>
-                                                        <td className="px-4 py-2 text-gray-800">{unit.value ?? '—'}</td>
-                                                        <td className="px-4 py-2 text-gray-800">{unit.unit || '—'}</td>
-                                                        <td className="px-4 py-2 max-w-80 text-gray-800 capitalize text-balance">{unit.description || '—'}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -313,130 +265,40 @@ const ViewItem = () => {
                         <div className='flex flex-col items-center justify-center w-full m-2'>
                             <div className='w-full p-3'>
                                 <p className='font-semibold pb-2'>Storage Detail</p>
-
-                                <div className="w-fit space-y-4 mb-2">
-                                    <div className="rounded-md border border-gray-200 overflow-scroll">
-                                        <table className="min-w-full divide-y divide-gray-200 ">
-                                            <thead className="bg-gray-100 rounded-t-md">
-                                                <tr>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Sr No.</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Storage</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Location</th>
-                                                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Quantity</th>
+                            </div>
+                            <div className="w-full space-y-4 mb-2">
+                                <div className="overflow-hidden rounded-md border border-gray-200">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-100 rounded-t-md">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Sr No.</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Storage</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Quantity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-100">
+                                            {item.storage.map((storage, index) => (
+                                                <tr key={index}>
+                                                    <td className="px-4 py-2 text-gray-800 capitalize">{index + 1}</td>
+                                                    <td className="px-4 py-2 text-gray-800 capitalize">{storage.storage || '—'}</td>
+                                                    <td className="px-4 py-2 text-gray-800 capitalize">{storage.quantity || '—'}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-100">
-                                                {item.storage.map((storage, index) => (
-                                                    <tr key={index}>
-                                                        <td className="px-4 py-2 text-gray-800 capitalize">{index + 1}</td>
-                                                        <td className="px-4 py-2 text-gray-800 capitalize">
-                                                            {storageDetails && storageDetails[index] ? storageDetails[index].storageName : '—'}
-                                                        </td>
-                                                        <td className="px-4 py-2 text-gray-800 capitalize">
-                                                            {storageDetails && storageDetails[index] ? storageDetails[index].storageAddress : '—'}
-                                                        </td>
-                                                        <td className="px-4 py-2 text-gray-800 capitalize">{storage.quantity || '—'}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div className='flex flex-col w-1/2 py-2'>
 
-                    {/* Statistics Section */}
-                    {showStatistics && (
-                        <div className='absolute top-0 left-0 h-full w-full md:w-[500px] bg-white text-gray-600 shadow-md overflow-auto py-2'>
-                            <div className='flex flex-col bg-white w-11/12 capitalize rounded-lg p-4 m-2'>
-                                <div className='flex flex-col h-fit pb-4 relative'>
-                                    <span className='flex items-center'>
-                                        <p className='text-base font-bold p-0 me-2'>Item Seles</p>
-                                        <button
-                                            onClick={(e) => handleInfoClick("This graph shows the sales trend of the item over the last 7 days.", e)}
-                                            onMouseLeave={handleMouseLeave}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info-icon lucide-info text-customPrimary"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-                                        </button>
-                                    </span>
-                                    <p className='text-xs p-0 text-gray-400'>Last 7 Days</p>
-                                </div>
-                                <hr />
-                                <ResponsiveContainer width="100%" height={250} className='mt-4'>
-                                    <LineChart
-                                        data={data}
-                                        margin={{
-                                            top: 5,
-                                            right: 30,
-                                            left: 20,
-                                            bottom: 5,
-                                        }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="sales" stroke="#8884d8" activeDot={{ r: 8 }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className='flex flex-col bg-white w-11/12 capitalize rounded-lg p-4 m-2'>
-                                <div className='flex flex-col h-fit pb-4 relative'>
-                                    <span className='flex items-center'>
-                                        <p className='text-base font-bold p-0 me-2'>Revenue per Year</p>
-                                        <button
-                                            onClick={(e) => handleInfoClick("This graph displays the revenue generated by the item for the past 4 years.", e)}
-                                            onMouseLeave={handleMouseLeave}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info-icon lucide-info text-customPrimary"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-                                        </button>
-                                    </span>
-                                    <p className='text-xs p-0 text-gray-400'>Past 4 Years</p>
-                                </div>
-                                <hr />
-                                <ResponsiveContainer width="100%" height={250} className='mt-4'>
-                                    <LineChart
-                                        data={revenueData}
-                                        margin={{
-                                            top: 5,
-                                            right: 30,
-                                            left: 20,
-                                            bottom: 5,
-                                        }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="year" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="revenue" stroke="#82ca9d" activeDot={{ r: 8 }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <button className='absolute top-0 right-0 p-4' onClick={() => setShowStatistics(false)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                            </button>
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
-            {/* Tooltip */}
-            {tooltip.show && (
-                <div
-                    className="absolute z-50 w-48 bg-gray-100 border border-gray-300 rounded p-2 text-sm text-gray-700"
-                    style={{
-                        top: tooltip.y + 10,
-                        left: tooltip.x + 10,
-                    }}
-                    onMouseLeave={handleMouseLeave}
-                >
-                    {tooltip.message}
-                </div>
-            )}
-        </UserLayout >
+            {/* Alert */}
+            {alert && <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />}
+        </UserLayout>
     )
 }
 
