@@ -36,7 +36,7 @@ const TaxTab = ({ formData, handleChange }) => {
         value={formData.taxDetails.sourceState}
         onChange={(e) => handleChange('taxDetails.sourceState', e.target.value)} // Pass explicitly
         options={states.map(state => ({
-          value: state.isoCode,
+          value: state.name,
           label: state.name,
         }))}
       />

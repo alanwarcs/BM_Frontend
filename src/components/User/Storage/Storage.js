@@ -5,6 +5,7 @@ import TextInput from "../ReusableComponents/TextInput";
 import SelectInput from "../ReusableComponents/SelectInput";
 import LoadingBar from '../../LoadingBar';
 import Pagination from '../ReusableComponents/Pagination';
+import { State } from 'country-state-city';
 import Alert from '../../Alert';
 import axios from 'axios';
 
@@ -19,6 +20,7 @@ const Storage = () => {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [openFilterDropdown, setOpenFilterDropdown] = useState(false);
     const [appliedFilter, setAppliedFilter] = useState({});
+    const [states, setStates] = useState([]);
     const [filter, setFilter] = useState({
         search: '',
         storageType: '',
@@ -28,6 +30,12 @@ const Storage = () => {
     const filterButtonRef = useRef(null);
     const editorRef = useRef(null);
     const editorButtonRef = useRef(null);
+
+    useEffect(() => {
+        // Fetch states from the country-state-city package
+        const allStates = State.getStatesOfCountry("IN");
+        setStates(allStates);
+    }, []);
 
     // Fetch all Storage's or based on Filter and search
     const fetchStorage = useCallback(async (page = 1) => {
@@ -429,7 +437,7 @@ const Storage = () => {
                             <div className='flex items-center justify-between w-full'>
                                 <p className='text-xl font-medium'>Edit Storage</p>
                                 <button onClick={() => setSelectedStorageToView(null)} className='bg-gray-100 rounded-full p-1'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                 </button>
                             </div>
                             <form onSubmit={handleUpdateSubmit} className='block w-fit mt-2'>
@@ -491,18 +499,36 @@ const Storage = () => {
                                     />
                                 </div>
 
-                                <div className="flex flex-col m-2 w-fit">
-                                    <label htmlFor="storageAddress" className="block text-gray-700 text-sm mb-2">
-                                        Address
-                                    </label>
-                                    <textarea
-                                        id="storageAddress"
-                                        className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
-                                        rows="4"
-                                        placeholder="Enter storage address"
-                                        value={selectedStorageToView?.storageAddress || ''}
-                                        onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageAddress: e.target.value })}
-                                    ></textarea>
+                                <div className="flex flex-col w-fit">
+                                    <div className='flex flex-warp'>
+                                        {/* Location State */}
+                                        <SelectInput
+                                            id="storageState"
+                                            name="storageState"
+                                            label="Location State"
+                                            required
+                                            value={selectedStorageToView.storageState || ""}
+                                            onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageState: e.target.value })}
+                                            options={states.map(state => ({
+                                                value: state.name,
+                                                label: state.name,
+                                            }))}
+                                            className="w-[250px] m-0"
+                                        />
+                                        <div className='flex flex-col m-2'>
+                                            <label htmlFor="storageAddress" className="block text-gray-700 text-sm mb-2">
+                                                Address
+                                            </label>
+                                            <textarea
+                                                id="storageAddress"
+                                                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+                                                rows="4"
+                                                placeholder="Enter storage address"
+                                                value={selectedStorageToView?.storageAddress || ''}
+                                                onChange={(e) => setSelectedStorageToView({ ...selectedStorageToView, storageAddress: e.target.value })}
+                                            ></textarea>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <button type="submit" className="rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-2 px-2 text-white text-[16px]">

@@ -7,7 +7,7 @@ const getNestedValue = (obj, path) => {
   return path.split('.').reduce((current, key) => current && current[key], obj) || 0;
 };
 
-const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField }) => {
+const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField, isIntraState }) => {
   const [allItems, setAllItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdownIndex, setShowDropdownIndex] = useState(null);
@@ -84,7 +84,6 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
       const filtered = allItems.filter(item =>
         item.itemName?.toLowerCase().includes(value.toLowerCase())
       );
-      console.log('Filtered items on change:', filtered);
       setFilteredItems(filtered);
       setShowDropdownIndex(index);
 
@@ -217,13 +216,12 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
   };
 
   const recalculateAllProducts = (updatedProducts) => {
-    const isIntraState = purchaseOrder.billingAddress?.state === purchaseOrder.shippingAddress?.state;
-
     const recalculatedProducts = updatedProducts.map(product => {
       const quantity = parseFloat(product.quantity) || 0;
       const rate = parseFloat(product.rate) || 0;
       const taxRate = parseFloat(product.tax) || 0;
-      const subtotal = quantity * rate;
+      const discount = parseFloat(product.discount) || 0;
+      const subtotal = quantity * rate - discount;
       let taxAmount = 0;
       let totalPrice = 0;
       let cgstAmount = '0';
@@ -269,15 +267,15 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
       taxAmount: recalculatedProducts.reduce((acc, p) => {
         return acc + parseFloat(p.cgstAmount || 0) + parseFloat(p.sgstAmount || 0) + parseFloat(p.igstAmount || 0);
       }, 0).toFixed(2),
-      totalAmount: Math.max(0, recalculatedProducts.reduce((acc, p) => acc + parseFloat(p.totalPrice || 0), 0) - parseFloat(prevState.discount || 0)).toFixed(2),
-      dueAmount: Math.max(0, (recalculatedProducts.reduce((acc, p) => acc + parseFloat(p.totalPrice || 0), 0) - parseFloat(prevState.discount || 0) - parseFloat(prevState.paidAmount || 0))).toFixed(2)
+      totalAmount: Math.max(0, recalculatedProducts.reduce((acc, p) => acc + parseFloat(p.totalPrice || 0), 0)).toFixed(2),
+      dueAmount: Math.max(0, (recalculatedProducts.reduce((acc, p) => acc + parseFloat(p.totalPrice || 0), 0) - parseFloat(prevState.paidAmount || 0))).toFixed(2)
     }));
   };
 
   const calculateTotalAmount = () => {
     return Math.max(0, products.reduce((acc, product) => {
       return acc + parseFloat(product.totalPrice || 0);
-    }, 0) - parseFloat(purchaseOrder.discount || 0)).toFixed(2);
+    }, 0)).toFixed(2);
   };
 
   const getTaxOptions = () => {
@@ -336,14 +334,12 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
                             item.itemName?.toLowerCase().includes(searchTerm)
                           )
                         : allItems;
-                      console.log('Filtered items on focus:', filtered);
                       setFilteredItems(filtered);
                       setShowDropdownIndex(index);
                     }}
                     onBlur={(e) => {
                       setTimeout(() => {
                         if (!dropdownRef.current?.contains(document.activeElement)) {
-                          console.log('Hiding dropdown');
                           setShowDropdownIndex(null);
                         }
                       }, 200);
@@ -389,7 +385,7 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
                         className="text-customPrimary underline hover:text-customPrimaryHover"
                         onClick={() => handleAddDuplicate(index, allItems.find(i => i.itemName === duplicateWarnings[index].itemName))}
                       >
-                        Add New LOCK
+                        Add New
                       </button>
                     </div>
                   )}
@@ -431,9 +427,9 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
                     name="rate"
                     value={product.rate}
                     onChange={event => handleInternalProductChange(index, event)}
-                    min="0"
-                    className="w-full py-1 px-1 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
-                  />
+                  min="0"
+                  className="w-full py-1 px-1 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+                />
                 </td>
                 <td className="w-[2px] text-center">
                   <span>+</span>
@@ -467,7 +463,7 @@ const ProductTable = ({ products, setPurchaseOrder, purchaseOrder, priceField })
                   <select
                     name="taxPreference"
                     value={product.taxPreference}
-                    onChange={event => handleInternalProductChange(index, event)}
+ scarcar                    onChange={event => handleInternalProductChange(index, event)}
                     className="w-full py-1 px-1 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                   >
                     <option value="GST Inclusive">Incl. GST</option>

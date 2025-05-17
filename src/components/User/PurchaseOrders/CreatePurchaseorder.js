@@ -10,13 +10,14 @@ import PaymentSummary from "../ReusableComponents/PaymentSummary";
 import { useUser } from '../../../context/userContext';
 import { State } from 'country-state-city';
 
-const CreatePurchaseorder = () => {
+const CreatePurchaseOrder = () => {
     const navigate = useNavigate();
     const { user, isLoading } = useUser();
     const [availableStorage, setAvailableStorage] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [alert, setAlert] = useState(null);
     const [states, setStates] = useState([]);
+    const [isIntraState, setIsIntraState] = useState(true); // New state for GST type
 
     const [purchaseOrder, setPurchaseOrder] = useState({
         vendorId: '',
@@ -35,9 +36,10 @@ const CreatePurchaseorder = () => {
         billingAddress: '',
         shippingAddress: '',
         sourceState: '',
-        deliveryState:'',
+        deliveryState: '',
         deliveryLocation: '',
         note: '',
+        buyerGstin: '',
         products: [{
             productId: '',
             productName: '',
@@ -47,7 +49,10 @@ const CreatePurchaseorder = () => {
             tax: '0',
             totalPrice: '0',
             taxPreference: 'GST Exclusive',
-            discount: '0'
+            discount: '0',
+            cgstAmount: '0', // Added for tax breakdown
+            sgstAmount: '0',
+            igstAmount: '0'
         }],
         taxAmount: '0',
         totalAmount: '0',
@@ -87,17 +92,14 @@ const CreatePurchaseorder = () => {
                 const uniqueVendors = Array.from(
                     new Map(vendorList.map(vendor => [vendor.id, vendor])).values()
                 );
-                console.log('Unique vendors:', uniqueVendors);
                 setVendors(uniqueVendors);
                 if (vendorList.length !== uniqueVendors.length) {
-                    console.warn('Duplicate vendor IDs detected:', vendorList);
                     setAlert({
                         message: "Duplicate vendors detected. Showing unique vendors only.",
                         type: "warning"
                     });
                 }
             } catch (error) {
-                console.error('Vendor fetch error:', error);
                 setAlert({ message: "Failed to load vendors.", type: "error" });
             }
         };
@@ -116,7 +118,6 @@ const CreatePurchaseorder = () => {
                 const allStates = State.getStatesOfCountry('IN');
                 setStates(allStates);
             } catch (error) {
-                console.error('State fetch error:', error);
                 setAlert({ message: "Failed to load states.", type: "error" });
             }
         };
@@ -133,30 +134,40 @@ const CreatePurchaseorder = () => {
             }
         };
 
-        const fetchAddress = async () => {
+        const fetchAddressAndGstin = async () => {
             try {
-                const response = await axios.get(`/api/business/address`);
-                const userAddress = response.data.address;
-                const formatAddress =  `${userAddress.address.address}, ${userAddress.address.region}, ${userAddress.address.country}, ${userAddress.address.pincode},`;
-                console.log(userAddress)
+                const response = await axios.get(`/api/business/summary`);
+                const userAddress = response.data.summary.address;
+                const formatAddress = `${userAddress.address}, ${userAddress.region}, ${userAddress.country}, ${userAddress.pincode}.`;
                 setPurchaseOrder(prevState => ({
                     ...prevState,
                     billingAddress: formatAddress,
                     shippingAddress: formatAddress,
-                    deliveryState: userAddress.address.region
+                    deliveryState: userAddress.region
+                }));
+                
+                const buyerGstin = response.data.summary.gstin;
+                setPurchaseOrder(prevState => ({
+                    ...prevState,
+                    buyerGstin
                 }));
             } catch (error) {
-                console.error('user address fetch error:', error);
-                setAlert({ message: "Failed to fetch user's address." });
+                setAlert({ message: "Failed to fetch user's address or GSTIN.", type: "error" });
             }
-        }
+        };
 
         fetchVendors();
         fetchStorage();
         fetchStates();
-        fetchAddress();
+        fetchAddressAndGstin();
         fetchPurchaseOrderNumber();
+
     }, [user, isLoading, navigate]);
+
+    // Update isIntraState whenever sourceState or deliveryState changes
+    useEffect(() => {
+        setIsIntraState(purchaseOrder.sourceState === purchaseOrder.deliveryState);
+    }, [purchaseOrder.sourceState, purchaseOrder.deliveryState]);
 
     const handleVendorChange = async (e) => {
         const vendorId = e.target.value;
@@ -169,19 +180,17 @@ const CreatePurchaseorder = () => {
             try {
                 const response = await axios.get(`/api/vendor/getVendorDetails/${vendorId}`);
                 const vendorData = response.data.vendorDetails;
-                console.log('Vendor details:', vendorData);
 
                 let sourceState = vendorData?.taxDetails?.sourceState;
-
+                
+                console.log("Source state set to: ", sourceState);
+                
                 if (sourceState) {
-                    // Find the state object that matches the vendor's sourceState
-                    const stateExists = states.find(state => state.isoCode === sourceState);
-
+                    const stateExists = states.find(state => state.name === sourceState);
                     if (stateExists) {
-                        // Set the purchaseOrder's sourceState to the isoCode
                         setPurchaseOrder(prevState => ({
                             ...prevState,
-                            sourceState: stateExists.isoCode
+                            sourceState: stateExists.name
                         }));
                     } else {
                         setAlert({
@@ -196,7 +205,6 @@ const CreatePurchaseorder = () => {
                     });
                 }
             } catch (error) {
-                console.error('Vendor details error:', error);
                 setAlert({
                     message: "Failed to fetch vendor details. Please select source state manually.",
                     type: "error"
@@ -205,11 +213,31 @@ const CreatePurchaseorder = () => {
         }
     };
 
-    const handleInputChange = (field, value) => {
-        setPurchaseOrder(prevState => ({
-            ...prevState,
-            [field]: value
-        }));
+    const handleInputChange = async (field, value) => {
+        if (field === 'deliveryLocation') {
+            try {
+                setPurchaseOrder(prevState => ({
+                    ...prevState,
+                    deliveryLocation: value
+                }));
+
+                if (value) {
+                    const response = await axios.get(`/api/storage/getStorageDetails/${value}`);
+                    const storageState = response.data.storage.storageState || '';
+                    setPurchaseOrder(prevState => ({
+                        ...prevState,
+                        deliveryState: storageState
+                    }));
+                }
+            } catch (error) {
+                setAlert({ message: "Failed to fetch storage details.", type: "error" });
+            }
+        } else {
+            setPurchaseOrder(prevState => ({
+                ...prevState,
+                [field]: value
+            }));
+        }
     };
 
     const handleFileChange = (e) => {
@@ -264,8 +292,8 @@ const CreatePurchaseorder = () => {
                 return;
             }
 
-            if (!purchaseOrder.vendorId || !purchaseOrder.orderDate || !purchaseOrder.billingAddress || !purchaseOrder.shippingAddress) {
-                setAlert({ message: "Please fill all required fields.", type: "error" });
+            if (!purchaseOrder.vendorId || !purchaseOrder.orderDate || !purchaseOrder.billingAddress || !purchaseOrder.shippingAddress || !purchaseOrder.sourceState || !purchaseOrder.deliveryState) {
+                setAlert({ message: "Please fill all required fields, including Source State and Delivery State.", type: "error" });
                 return;
             }
             if (parseFloat(purchaseOrder.paidAmount) > 0 && !purchaseOrder.initialPaymentMethod) {
@@ -335,6 +363,7 @@ const CreatePurchaseorder = () => {
                 deliveryState: '',
                 deliveryLocation: '',
                 note: '',
+                buyerGstin: '',
                 products: [{
                     productId: '',
                     productName: '',
@@ -344,7 +373,10 @@ const CreatePurchaseorder = () => {
                     tax: '0',
                     totalPrice: '0',
                     taxPreference: 'GST Exclusive',
-                    discount: '0'
+                    discount: '0',
+                    cgstAmount: '0',
+                    sgstAmount: '0',
+                    igstAmount: '0'
                 }],
                 taxAmount: '0',
                 totalAmount: '0',
@@ -452,12 +484,12 @@ const CreatePurchaseorder = () => {
                                 />
                                 <SelectInput
                                     id="sourceState"
-                                    name="sourceState" // Add name attribute
+                                    name="sourceState"
                                     label="Source State"
                                     value={purchaseOrder.sourceState || ''}
                                     onChange={(e) => handleInputChange('sourceState', e.target.value)}
                                     options={states.map(state => ({
-                                        value: state.isoCode,
+                                        value: state.name,
                                         label: state.name,
                                     }))}
                                     required
@@ -473,13 +505,14 @@ const CreatePurchaseorder = () => {
                                         value: state.name,
                                         label: state.name,
                                     }))}
+                                    required
                                     className="w-[250px]"
                                 />
                                 <SelectInput
                                     id="deliveryLocation"
                                     label="Delivery Location"
                                     options={availableStorage.map((storage) => ({
-                                        value: storage.id,
+                                        value: storage._id,
                                         label: storage.storageName,
                                     }))}
                                     value={purchaseOrder.deliveryLocation || ''}
@@ -530,10 +563,12 @@ const CreatePurchaseorder = () => {
                                     setPurchaseOrder={setPurchaseOrder}
                                     purchaseOrder={purchaseOrder}
                                     priceField="purchaseInfo.purchasePrice"
+                                    isIntraState={isIntraState} // Pass isIntraState
                                 />
                                 <PaymentSummary
                                     purchaseOrder={purchaseOrder}
                                     setPurchaseOrder={setPurchaseOrder}
+                                    isIntraState={isIntraState} // Pass isIntraState
                                 />
                             </div>
                             <div className='flex flex-wrap w-full'>
@@ -603,4 +638,4 @@ const CreatePurchaseorder = () => {
     );
 };
 
-export default CreatePurchaseorder;
+export default CreatePurchaseOrder;

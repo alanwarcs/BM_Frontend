@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import TextInput from "../ReusableComponents/TextInput";
 import SelectInput from "../ReusableComponents/SelectInput";
 import UserLayout from "../ReusableComponents/UserLayout";
+import { State } from 'country-state-city';
 import LoadingBar from "../../LoadingBar";
 import { Link } from "react-router-dom";
 import Alert from "../../Alert";
@@ -10,13 +11,38 @@ import axios from "axios";
 const AddStorage = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [alert, setAlert] = useState(null);
+  const [states, setStates] = useState([]);
   const [formData, setFormData] = useState({
     storageType: "",
     storageName: "",
     storageAddress: "",
+    storageState: "",
     capacity: "",
     capacityUnit: "",
   });
+
+  useEffect(() => {
+
+    // Fetch states from the country-state-city package
+    const allStates = State.getStatesOfCountry("IN");
+    setStates(allStates);
+
+    // Fetch states from the backend
+    const fetchStates = async () => {
+      try {
+        const response = await axios.get("/api/business/address");
+        const userAddress = response.data.address;
+        setFormData(prevState => ({
+          ...prevState,
+          storageState: userAddress.address.region
+        }));
+      } catch (error) {
+        setAlert({ message: "An error occurred while fetching states.", type: "error" });
+      }
+    };
+    fetchStates();
+  }, []);
+
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -188,6 +214,31 @@ const AddStorage = () => {
                 { value: "liters", label: "Liters" },
                 { value: "cubic meters", label: "Cubic Meters" },
               ]}
+            />
+
+            {/* Storage Contact */}
+            <TextInput
+              label="Storage Contact"
+              id="storageContact"
+              placeholder="Enter storage contact number"
+              value={formData.storageContact}
+              onChange={handleChange}
+              type="tel"
+            />
+            
+            {/* Location State */}
+            <SelectInput
+              id="storageState"
+              name="storageState"
+              label="Location State"
+              required
+              value={formData.storageState || ""}
+              onChange={handleChange}
+              options={states.map(state => ({
+                value: state.name,
+                label: state.name,
+              }))}
+              className="w-[250px]"
             />
 
             {/* Address */}

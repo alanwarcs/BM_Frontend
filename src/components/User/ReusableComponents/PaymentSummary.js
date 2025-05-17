@@ -4,10 +4,9 @@ import SelectInput from "../ReusableComponents/SelectInput";
 import TextInput from "../ReusableComponents/TextInput";
 import Alert from "../../Alert";
 
-const PaymentSummary = ({ purchaseOrder, setPurchaseOrder }) => {
+const PaymentSummary = ({ purchaseOrder, setPurchaseOrder, isIntraState }) => {
   const [paymentType, setPaymentType] = useState(purchaseOrder.modeOfPayment === 'EMI' ? 'EMI' : 'One-Go');
   const [alert, setAlert] = useState(null);
-  const isIntraState = purchaseOrder.billingAddress?.state === purchaseOrder.shippingAddress?.state;
 
   useEffect(() => {
     if (!purchaseOrder.emiDetails || !Array.isArray(purchaseOrder.emiDetails?.installments)) {
@@ -263,7 +262,7 @@ const PaymentSummary = ({ purchaseOrder, setPurchaseOrder }) => {
     }
   };
 
-  const totalBeforeTax = (parseFloat(purchaseOrder.totalAmount || 0) + parseFloat(purchaseOrder.discount || 0) - parseFloat(purchaseOrder.taxAmount || 0)).toFixed(2);
+  const totalBeforeTax = (parseFloat(purchaseOrder.totalAmount || 0) - parseFloat(purchaseOrder.taxAmount || 0)).toFixed(2);
   const cgstTotal = purchaseOrder.products.reduce((sum, p) => sum + parseFloat(p.cgstAmount || 0), 0).toFixed(2);
   const sgstTotal = purchaseOrder.products.reduce((sum, p) => sum + parseFloat(p.sgstAmount || 0), 0).toFixed(2);
   const igstTotal = purchaseOrder.products.reduce((sum, p) => sum + parseFloat(p.igstAmount || 0), 0).toFixed(2);

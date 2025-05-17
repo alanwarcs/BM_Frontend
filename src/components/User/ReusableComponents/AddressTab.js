@@ -23,7 +23,7 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
     // If no valid state is found, clear the shippingState
     if (formData.shippingAddress.country === 'IN' && formData.shippingAddress.state) {
       const states = State.getStatesOfCountry('IN');
-      if (!states.some(state => state.isoCode === formData.shippingAddress.state)) {
+      if (!states.some(state => state.name === formData.shippingAddress.state)) {
         handleChange({ target: { name: 'shippingState', value: '' } });
       }
     }
@@ -33,7 +33,7 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
     // If no valid state is found, clear the billingState
     if (formData.billingAddress.country === 'IN' && formData.billingAddress.state) {
       const states = State.getStatesOfCountry('IN');
-      if (!states.some(state => state.isoCode === formData.billingAddress.state)) {
+      if (!states.some(state => state.name === formData.billingAddress.state)) {
         handleChange({ target: { name: 'billingState', value: '' } });
       }
     }
@@ -154,7 +154,7 @@ const AddressTab = ({ formData, handleChange, copyShippingToBilling }) => {
           value={formData.billingAddress.state}
           onChange={(e) => handleChange('billingAddress.state', e.target.value)} // Pass explicitly
           options={billingStates.map(state => ({
-            value: state.isoCode,
+            value: state.name,
             label: state.name,
           }))}
         />
