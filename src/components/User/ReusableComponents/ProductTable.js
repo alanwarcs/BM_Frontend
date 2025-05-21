@@ -3,16 +3,19 @@ import axios from "axios";
 import Alert from "../../Alert";
 import { useUser } from "../../../context/userContext";
 import measurementData from "../../../data/measurementCategories.json";
+import gstData from '../../../data/gstRates.json'; // Adjust path
 
-const ProductTable = ({ selectedProducts, onProductSelect }) => {
+const ProductTable = ({ selectedProducts, onProductSelect, gstType }) => {
   const { user } = useUser();
   const [alert, setAlert] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [itemDropdownVisible, setItemDropdownVisible] = useState(false);
+  const [taxDropdownVisible, setTaxDropdownVisible] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const productTableRef = useRef();
   const productNameRef = useRef();
+  const productTaxRef = useRef();
 
   useEffect(() => {
     // Handle click outside to close dropdown
@@ -35,7 +38,6 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
         const response = await axios.get("/api/item/getItemList", { withCredentials: true });
         if (response.data.success) {
           const fetchedProducts = response.data.data || [];
-          console.log("Fetched products:", fetchedProducts); // Debug log
           setProducts(fetchedProducts);
           setFilteredProducts(fetchedProducts);
           setHighlightedIndex(fetchedProducts.length > 0 ? 0 : -1);
@@ -46,7 +48,6 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
         const errorMessage =
           error.response?.data?.message || "Failed to retrieve items. Please try again later.";
         setAlert({ message: errorMessage, type: "error" });
-        console.error("Error fetching product list:", error);
       }
     };
 
@@ -58,10 +59,10 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
     const searchTerm = value.toLowerCase().trim();
     const filtered = searchTerm
       ? products.filter(
-          (product) =>
-            product &&
-            (product.itemName || product.name || "").toLowerCase().includes(searchTerm)
-        )
+        (product) =>
+          product &&
+          (product.itemName || product.name || "").toLowerCase().includes(searchTerm)
+      )
       : products;
     setFilteredProducts(filtered);
     setHighlightedIndex(filtered.length > 0 ? 0 : -1);
@@ -82,19 +83,16 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
   // Handle product selection
   const handleProductSelect = (product) => {
     if (!product || !onProductSelect) {
-      console.error("Invalid product or onProductSelect:", { product, onProductSelect });
       setAlert({ message: "Invalid product selected.", type: "error" });
       return;
     }
 
     const productId = product._id || product.id || "";
     if (!productId) {
-      console.error("Product missing ID:", product);
       setAlert({ message: "Selected product has no valid ID.", type: "error" });
       return;
     }
 
-    console.log("Selecting product:", product); // Debug log
     onProductSelect({
       productId,
       productName: product.itemName || product.name || "Unknown Product",
@@ -130,18 +128,16 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
         });
         break;
       case "Enter":
-      case "Space":
+      case " ":
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
           const selectedProduct = filteredProducts[highlightedIndex];
           if (!selectedProduct || (!selectedProduct._id && !selectedProduct.id)) {
-            console.error("Invalid selected product:", selectedProduct);
             setAlert({ message: "Selected product is invalid.", type: "error" });
             return;
           }
           handleProductSelect(selectedProduct);
         } else {
-          console.warn("No valid product to select:", { highlightedIndex, filteredProducts });
           setItemDropdownVisible(false);
           setHighlightedIndex(-1);
         }
@@ -158,6 +154,7 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
   return (
     <div ref={productTableRef} className="flex flex-col w-full mb-96">
       <h2 className="text-md font-semibold m-2">Product/Service Details</h2>
+      {alert && <Alert message={alert.message} type={alert.type} />}
       <div className="overflow-x-visible">
         <table className="min-w-[1000px] w-full table-auto overflow-x-visible border-1 border-bottom border-gray-300 text-sm p-3">
           <thead className="bg-gray-100">
@@ -175,8 +172,8 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
           <tbody>
             <tr className="hover:bg-gray-50">
               <td className="p-2">
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={1}
                   className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
                   disabled
@@ -205,22 +202,26 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                       {filteredProducts.length > 0 ? (
                         filteredProducts.map((product, index) => (
                           <li
-                            key={product?._id || product?.id || `product-${index}`}
-                            className={`px-3 py-2 cursor-pointer ${
-                              index === highlightedIndex ? "bg-gray-200" : "hover:bg-gray-100"
-                            }`}
+                            key={
+                              product._id
+                                ? `product-${product._id}`
+                                : product.id
+                                  ? `product-${product.id}`
+                                  : `product-${index}`
+                            }
+                            className={`px-3 py-2 cursor-pointer ${index === highlightedIndex ? "bg-gray-200" : "hover:bg-gray-100"
+                              }`}
                             onClick={() => product && handleProductSelect(product)}
                           >
                             <span className="font-medium">
-                              {product?.itemName || product?.name || "Unnamed Product"}
+                              {product.itemName || product.name || "Unnamed Product"}
                             </span>
                           </li>
                         ))
                       ) : (
                         <li
-                          className={`px-3 py-2 text-customPrimary cursor-pointer ${
-                            highlightedIndex === -1 ? "bg-gray-200" : "hover:bg-gray-100"
-                          }`}
+                          className={`px-3 py-2 text-customPrimary cursor-pointer ${highlightedIndex === -1 ? "bg-gray-200" : "hover:bg-gray-100"
+                            }`}
                           onClick={() => {
                             setItemDropdownVisible(false);
                             setHighlightedIndex(-1);
@@ -248,7 +249,7 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                     })
                   }
                   placeholder="0"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm text-center"
+                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
                 />
               </td>
               <td className="p-2">
@@ -264,12 +265,12 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                   }
                   className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
                 >
-                  <option value="" disabled>
-                    Select
-                  </option>
                   {measurementData.measurementCategories.flatMap((category) =>
                     category.units.map((unit) => (
-                      <option key={unit.UQC} value={unit.UQC}>
+                      <option
+                        key={`${category.categoryName}-${unit.UQC}`} // composite unique key
+                        value={unit.UQC}
+                      >
                         {unit.unitName} ({unit.UQC})
                       </option>
                     ))
@@ -281,9 +282,9 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                   type="number"
                   name="rate"
                   id="rate"
-                  autoComplete="off"
                   min="0"
-                  value={selectedProducts[0]?.rate || "0.00"}
+                  autoComplete="off"
+                  value={selectedProducts[0]?.rate || "0"}
                   onChange={(e) =>
                     onProductSelect({
                       ...selectedProducts[0],
@@ -291,7 +292,7 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                     })
                   }
                   placeholder="0.00"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm text-right"
+                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
                 />
               </td>
               <td className="p-2">
@@ -300,6 +301,8 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                   name="discount"
                   id="discount"
                   min="0"
+                  max="100"
+                  autoComplete="off"
                   value={selectedProducts[0]?.discount || "0"}
                   onChange={(e) =>
                     onProductSelect({
@@ -308,49 +311,66 @@ const ProductTable = ({ selectedProducts, onProductSelect }) => {
                     })
                   }
                   placeholder="0"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm text-right"
+                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
                 />
               </td>
               <td className="p-2">
-                <select
-                  name="tax"
-                  id="tax"
-                  value={selectedProducts[0]?.tax || ""}
-                  onChange={(e) =>
-                    onProductSelect({
-                      ...selectedProducts[0],
-                      tax: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                >
-                  <option value="" disabled>
-                    Select
-                  </option>
-                  <option value="0">0%</option>
-                  <option value="5">5%</option>
-                  <option value="12">12%</option>
-                  <option value="18">18%</option>
-                  <option value="28">28%</option>
-                </select>
+                <div className="flex relative flex-col overflow-x-visible">
+                  <input
+                    type="text"
+                    name="tax"
+                    id="tax"
+                    autoComplete="off"
+                    ref={productTaxRef}
+                    onChange={(e) => handleProductSearch(e.target.value)}
+                    onFocus={() => {
+                      setFilteredProducts(products);
+                      setTaxDropdownVisible(true);
+                      setHighlightedIndex(products.length > 0 ? 0 : -1);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Select or Search Product"
+                    className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
+                  />
+                  {taxDropdownVisible && (
+                    <ul className="absolute z-50 top-[30px] whitespace-nowrap w-fit bg-white border border-gray-200 rounded-md max-h-52 overflow-y-auto shadow-md">
+                        <li
+                          className={`px-3 py-2 text-black cursor-pointer ${highlightedIndex === -1 ? "bg-gray-200" : "hover:bg-gray-100"
+                            }`}
+                          onClick={() => {
+                            setTaxDropdownVisible(false);
+                            setHighlightedIndex(-1);
+                          }}
+                        >
+                          <p>No Tax Available</p>
+                        </li>
+                    </ul>
+                  )}
+                </div>
               </td>
               <td className="p-2">
                 <input
-                  type="number"
+                  type="text"
                   name="totalPrice"
                   id="totalPrice"
-                  min="0"
-                  value={selectedProducts[0]?.totalPrice || "0.00"}
-                  disabled
+                  autoComplete="off"
+                  value={
+                    (
+                      (parseFloat(selectedProducts[0]?.rate) || 0) *
+                      (parseFloat(selectedProducts[0]?.quantity) || 0) *
+                      (1 - (parseFloat(selectedProducts[0]?.discount) || 0) / 100) *
+                      (1 + (parseFloat(selectedProducts[0]?.tax) || 0) / 100)
+                    ).toFixed(2) || "0.00"
+                  }
+                  readOnly
                   placeholder="0.00"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm text-right"
+                  className="w-full px-2 py-1 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm"
                 />
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      {alert && <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />}
     </div>
   );
 };

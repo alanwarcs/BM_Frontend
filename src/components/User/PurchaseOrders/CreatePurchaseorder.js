@@ -166,12 +166,22 @@ const CreatePurchaseorder = () => {
     }
   };
 
-  const handleVendorSelect = ({ vendorId, vendorName }) => {
-    setPurchaseOrder((prev) => ({
-      ...prev,
-      vendorId,
-      vendorName,
-    }));
+  const handleVendorSelect = async({ vendorId, vendorName }) => {
+    try {
+      const response = await axios.get(`/api/vendor/getVendorDetails/${vendorId}`);
+      const vendorDetails = response?.data?.vendorDetails;
+
+      if (vendorDetails) {
+      setPurchaseOrder((prev) => ({
+        ...prev,
+        vendorId,
+        vendorName,
+        sourceState: vendorDetails.taxDetails.sourceState,
+      }));
+      }
+    } catch (error) {
+      setAlert({ message: "Failed to fetch selected vendors details.", type: "error" });
+    }
   };
 
 const handleProductSelect = (product) => {
@@ -328,7 +338,15 @@ const handleProductSelect = (product) => {
             </div>
           </div>
           <hr />
-          <ProductTable selectedProducts={purchaseOrder.products} onProductSelect={handleProductSelect} />
+          <ProductTable
+            selectedProducts={purchaseOrder.products}
+            gstType={
+              purchaseOrder.sourceState === purchaseOrder.deliveryState
+                ? "intra"
+                : "inter"
+            }
+            onProductSelect={handleProductSelect}
+          />
         </form>
       </div>
       {alert && <Alert message={alert.message} type={alert.type} handleClose={() => setAlert(null)} />}
