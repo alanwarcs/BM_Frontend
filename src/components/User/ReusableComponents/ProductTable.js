@@ -3,50 +3,57 @@ import axios from "axios";
 import Alert from "../../Alert";
 import { useUser } from "../../../context/userContext";
 import measurementData from "../../../data/measurementCategories.json";
-import gstData from '../../../data/gstRates.json'; // Adjust path
+import gstData from "../../../data/gstRates.json";
 
-const ProductTable = ({ selectedProducts, onProductSelect, gstType }) => {
+const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
   const { user } = useUser();
   const [alert, setAlert] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [itemDropdownVisible, setItemDropdownVisible] = useState(false);
-  const [taxDropdownVisible, setTaxDropdownVisible] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const productTableRef = useRef();
-  const productNameRef = useRef();
-  const productTaxRef = useRef();
+  const [taxes, setTaxes] = useState([]);
+  const [filteredTaxes, setFilteredTaxes] = useState([]);
+  const [itemDropdownVisible, setItemDropdownVisible] = useState({});
+  const [taxDropdownVisible, setTaxDropdownVisible] = useState({});
+  const [highlightedIndex, setHighlightedIndex] = useState({ product: -1, tax: -1 });
+  const [duplicateWarnings, setDuplicateWarnings] = useState({});
+  const productDropdownRefs = useRef({});
+  const taxDropdownRef = useRef();
+
+  const gstRates = gstData.gstRates;
+  const gstType = purchaseOrder.sourceState === purchaseOrder.deliveryState ? "intra" : "inter";
 
   useEffect(() => {
-    // Handle click outside to close dropdown
-    const handleClickOutside = (event) => {
-      if (productTableRef.current && !productTableRef.current.contains(event.target)) {
-        setItemDropdownVisible(false);
-        setHighlightedIndex(-1);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Fetch product list
     const fetchData = async () => {
       try {
-        const response = await axios.get("/api/item/getItemList", { withCredentials: true });
+        const response = await axios.get("/api/item/getItemList", {
+          withCredentials: true,
+        });
         if (response.data.success) {
           const fetchedProducts = response.data.data || [];
           setProducts(fetchedProducts);
           setFilteredProducts(fetchedProducts);
-          setHighlightedIndex(fetchedProducts.length > 0 ? 0 : -1);
         } else {
-          setAlert({ message: response.data.message || "Failed to fetch products.", type: "error" });
+          setAlert({
+            message: response.data.message || "Failed to fetch products.",
+            type: "error",
+          });
+        }
+
+        const taxResponse = await axios.get("/api/tax/getTax", {
+          withCredentials: true,
+        });
+        if (taxResponse.data.success) {
+          setTaxes(taxResponse.data.taxes || []);
+        } else {
+          setAlert({
+            message: taxResponse.data.message || "Failed to fetch taxes.",
+            type: "error",
+          });
         }
       } catch (error) {
         const errorMessage =
-          error.response?.data?.message || "Failed to retrieve items. Please try again later.";
+          error.response?.data?.message ||
+          "Failed to retrieve items or taxes. Please try again later.";
         setAlert({ message: errorMessage, type: "error" });
       }
     };
@@ -54,323 +61,1078 @@ const ProductTable = ({ selectedProducts, onProductSelect, gstType }) => {
     fetchData();
   }, [user]);
 
-  // Handle product search
-  const handleProductSearch = (value) => {
-    const searchTerm = value.toLowerCase().trim();
-    const filtered = searchTerm
-      ? products.filter(
-        (product) =>
-          product &&
-          (product.itemName || product.name || "").toLowerCase().includes(searchTerm)
-      )
-      : products;
-    setFilteredProducts(filtered);
-    setHighlightedIndex(filtered.length > 0 ? 0 : -1);
-    setItemDropdownVisible(true);
-
-    // Update parent with partial selection
-    if (onProductSelect) {
-      onProductSelect({
-        productId: "",
-        productName: value,
-        rate: "0",
-        tax: 0,
-        unit: "nos",
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      let clickedOutsideAll = true;
+      Object.values(productDropdownRefs.current).forEach((ref) => {
+        if (ref && ref.contains(event.target)) {
+          clickedOutsideAll = false;
+        }
       });
-    }
-  };
 
-  // Handle product selection
-  const handleProductSelect = (product) => {
-    if (!product || !onProductSelect) {
-      setAlert({ message: "Invalid product selected.", type: "error" });
-      return;
-    }
+      if (clickedOutsideAll) {
+        setItemDropdownVisible({});
+        setHighlightedIndex((prev) => ({ ...prev, product: -1 }));
+      }
 
-    const productId = product._id || product.id || "";
-    if (!productId) {
-      setAlert({ message: "Selected product has no valid ID.", type: "error" });
-      return;
-    }
+      if (taxDropdownRef.current && !taxDropdownRef.current.contains(event.target)) {
+        setTaxDropdownVisible({});
+        setHighlightedIndex((prev) => ({ ...prev, tax: -1 }));
+      }
+    };
 
-    onProductSelect({
-      productId,
-      productName: product.itemName || product.name || "Unknown Product",
-      rate: product.rate ? String(product.rate) : "0",
-      tax: product.intraStateGST || product.interStateGST || 0,
-      unit: product.unit || "nos",
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const customGstRates = gstRates.map((rate) => {
+      if (gstType === "intra") {
+        return {
+          label: `GST (${rate.intraState.cgst.rate + rate.intraState.sgst.rate}%)`,
+          value: rate.totalRate,
+          rate: rate.intraState.cgst.rate + rate.intraState.sgst.rate,
+          type: "GST",
+        };
+      } else {
+        return {
+          label: `IGST (${rate.interState.igst.rate}%)`,
+          value: rate.totalRate,
+          rate: rate.interState.igst.rate,
+          type: "IGST",
+        };
+      }
     });
 
-    setItemDropdownVisible(false);
-    setHighlightedIndex(-1);
-    if (productNameRef.current) {
-      productNameRef.current.value = product.itemName || product.name || "";
-    }
-  };
+    const formattedTaxes = taxes.map((tax) => ({
+      label: `${tax.name} (${tax.rate}${tax.rateType === "Percent" ? "%" : ""})`,
+      value: tax.rate,
+      rate: tax.rate,
+      description: tax.name,
+      type: "custom",
+    }));
 
-  // Handle keyboard navigation
-  const handleKeyDown = (e) => {
-    if (!itemDropdownVisible) return;
+    setFilteredTaxes([...customGstRates, ...formattedTaxes]);
+  }, [gstType, gstRates, taxes]);
 
-    switch (e.key) {
-      case "ArrowUp":
-        e.preventDefault();
-        setHighlightedIndex((prev) => {
-          if (prev <= 0) return filteredProducts.length - 1;
-          return prev - 1;
-        });
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        setHighlightedIndex((prev) => {
-          if (prev >= filteredProducts.length - 1) return 0;
-          return prev + 1;
-        });
-        break;
-      case "Enter":
-      case " ":
-        e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
-          const selectedProduct = filteredProducts[highlightedIndex];
-          if (!selectedProduct || (!selectedProduct._id && !selectedProduct.id)) {
-            setAlert({ message: "Selected product is invalid.", type: "error" });
-            return;
-          }
-          handleProductSelect(selectedProduct);
-        } else {
-          setItemDropdownVisible(false);
-          setHighlightedIndex(-1);
+  const calculateTotals = (products, purchaseOrder) => {
+    let totalBaseAmount = 0;
+    let totalDiscount = 0;
+    let taxableAmount = 0;
+    let cgstTotal = 0;
+    let sgstTotal = 0;
+    let igstTotal = 0;
+    let customTaxTotal = 0;
+
+    products.forEach((product) => {
+      const qty = parseFloat(product.quantity) || 0;
+      const rate = parseFloat(product.rate) || 0;
+      const subtotal = qty * rate;
+      totalBaseAmount += subtotal;
+
+      let discountAmount = 0;
+      if (purchaseOrder.discountType === "Product") {
+        const discountValue = parseFloat(product.inProductDiscount) || 0;
+        discountAmount =
+          product.inProductDiscountValueType === "Percent"
+            ? (subtotal * discountValue) / 100
+            : discountValue;
+        totalDiscount += discountAmount;
+      }
+      taxableAmount += subtotal - discountAmount;
+
+      product.taxes.forEach((tax) => {
+        const taxAmount = parseFloat(tax.amount || 0);
+        if (tax.type === "GST" && tax.subType === "CGST") {
+          cgstTotal += taxAmount;
+        } else if (tax.type === "GST" && tax.subType === "SGST") {
+          sgstTotal += taxAmount;
+        } else if (tax.type === "IGST") {
+          igstTotal += taxAmount;
+        } else if (tax.type === "custom") {
+          customTaxTotal += taxAmount;
         }
-        break;
-      case "Escape":
-        setItemDropdownVisible(false);
-        setHighlightedIndex(-1);
-        break;
-      default:
-        break;
+      });
+    });
+
+    if (purchaseOrder.discountType === "Flat") {
+      const discountValue = parseFloat(purchaseOrder.discount) || 0;
+      if (discountValue > 0) {
+        const flatDiscountAmount =
+          purchaseOrder.discountValueType === "Percent"
+            ? (taxableAmount * discountValue) / 100
+            : discountValue;
+        taxableAmount -= flatDiscountAmount;
+        totalDiscount += flatDiscountAmount;
+      }
+    }
+
+    const totalTax = cgstTotal + sgstTotal + igstTotal + customTaxTotal;
+    let totalInclTax = taxableAmount + totalTax;
+    let roundOffAmount = "0.00";
+
+    if (purchaseOrder.roundOff) {
+      const roundedTotal = Math.round(totalInclTax);
+      roundOffAmount = (roundedTotal - totalInclTax).toFixed(2);
+      totalInclTax = roundedTotal;
+    }
+
+    return {
+      totalBaseAmount: totalBaseAmount.toFixed(2),
+      totalDiscount: totalDiscount.toFixed(2),
+      taxableAmount: taxableAmount.toFixed(2),
+      totalTax: totalTax.toFixed(2),
+      totalInclTax: totalInclTax.toFixed(2),
+      cgstTotal: cgstTotal.toFixed(2),
+      sgstTotal: sgstTotal.toFixed(2),
+      igstTotal: igstTotal.toFixed(2),
+      customTaxTotal: customTaxTotal.toFixed(2),
+      roundOffAmount,
+    };
+  };
+
+  const recalculateProduct = (product, gstType, tax = null) => {
+    const quantity = parseFloat(product.quantity) || 0;
+    const rate = parseFloat(product.rate) || 0;
+    const discountValue = parseFloat(product.inProductDiscount) || 0;
+    const discount =
+      product.inProductDiscountValueType === "Percent"
+        ? discountValue / 100
+        : discountValue;
+
+    let amountBase = quantity * rate;
+    const discountAmount =
+      product.inProductDiscountValueType === "Percent"
+        ? amountBase * discount
+        : discount;
+    amountBase -= discountAmount;
+
+    let taxes = [];
+
+    if (tax) {
+      if (tax.type === "GST" && gstType === "intra") {
+        const cgstRate = parseFloat(tax.rate) / 2 || 0;
+        const sgstRate = parseFloat(tax.rate) / 2 || 0;
+        taxes = [
+          {
+            type: "GST",
+            subType: "CGST",
+            rate: cgstRate,
+            amount: ((cgstRate / 100) * amountBase).toFixed(2),
+          },
+          {
+            type: "GST",
+            subType: "SGST",
+            rate: sgstRate,
+            amount: ((sgstRate / 100) * amountBase).toFixed(2),
+          },
+        ];
+      } else if (tax.type === "IGST" && gstType === "inter") {
+        const igstRate = parseFloat(tax.rate) || 0;
+        taxes = [
+          {
+            type: "IGST",
+            subType: "IGST",
+            rate: igstRate,
+            amount: ((igstRate / 100) * amountBase).toFixed(2),
+          },
+        ];
+      } else if (tax.type === "custom") {
+        const customRate = parseFloat(tax.rate) || 0;
+        taxes = [
+          {
+            type: "custom",
+            subType: tax.description,
+            rate: customRate,
+            amount: ((customRate / 100) * amountBase).toFixed(2),
+          },
+        ];
+      }
+    } else if (product.taxes && product.taxes.length > 0) {
+      taxes = product.taxes.map((t) => ({
+        ...t,
+        amount: ((t.rate / 100) * amountBase).toFixed(2),
+      }));
+    } else {
+      taxes = gstType === "intra"
+        ? [
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
+        : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
+    }
+
+    const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+    const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+
+    return {
+      ...product,
+      taxes,
+      totalPrice,
+    };
+  };
+
+  const checkDuplicates = (updatedProducts) => {
+    const newWarnings = {};
+    updatedProducts.forEach((product, index) => {
+      const existingIndex = updatedProducts.findIndex((p, i) => {
+        if (i >= index) return false;
+        if (product.productId && p.productId) {
+          return product.productId === p.productId;
+        }
+        return product.productName && p.productName && product.productName.toLowerCase() === p.productName.toLowerCase();
+      });
+      if (existingIndex !== -1) {
+        newWarnings[index] = existingIndex;
+      }
+    });
+    setDuplicateWarnings(newWarnings);
+  };
+
+  const handleInputChangeProduct = (index, field, value) => {
+    const updatedProducts = [...purchaseOrder.products];
+    
+    // Validate inProductDiscount when type is Percent
+    if (field === "inProductDiscount" && updatedProducts[index].inProductDiscountValueType === "Percent") {
+      const parsedValue = parseFloat(value) || 0;
+      if (parsedValue > 100) {
+        setAlert({
+          message: "Discount percentage cannot exceed 100%.",
+          type: "error",
+        });
+        setTimeout(() => setAlert(null), 3000);
+        value = "100";
+      } else if (parsedValue < 0) {
+        setAlert({
+          message: "Discount percentage cannot be negative.",
+          type: "error",
+        });
+        setTimeout(() => setAlert(null), 3000);
+        value = "0";
+      }
+    }
+
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      [field]: value,
+    };
+
+    if (field === "inProductDiscountValueType") {
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        inProductDiscount: "0",
+        [field]: value,
+      };
+    }
+
+    if (field === "productName") {
+      const searchTerm = value.toLowerCase();
+      const filtered = products.filter((product) =>
+        product.itemName.toLowerCase().includes(searchTerm)
+      );
+      setFilteredProducts(filtered);
+      setItemDropdownVisible((prev) => ({ ...prev, [index]: true }));
+      updatedProducts[index].productId = "";
+    }
+
+    if (
+      [
+        "quantity",
+        "rate",
+        "inProductDiscount",
+        "inProductDiscountValueType",
+      ].includes(field)
+    ) {
+      updatedProducts[index] = recalculateProduct(updatedProducts[index], gstType);
+    }
+
+    handleInputChange({ target: { name: "products", value: updatedProducts } });
+    checkDuplicates(updatedProducts);
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleProductSelect = (index, product) => {
+    const updatedProducts = [...purchaseOrder.products];
+    const quantity = parseFloat(updatedProducts[index].quantity) || 0;
+    const rate = parseFloat(product.rate) || 0;
+    const discountValue = parseFloat(updatedProducts[index].inProductDiscount) || 0;
+    const discount =
+      updatedProducts[index].inProductDiscountValueType === "Percent"
+        ? discountValue / 100
+        : discountValue;
+
+    let amountBase = quantity * rate;
+    const discountAmount =
+      updatedProducts[index].inProductDiscountValueType === "Percent"
+        ? amountBase * discount
+        : discount;
+    amountBase -= discountAmount;
+
+    let taxes = [];
+    let selectedTax = null;
+
+    if (gstType === "intra" && product.intraStateGST) {
+      selectedTax = filteredTaxes.find(
+        (tax) => tax.type === "GST" && tax.rate === parseFloat(product.intraStateGST)
+      );
+    } else if (gstType === "inter" && product.interStateGST) {
+      selectedTax = filteredTaxes.find(
+        (tax) => tax.type === "IGST" && tax.rate === parseFloat(product.interStateGST)
+      );
+    }
+
+    if (selectedTax) {
+      if (gstType === "intra") {
+        const cgstRate = parseFloat(selectedTax.rate) / 2 || 0;
+        const sgstRate = parseFloat(selectedTax.rate) / 2 || 0;
+        taxes = [
+          {
+            type: "GST",
+            subType: "CGST",
+            rate: cgstRate,
+            amount: ((cgstRate / 100) * amountBase).toFixed(2),
+          },
+          {
+            type: "GST",
+            subType: "SGST",
+            rate: sgstRate,
+            amount: ((sgstRate / 100) * amountBase).toFixed(2),
+          },
+        ];
+      } else {
+        const igstRate = parseFloat(selectedTax.rate) || 0;
+        taxes = [
+          {
+            type: "IGST",
+            subType: "IGST",
+            rate: igstRate,
+            amount: ((igstRate / 100) * amountBase).toFixed(2),
+          },
+        ];
+      }
+    } else {
+      taxes = gstType === "intra"
+        ? [
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
+        : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
+    }
+
+    const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+    const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      productId: product._id,
+      productName: product.itemName,
+      rate: product.rate || "0",
+      unit: product.unit || "nos",
+      taxes,
+      totalPrice,
+    };
+
+    handleInputChange({ target: { name: "products", value: updatedProducts } });
+    setItemDropdownVisible((prev) => ({ ...prev, [index]: false }));
+    setHighlightedIndex((prev) => ({ ...prev, product: -1 }));
+    setFilteredProducts(products);
+    checkDuplicates(updatedProducts);
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleMergeDuplicate = (index, existingIndex) => {
+    const updatedProducts = [...purchaseOrder.products];
+    const existingQuantity = parseFloat(updatedProducts[existingIndex].quantity) || 0;
+    const newQuantity = parseFloat(updatedProducts[index].quantity) || 0;
+    updatedProducts[existingIndex].quantity = (existingQuantity + newQuantity).toString();
+    updatedProducts[existingIndex] = recalculateProduct(updatedProducts[existingIndex], gstType);
+
+    updatedProducts.splice(index, 1);
+
+    handleInputChange({ target: { name: "products", value: updatedProducts } });
+    checkDuplicates(updatedProducts);
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleTaxSelect = (index, tax) => {
+    const updatedProducts = [...purchaseOrder.products];
+    const product = updatedProducts[index];
+    const quantity = parseFloat(product.quantity) || 0;
+    const rate = parseFloat(product.rate) || 0;
+    const discountValue = parseFloat(product.inProductDiscount) || 0;
+    const discount = product.inProductDiscountValueType === "Percent" ? discountValue / 100 : discountValue;
+
+    let amountBase = quantity * rate;
+    const discountAmount = product.inProductDiscountValueType === "Percent" ? amountBase * discount : discount;
+    amountBase -= discountAmount;
+
+    let taxes = [];
+
+    if (tax.type === "GST" && gstType === "intra") {
+      const cgstRate = parseFloat(tax.rate) / 2 || 0;
+      const sgstRate = parseFloat(tax.rate) / 2 || 0;
+      taxes = [
+        {
+          type: "GST",
+          subType: "CGST",
+          rate: cgstRate,
+          amount: ((cgstRate / 100) * amountBase).toFixed(2),
+        },
+        {
+          type: "GST",
+          subType: "SGST",
+          rate: sgstRate,
+          amount: ((sgstRate / 100) * amountBase).toFixed(2),
+        },
+      ];
+    } else if (tax.type === "IGST" && gstType === "inter") {
+      const igstRate = parseFloat(tax.rate) || 0;
+      taxes = [
+        {
+          type: "IGST",
+          subType: "IGST",
+          rate: igstRate,
+          amount: ((igstRate / 100) * amountBase).toFixed(2),
+        },
+      ];
+    } else if (tax.type === "custom") {
+      const customRate = parseFloat(tax.rate) || 0;
+      taxes = [
+        {
+          type: "custom",
+          subType: tax.description,
+          rate: customRate,
+          amount: ((customRate / 100) * amountBase).toFixed(2),
+        },
+      ];
+    }
+
+    const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+    const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+
+    updatedProducts[index] = {
+      ...product,
+      taxes,
+      totalPrice,
+    };
+
+    handleInputChange({ target: { name: "products", value: updatedProducts } });
+    setTaxDropdownVisible((prev) => ({ ...prev, [index]: false }));
+    setHighlightedIndex((prev) => ({ ...prev, tax: -1 }));
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleProductKeyDown = (e, index) => {
+    if (!itemDropdownVisible[index]) {
+      if (e.key === "Enter" || e.key === "ArrowDown") {
+        setItemDropdownVisible((prev) => ({ ...prev, [index]: true }));
+        setHighlightedIndex((prev) => ({ ...prev, product: 0 }));
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      setHighlightedIndex((prev) => ({
+        ...prev,
+        product: Math.min(prev.product + 1, filteredProducts.length - 1),
+      }));
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      setHighlightedIndex((prev) => ({
+        ...prev,
+        product: Math.max(prev.product - 1, 0),
+      }));
+      e.preventDefault();
+    } else if (e.key === "Enter" && highlightedIndex.product >= 0) {
+      handleProductSelect(index, filteredProducts[highlightedIndex.product]);
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      setItemDropdownVisible((prev) => ({ ...prev, [index]: false }));
+      setHighlightedIndex((prev) => ({ ...prev, product: -1 }));
+      setFilteredProducts(products);
+      e.preventDefault();
     }
   };
+
+  const handleTaxKeyDown = (e, index) => {
+    if (!taxDropdownVisible[index]) {
+      if (e.key === "Enter" || e.key === "ArrowDown") {
+        setTaxDropdownVisible((prev) => ({ ...prev, [index]: true }));
+        setHighlightedIndex((prev) => ({ ...prev, tax: 0 }));
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      setHighlightedIndex((prev) => ({
+        ...prev,
+        tax: Math.min(prev.tax + 1, filteredTaxes.length - 1),
+      }));
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      setHighlightedIndex((prev) => ({
+        ...prev,
+        tax: Math.max(prev.tax - 1, 0),
+      }));
+      e.preventDefault();
+    } else if (e.key === "Enter" && highlightedIndex.tax >= 0) {
+      handleTaxSelect(index, filteredTaxes[highlightedIndex.tax]);
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      setTaxDropdownVisible((prev) => ({ ...prev, [index]: false }));
+      setHighlightedIndex((prev) => ({ ...prev, tax: -1 }));
+      e.preventDefault();
+    }
+  };
+
+  const handleAddProduct = () => {
+    const newProduct = {
+      productId: "",
+      productName: "",
+      quantity: "0",
+      unit: "nos",
+      rate: "0",
+      inProductDiscount: "0",
+      inProductDiscountValueType: purchaseOrder.discountValueType || "Percent",
+      taxes: gstType === "intra"
+        ? [
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
+        : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }],
+      totalPrice: "0",
+    };
+    const updatedProducts = [...purchaseOrder.products, newProduct];
+    handleInputChange({ target: { name: "products", value: updatedProducts } });
+    checkDuplicates(updatedProducts);
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleRemoveProduct = (index) => {
+    const updatedProducts = purchaseOrder.products.filter((_, i) => i !== index);
+    handleInputChange({ target: { name: "products", value: updatedProducts } });
+    checkDuplicates(updatedProducts);
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleDiscountTypeChange = (value) => {
+    const updatedProducts = purchaseOrder.products.map((product) => {
+      const resetProduct = {
+        ...product,
+        inProductDiscount: "0",
+        inProductDiscountValueType: "Percent",
+      };
+      return recalculateProduct(resetProduct, gstType);
+    });
+
+    handleInputChange(
+      { target: { name: "discountType", value } },
+      { target: { name: "discount", value: "0" } },
+      { target: { name: "discountValueType", value: "Percent" } },
+      { target: { name: "products", value: updatedProducts } }
+    );
+
+    const totals = calculateTotals(updatedProducts, purchaseOrder);
+    updateTotals(totals);
+  };
+
+  const handleDiscountValueTypeChange = (value) => {
+    handleInputChange(
+      { target: { name: "discountValueType", value } },
+      { target: { name: "discount", value: "0" } }
+    );
+
+    const totals = calculateTotals(purchaseOrder.products, {
+      ...purchaseOrder,
+      discountValueType: value,
+      discount: "0",
+    });
+    updateTotals(totals);
+  };
+
+  const handleDiscountChange = (value) => {
+    let validatedValue = value;
+    if (purchaseOrder.discountValueType === "Percent") {
+      const parsedValue = parseFloat(value) || 0;
+      if (parsedValue > 100) {
+        setAlert({
+          message: "Flat discount percentage cannot exceed 100%.",
+          type: "error",
+        });
+        setTimeout(() => setAlert(null), 3000);
+        validatedValue = "100";
+      } else if (parsedValue < 0) {
+        setAlert({
+          message: "Flat discount percentage cannot be negative.",
+          type: "error",
+        });
+        setTimeout(() => setAlert(null), 3000);
+        validatedValue = "0";
+      }
+    }
+
+    handleInputChange({ target: { name: "discount", value: validatedValue } });
+
+    const totals = calculateTotals(purchaseOrder.products, {
+      ...purchaseOrder,
+      discount: validatedValue,
+    });
+    updateTotals(totals);
+  };
+
+  const handleRoundOffChange = (e) => {
+    const roundOff = e.target.checked;
+    handleInputChange({ target: { name: "roundOff", value: roundOff } });
+
+    const totals = calculateTotals(purchaseOrder.products, {
+      ...purchaseOrder,
+      roundOff,
+    });
+    updateTotals(totals);
+  };
+
+  const totals = calculateTotals(purchaseOrder.products, purchaseOrder);
+  const hasCustomTax = parseFloat(totals.customTaxTotal) > 0;
+  const showTaxBreakdown = !hasCustomTax && (parseFloat(totals.cgstTotal) > 0 || parseFloat(totals.sgstTotal) > 0 || parseFloat(totals.igstTotal) > 0);
 
   return (
-    <div ref={productTableRef} className="flex flex-col w-full mb-96">
-      <h2 className="text-md font-semibold m-2">Product/Service Details</h2>
-      {alert && <Alert message={alert.message} type={alert.type} />}
+    <div className="flex flex-col w-full mb-20">
       <div className="overflow-x-visible">
-        <table className="min-w-[1000px] w-full table-auto overflow-x-visible border-1 border-bottom border-gray-300 text-sm p-3">
+        <table className="w-full table-auto text-sm">
           <thead className="bg-gray-100">
             <tr className="text-left text-gray-600">
-              <th className="p-2 w-[50px]">Sr No.</th>
               <th className="p-2 w-[270px]">Product Name</th>
-              <th className="p-2 w-[80px]">Quantity</th>
-              <th className="p-2 w-[80px]">Unit</th>
-              <th className="p-2 w-[80px]">Rate</th>
-              <th className="p-2 w-[80px]">Discount (%)</th>
-              <th className="p-2 w-[80px]">Tax (%)</th>
-              <th className="p-2 w-[100px]">Total Price</th>
+              <th className="p-2 w-[60px] text-right">Quantity</th>
+              <th className="p-2 w-[80px] text-right">Unit</th>
+              <th className="p-2 w-[60px] text-right">Rate</th>
+              {purchaseOrder.discountType === "Product" ? (
+                <th className="p-2 w-[70px] text-right">Discount</th>
+              ) : null}
+              <th className="p-2 w-[70px] text-right">Tax</th>
+              <th className="p-2 w-[80px] text-right">Total Price</th>
+              <th className="p-2 w-[80px] text-right"></th>
             </tr>
           </thead>
-          <tbody>
-            <tr className="hover:bg-gray-50">
-              <td className="p-2">
-                <input
-                  type="number"
-                  value={1}
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                  disabled
-                />
-              </td>
-              <td className="p-2 overflow-x-visible">
-                <div className="flex relative flex-col overflow-x-visible">
-                  <input
-                    type="text"
-                    name="productName"
-                    id="productName"
-                    autoComplete="off"
-                    ref={productNameRef}
-                    onChange={(e) => handleProductSearch(e.target.value)}
-                    onFocus={() => {
-                      setFilteredProducts(products);
-                      setItemDropdownVisible(true);
-                      setHighlightedIndex(products.length > 0 ? 0 : -1);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Select or Search Product"
-                    className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                  />
-                  {itemDropdownVisible && (
-                    <ul className="absolute z-50 top-[30px] w-[350px] bg-white border border-gray-200 rounded-md max-h-52 overflow-y-auto shadow-md">
-                      {filteredProducts.length > 0 ? (
-                        filteredProducts.map((product, index) => (
-                          <li
-                            key={
-                              product._id
-                                ? `product-${product._id}`
-                                : product.id
-                                  ? `product-${product.id}`
-                                  : `product-${index}`
-                            }
-                            className={`px-3 py-2 cursor-pointer ${index === highlightedIndex ? "bg-gray-200" : "hover:bg-gray-100"
+          <tbody className="border-b border-gray-300">
+            {purchaseOrder.products.map((product, index) => (
+              <tr key={index}>
+                <td className="p-2 overflow-x-visible">
+                  <div
+                    ref={(el) => (productDropdownRefs.current[index] = el)}
+                    className="flex relative flex-col overflow-x-visible"
+                  >
+                    <input
+                      type="text"
+                      name="productName"
+                      id={`productName-${index}`}
+                      autoComplete="off"
+                      value={product.productName}
+                      onClick={() =>
+                        setItemDropdownVisible((prev) => ({
+                          ...prev,
+                          [index]: !prev[index],
+                        }))
+                      }
+                      onKeyDown={(e) => handleProductKeyDown(e, index)}
+                      onChange={(e) =>
+                        handleInputChangeProduct(index, "productName", e.target.value)
+                      }
+                      placeholder="Select or Search Product"
+                      aria-label={`Search products for row ${index + 1}`}
+                      className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
+                    />
+                    {itemDropdownVisible[index] && (
+                      <div className="absolute top-[30px] z-20 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                        <ul className="max-h-40 overflow-y-auto">
+                          {filteredProducts.map((prod, prodIndex) => (
+                            <li
+                              key={prod._id}
+                              className={`p-2 cursor-pointer hover:bg-gray-200 ${
+                                highlightedIndex.product === prodIndex ? "bg-gray-200" : ""
                               }`}
-                            onClick={() => product && handleProductSelect(product)}
-                          >
-                            <span className="font-medium">
-                              {product.itemName || product.name || "Unnamed Product"}
-                            </span>
-                          </li>
-                        ))
-                      ) : (
-                        <li
-                          className={`px-3 py-2 text-customPrimary cursor-pointer ${highlightedIndex === -1 ? "bg-gray-200" : "hover:bg-gray-100"
-                            }`}
-                          onClick={() => {
-                            setItemDropdownVisible(false);
-                            setHighlightedIndex(-1);
-                          }}
+                              onClick={() => handleProductSelect(index, prod)}
+                              onMouseEnter={() =>
+                                setHighlightedIndex((prev) => ({ ...prev, product: prodIndex }))
+                              }
+                              onMouseLeave={() =>
+                                setHighlightedIndex((prev) => ({ ...prev, product: -1 }))
+                              }
+                            >
+                              {prod.itemName}
+                            </li>
+                          ))}
+                        </ul>
+                        {filteredProducts.length === 0 && (
+                          <div className="p-2 text-gray-500">No products found</div>
+                        )}
+                      </div>
+                    )}
+                    {duplicateWarnings[index] !== undefined && (
+                      <div className="text-red-500 text-xs mt-1">
+                        This product is already added in row {duplicateWarnings[index] + 1}.{" "}
+                        <button
+                          type="button"
+                          className="text-customPrimary hover:underline"
+                          onClick={() => handleMergeDuplicate(index, duplicateWarnings[index])}
+                          aria-label={`Merge duplicate product in row ${index + 1}`}
                         >
-                          <a href="/add-item">+ Add New Item</a>
-                        </li>
-                      )}
-                    </ul>
-                  )}
-                </div>
-              </td>
-              <td className="p-2">
-                <input
-                  type="number"
-                  name="quantity"
-                  id="quantity"
-                  autoComplete="off"
-                  min="0"
-                  value={selectedProducts[0]?.quantity || "0"}
-                  onChange={(e) =>
-                    onProductSelect({
-                      ...selectedProducts[0],
-                      quantity: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  placeholder="0"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                />
-              </td>
-              <td className="p-2">
-                <select
-                  name="unit"
-                  id="unit"
-                  value={selectedProducts[0]?.unit || ""}
-                  onChange={(e) =>
-                    onProductSelect({
-                      ...selectedProducts[0],
-                      unit: e.target.value,
-                    })
-                  }
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                >
-                  {measurementData.measurementCategories.flatMap((category) =>
-                    category.units.map((unit) => (
-                      <option
-                        key={`${category.categoryName}-${unit.UQC}`} // composite unique key
-                        value={unit.UQC}
+                          Merge
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="p-2">
+                  <input
+                    type="number"
+                    name="quantity"
+                    id={`quantity-${index}`}
+                    autoComplete="off"
+                    min="0"
+                    value={product.quantity}
+                    onChange={(e) =>
+                      handleInputChangeProduct(index, "quantity", e.target.value)
+                    }
+                    placeholder="0"
+                    className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm text-right"
+                  />
+                </td>
+                <td className="p-2">
+                  <select
+                    name="unit"
+                    id={`unit-${index}`}
+                    value={product.unit}
+                    onChange={(e) =>
+                      handleInputChangeProduct(index, "unit", e.target.value)
+                    }
+                    className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
+                  >
+                    {measurementData.measurementCategories.flatMap((category) =>
+                      category.units.map((unit) => (
+                        <option
+                          key={`${category.categoryName}-${unit.UQC}`}
+                          value={unit.UQC}
+                        >
+                          {unit.unitName} ({unit.UQC})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </td>
+                <td className="p-2">
+                  <input
+                    type="number"
+                    name="rate"
+                    id={`rate-${index}`}
+                    min="0"
+                    autoComplete="off"
+                    value={product.rate}
+                    onChange={(e) =>
+                      handleInputChangeProduct(index, "rate", e.target.value)
+                    }
+                    placeholder="0.00"
+                    className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm text-right"
+                  />
+                </td>
+                {purchaseOrder.discountType === "Product" ? (
+                  <td className="p-2">
+                    <div className="flex justify-between px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm">
+                      <input
+                        type="number"
+                        name="inProductDiscount"
+                        id={`inProductDiscount-${index}`}
+                        min="0"
+                        max={product.inProductDiscountValueType === "Percent" ? "100" : undefined}
+                        autoComplete="off"
+                        value={product.inProductDiscount}
+                        onChange={(e) =>
+                          handleInputChangeProduct(index, "inProductDiscount", e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (product.inProductDiscountValueType === "Percent") {
+                            const value = parseFloat(e.target.value + (e.key.match(/[0-9]/) ? e.key : "")) || 0;
+                            if (value > 100 || e.key === "-") {
+                              e.preventDefault();
+                            }
+                          }
+                        }}
+                        placeholder="0"
+                        className={`w-full border-none outline-none text-gray-700 text-sm text-right ${
+                          product.inProductDiscountValueType === "Percent" && parseFloat(product.inProductDiscount) > 100
+                            ? "border-red-500"
+                            : ""
+                        }`}
+                      />
+                      <select
+                        name="inProductDiscountValueType"
+                        id={`inProductDiscountValueType-${index}`}
+                        value={product.inProductDiscountValueType}
+                        onChange={(e) =>
+                          handleInputChangeProduct(index, "inProductDiscountValueType", e.target.value)
+                        }
+                        className="outline-none"
                       >
-                        {unit.unitName} ({unit.UQC})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </td>
-              <td className="p-2">
-                <input
-                  type="number"
-                  name="rate"
-                  id="rate"
-                  min="0"
-                  autoComplete="off"
-                  value={selectedProducts[0]?.rate || "0"}
-                  onChange={(e) =>
-                    onProductSelect({
-                      ...selectedProducts[0],
-                      rate: e.target.value,
-                    })
-                  }
-                  placeholder="0.00"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                />
-              </td>
-              <td className="p-2">
-                <input
-                  type="number"
-                  name="discount"
-                  id="discount"
-                  min="0"
-                  max="100"
-                  autoComplete="off"
-                  value={selectedProducts[0]?.discount || "0"}
-                  onChange={(e) =>
-                    onProductSelect({
-                      ...selectedProducts[0],
-                      discount: e.target.value,
-                    })
-                  }
-                  placeholder="0"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
-                />
-              </td>
-              <td className="p-2">
-                <div className="flex relative flex-col overflow-x-visible">
+                        <option value="Percent">%</option>
+                        <option value="Amount">₹</option>
+                      </select>
+                    </div>
+                  </td>
+                ) : null}
+                <td className="p-2">
+                  <div
+                    ref={taxDropdownRef}
+                    className="flex relative flex-col overflow-x-visible"
+                  >
+                    <input
+                      type="text"
+                      name="tax"
+                      id={`tax-${index}`}
+                      autoComplete="off"
+                      value={
+                        product.taxes && product.taxes.length > 0
+                          ? product.taxes[0].type === "custom"
+                            ? `${product.taxes[0].subType} ${product.taxes[0].rate}%`
+                            : gstType === "intra"
+                              ? `CGST ${product.taxes[0]?.rate || 0}% + SGST ${product.taxes[1]?.rate || 0}%`
+                              : `IGST ${product.taxes[0]?.rate || 0}%`
+                          : "Select Tax"
+                      }
+                      onClick={() =>
+                        setTaxDropdownVisible((prev) => ({
+                          ...prev,
+                          [index]: !prev[index],
+                        }))
+                      }
+                      onKeyDown={(e) => handleTaxKeyDown(e, index)}
+                      readOnly
+                      className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm text-right"
+                    />
+                    {taxDropdownVisible[index] && (
+                      <div className="absolute top-[30px] z-20 w-40 bg-white border border-gray-300 rounded-lg shadow-lg">
+                        <ul className="max-h-40 overflow-y-auto">
+                          {filteredTaxes.map((tax, taxIndex) => (
+                            <li
+                              key={`${tax.type}-${tax.value}`}
+                              className={`p-2 cursor-pointer hover:bg-gray-200 ${
+                                highlightedIndex.tax === taxIndex ? "bg-gray-200" : ""
+                              }`}
+                              onClick={() => handleTaxSelect(index, tax)}
+                              onMouseEnter={() =>
+                                setHighlightedIndex((prev) => ({ ...prev, tax: taxIndex }))
+                              }
+                              onMouseLeave={() =>
+                                setHighlightedIndex((prev) => ({ ...prev, tax: -1 }))
+                              }
+                            >
+                              {tax.label}
+                            </li>
+                          ))}
+                        </ul>
+                        {filteredTaxes.length === 0 && (
+                          <div className="p-2 text-gray-500">
+                            No taxes found
+                            <button
+                              type="button"
+                              className="text-customPrimary hover:underline"
+                              onClick={() => {
+                                console.log("Add new tax clicked");
+                              }}
+                            >
+                              +Add New
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="p-2">
                   <input
                     type="text"
-                    name="tax"
-                    id="tax"
+                    name="totalPrice"
+                    id={`totalPrice-${index}`}
                     autoComplete="off"
-                    ref={productTaxRef}
-                    onChange={(e) => handleProductSearch(e.target.value)}
-                    onFocus={() => {
-                      setFilteredProducts(products);
-                      setTaxDropdownVisible(true);
-                      setHighlightedIndex(products.length > 0 ? 0 : -1);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Select or Search Product"
-                    className="w-full px-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
+                    readOnly
+                    value={product.totalPrice}
+                    placeholder="0.00"
+                    className="w-full px-2 py-1 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm text-right"
                   />
-                  {taxDropdownVisible && (
-                    <ul className="absolute z-50 top-[30px] whitespace-nowrap w-fit bg-white border border-gray-200 rounded-md max-h-52 overflow-y-auto shadow-md">
-                        <li
-                          className={`px-3 py-2 text-black cursor-pointer ${highlightedIndex === -1 ? "bg-gray-200" : "hover:bg-gray-100"
-                            }`}
-                          onClick={() => {
-                            setTaxDropdownVisible(false);
-                            setHighlightedIndex(-1);
-                          }}
-                        >
-                          <p>No Tax Available</p>
-                        </li>
-                    </ul>
-                  )}
-                </div>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className={`p-0 focus:outline-none ${
+                      purchaseOrder.products.length === 1
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-customPrimary hover:underline"
+                    }`}
+                    onClick={() => handleRemoveProduct(index)}
+                    disabled={purchaseOrder.products.length === 1}
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={purchaseOrder.discountType === "Flat" ? 2 : 3} className="align-top p-2 text-left">
+                <button
+                  type="button"
+                  className="p-0 text-customPrimary focus:outline-none hover:underline"
+                  onClick={handleAddProduct}
+                >
+                  + Add Product
+                </button>
               </td>
-              <td className="p-2">
-                <input
-                  type="text"
-                  name="totalPrice"
-                  id="totalPrice"
-                  autoComplete="off"
-                  value={
-                    (
-                      (parseFloat(selectedProducts[0]?.rate) || 0) *
-                      (parseFloat(selectedProducts[0]?.quantity) || 0) *
-                      (1 - (parseFloat(selectedProducts[0]?.discount) || 0) / 100) *
-                      (1 + (parseFloat(selectedProducts[0]?.tax) || 0) / 100)
-                    ).toFixed(2) || "0.00"
-                  }
-                  readOnly
-                  placeholder="0.00"
-                  className="w-full px-2 py-1 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm"
-                />
+              <td colSpan={purchaseOrder.discountType === "Flat" ? 4 : 4} className="m-2 p-2">
+                <div className="flex flex-col text-gray-700 text-sm">
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-semibold">Subtotal (excl. Tax & Discount):</span>
+                    <span>₹{totals.totalBaseAmount}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-semibold">Discount:</span>
+                    <span className="flex items-center">
+                      <input
+                        type="radio"
+                        name="discountType"
+                        id="discountTypeFlat"
+                        value="Flat"
+                        checked={purchaseOrder.discountType === "Flat"}
+                        onChange={() => handleDiscountTypeChange("Flat")}
+                        className="rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm"
+                      />
+                      <label htmlFor="discountTypeFlat" className="ms-1">Flat</label>
+                      <input
+                        type="radio"
+                        name="discountType"
+                        id="discountTypeProduct"
+                        value="Product"
+                        checked={purchaseOrder.discountType === "Product"}
+                        onChange={() => handleDiscountTypeChange("Product")}
+                        className="rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm ms-2"
+                      />
+                      <label htmlFor="discountTypeProduct" className="ms-1">Product</label>
+                      {purchaseOrder.discountType === "Flat" && (
+                        <div className="flex w-[100px] justify-between mx-2 py-1 rounded-lg border border-gray-300 focus:outline-customSecondary text-gray-700 text-sm">
+                          <input
+                            type="number"
+                            name="discount"
+                            id="discount"
+                            min="0"
+                            max={purchaseOrder.discountValueType === "Percent" ? "100" : undefined}
+                            autoComplete="off"
+                            value={purchaseOrder.discount}
+                            onChange={(e) => handleDiscountChange(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (purchaseOrder.discountValueType === "Percent") {
+                                const value = parseFloat(e.target.value + (e.key.match(/[0-9]/) ? e.key : "")) || 0;
+                                if (value > 100 || e.key === "-") {
+                                  e.preventDefault();
+                                }
+                              }
+                            }}
+                            placeholder="0"
+                            className={`w-full border-none outline-none text-gray-700 text-sm text-right ${
+                              purchaseOrder.discountValueType === "Percent" && parseFloat(purchaseOrder.discount) > 100
+                                ? "border-red-500"
+                                : ""
+                            }`}
+                          />
+                          <select
+                            name="discountValueType"
+                            id="discountValueType"
+                            value={purchaseOrder.discountValueType}
+                            onChange={(e) => handleDiscountValueTypeChange(e.target.value)}
+                            className="outline-none"
+                          >
+                            <option value="Percent">%</option>
+                            <option value="Amount">₹</option>
+                          </select>
+                        </div>
+                      )}
+                      <span className="ps-2">₹{totals.totalDiscount}</span>
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-semibold">Taxable Amount:</span>
+                    <span>₹{totals.taxableAmount}</span>
+                  </div>
+                  {hasCustomTax ? (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="font-semibold">Total Tax:</span>
+                      <span>₹{totals.customTaxTotal}</span>
+                    </div>
+                  ) : showTaxBreakdown && (
+                    <>
+                      {gstType === "intra" ? (
+                        <>
+                          <div className="flex justify-between items-center py-1">
+                            <span className="font-semibold">CGST:</span>
+                            <span>₹{totals.cgstTotal}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1">
+                            <span className="font-semibold">SGST:</span>
+                            <span>₹{totals.sgstTotal}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="font-semibold">IGST:</span>
+                          <span>₹{totals.igstTotal}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="flex justify-between items-center py-1">
+                    <span className="flex items-center font-semibold">
+                      Round Off
+                      <input
+                        type="checkbox"
+                        name="roundOff"
+                        id="roundOff"
+                        checked={purchaseOrder.roundOff}
+                        onChange={handleRoundOffChange}
+                        className="ms-2 rounded border-gray-300 focus:ring-customSecondary"
+                      />
+                    </span>
+                    <span>₹{totals.roundOffAmount}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 mt-2 border-t border-gray-300 pt-2">
+                    <span className="font-semibold text-base">Total (incl. Tax):</span>
+                    <span className="text-base font-semibold">₹{totals.totalInclTax}</span>
+                  </div>
+                </div>
               </td>
             </tr>
-          </tbody>
+          </tfoot>
         </table>
       </div>
+      {alert && (
+        <Alert
+          message={alert.message}
+          type={alert.type}
+          handleClose={() => setAlert(null)}
+        />
+      )}
     </div>
   );
 };
