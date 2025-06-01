@@ -293,27 +293,6 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
 
   const handleInputChangeProduct = (index, field, value) => {
     const updatedProducts = [...purchaseOrder.products];
-    
-    // Validate inProductDiscount when type is Percent
-    if (field === "inProductDiscount" && updatedProducts[index].inProductDiscountValueType === "Percent") {
-      const parsedValue = parseFloat(value) || 0;
-      if (parsedValue > 100) {
-        setAlert({
-          message: "Discount percentage cannot exceed 100%.",
-          type: "error",
-        });
-        setTimeout(() => setAlert(null), 3000);
-        value = "100";
-      } else if (parsedValue < 0) {
-        setAlert({
-          message: "Discount percentage cannot be negative.",
-          type: "error",
-        });
-        setTimeout(() => setAlert(null), 3000);
-        value = "0";
-      }
-    }
-
     updatedProducts[index] = {
       ...updatedProducts[index],
       [field]: value,
@@ -667,31 +646,11 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
   };
 
   const handleDiscountChange = (value) => {
-    let validatedValue = value;
-    if (purchaseOrder.discountValueType === "Percent") {
-      const parsedValue = parseFloat(value) || 0;
-      if (parsedValue > 100) {
-        setAlert({
-          message: "Flat discount percentage cannot exceed 100%.",
-          type: "error",
-        });
-        setTimeout(() => setAlert(null), 3000);
-        validatedValue = "100";
-      } else if (parsedValue < 0) {
-        setAlert({
-          message: "Flat discount percentage cannot be negative.",
-          type: "error",
-        });
-        setTimeout(() => setAlert(null), 3000);
-        validatedValue = "0";
-      }
-    }
-
-    handleInputChange({ target: { name: "discount", value: validatedValue } });
+    handleInputChange({ target: { name: "discount", value } });
 
     const totals = calculateTotals(purchaseOrder.products, {
       ...purchaseOrder,
-      discount: validatedValue,
+      discount: value,
     });
     updateTotals(totals);
   };
@@ -712,7 +671,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
   const showTaxBreakdown = !hasCustomTax && (parseFloat(totals.cgstTotal) > 0 || parseFloat(totals.sgstTotal) > 0 || parseFloat(totals.igstTotal) > 0);
 
   return (
-    <div className="flex flex-col w-full mb-20">
+    <div className="flex flex-col w-full">
       <div className="overflow-x-visible">
         <table className="w-full table-auto text-sm">
           <thead className="bg-gray-100">
@@ -864,20 +823,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                         onChange={(e) =>
                           handleInputChangeProduct(index, "inProductDiscount", e.target.value)
                         }
-                        onKeyDown={(e) => {
-                          if (product.inProductDiscountValueType === "Percent") {
-                            const value = parseFloat(e.target.value + (e.key.match(/[0-9]/) ? e.key : "")) || 0;
-                            if (value > 100 || e.key === "-") {
-                              e.preventDefault();
-                            }
-                          }
-                        }}
                         placeholder="0"
-                        className={`w-full border-none outline-none text-gray-700 text-sm text-right ${
-                          product.inProductDiscountValueType === "Percent" && parseFloat(product.inProductDiscount) > 100
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className="w-full border-none outline-none text-gray-700 text-sm text-right"
                       />
                       <select
                         name="inProductDiscountValueType"
@@ -1042,20 +989,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                             autoComplete="off"
                             value={purchaseOrder.discount}
                             onChange={(e) => handleDiscountChange(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (purchaseOrder.discountValueType === "Percent") {
-                                const value = parseFloat(e.target.value + (e.key.match(/[0-9]/) ? e.key : "")) || 0;
-                                if (value > 100 || e.key === "-") {
-                                  e.preventDefault();
-                                }
-                              }
-                            }}
                             placeholder="0"
-                            className={`w-full border-none outline-none text-gray-700 text-sm text-right ${
-                              purchaseOrder.discountValueType === "Percent" && parseFloat(purchaseOrder.discount) > 100
-                                ? "border-red-500"
-                                : ""
-                            }`}
+                            className="w-full border-none outline-none text-gray-700 text-sm text-right"
                           />
                           <select
                             name="discountValueType"

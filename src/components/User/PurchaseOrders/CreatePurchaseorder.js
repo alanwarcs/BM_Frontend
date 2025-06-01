@@ -23,6 +23,8 @@ const CreatePurchaseorder = () => {
   const [states, setStates] = useState([]);
   const [availableStorage, setAvailableStorage] = useState([]);
   const [userAddress, setUserAddress] = useState(null);
+  const [attachmentFiles, setAttachmentFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false); // State for drag-and-drop highlight
 
   const [purchaseOrder, setPurchaseOrder] = useState({
     vendorId: "",
@@ -32,10 +34,6 @@ const CreatePurchaseorder = () => {
     orderDate: formatDate(today),
     billDate: "",
     dueDate: "",
-    status: "Pending",
-    paymentStatus: "UnPaid",
-    modeOfPayment: "",
-    initialPaymentMethod: "",
     referenceNumber: "",
     billingAddress: "",
     shippingAddress: "",
@@ -43,23 +41,6 @@ const CreatePurchaseorder = () => {
     deliveryState: "",
     deliveryLocation: "",
     note: "",
-    emiDetails: {
-      frequency: "",
-      interestRate: 0,
-      totalWithInterest: "0",
-      advancePayment: 0,
-      installments: [
-        {
-          amount: "0",
-          dueDate: "",
-          status: "Unpaid",
-          paymentDate: "",
-          paymentMethod: "",
-          paymentReference: "",
-          paymentNote: "",
-        },
-      ],
-    },
     products: [
       {
         productId: "",
@@ -130,6 +111,71 @@ const CreatePurchaseorder = () => {
     };
     fetchData();
   }, [user]);
+
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    const maxAttachments = 2;
+    const maxFileSize = 3 * 1024 * 1024; // 3 MB
+    const allowedTypes = ["application/pdf", "image/jpeg"]; // Only PDF and JPG/JPEG
+
+    // Validate number of attachments
+    if (attachmentFiles.length + files.length > maxAttachments) {
+      setAlert({ message: `You can only upload up to ${maxAttachments} attachments.`, type: "error" });
+      return;
+    }
+
+    // Validate file sizes and types
+    const validFiles = files.filter((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        setAlert({ message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG files are allowed.`, type: "error" });
+        return false;
+      }
+      if (file.size > maxFileSize) {
+        setAlert({ message: `File ${file.name} exceeds 3 MB limit.`, type: "error" });
+        return false;
+      }
+      return true;
+    });
+
+    // Update attachmentFiles state with new valid files
+    setAttachmentFiles((prev) => [...prev, ...validFiles]);
+
+    // Update purchaseOrder.attachments with file metadata
+    setPurchaseOrder((prev) => ({
+      ...prev,
+      attachments: [...prev.attachments, ...validFiles.map((file) => ({ name: file.name, size: file.size }))],
+    }));
+  };
+
+  const removeAttachment = (index) => {
+    setAttachmentFiles((prev) => prev.filter((_, i) => i !== index));
+    setPurchaseOrder((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Drag-and-drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (attachmentFiles.length < 2) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (attachmentFiles.length < 2) {
+      const files = Array.from(e.dataTransfer.files);
+      handleAttachmentChange({ target: { files } });
+    }
+  };
 
   const updateTotals = (totals) => {
     setPurchaseOrder((prev) => ({
@@ -269,9 +315,9 @@ const CreatePurchaseorder = () => {
       } else {
         taxes = gstType === "intra"
           ? [
-              { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-              { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-            ]
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
           : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
       }
 
@@ -360,22 +406,66 @@ const CreatePurchaseorder = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Purchase Order State on Submit:", purchaseOrder);
+
+    try {
+      // Upload attachments to the server
+      const uploadedAttachments = [];
+      for (const file of attachmentFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadResponse = await axios.post("/api/upload/attachment", formData, {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        if (uploadResponse.status === 200) {
+          uploadedAttachments.push({
+            name: file.name,
+            url: uploadResponse.data.url,
+            size: file.size,
+          });
+        }
+      }
+
+      // Update purchase order with uploaded attachment details
+      const updatedPurchaseOrder = {
+        ...purchaseOrder,
+        attachments: uploadedAttachments,
+      };
+
+      // Submit the purchase order
+      const response = await axios.post("/api/purchase-order/create", updatedPurchaseOrder, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        setAlert({ message: "Purchase order created successfully!", type: "success" });
+      }
+    } catch (error) {
+      setAlert({ message: "Failed to create purchase order or upload attachments.", type: "error" });
+    }
   };
 
   const deliveryLocationOptions = [
     userAddress || { value: "", label: "Loading user address..." },
     ...(Array.isArray(availableStorage)
       ? availableStorage.map((storage) => ({
-          value: storage.address || storage.name || storage._id,
-          label: `${storage.storageName}`,
-        }))
+        value: storage.address || storage.name || storage._id,
+        label: `${storage.storageName}`,
+      }))
       : []),
   ];
 
-  console.log("purchase order:", purchaseOrder);
+  // Get file icon based on file type
+  const getFileIcon = (fileName) => {
+    const extension = fileName.split('.').pop().toLowerCase();
+    return extension === 'pdf' ? '📄' : '🖼️';
+  };
 
   return (
     <UserLayout>
@@ -391,7 +481,7 @@ const CreatePurchaseorder = () => {
         </div>
         <hr />
         <form className="h-full overflow-y-auto" onSubmit={handleSubmit}>
-          <div className="flex flex-wrap w-full mb-4">
+          <div className="flex flex-wrap w-full">
             <TextInput
               label="Purchase Order Number"
               name="purchaseOrderNumber"
@@ -459,9 +549,9 @@ const CreatePurchaseorder = () => {
               options={
                 states.length > 0
                   ? states.map((state) => ({
-                      value: state.name,
-                      label: state.name,
-                    }))
+                    value: state.name,
+                    label: state.name,
+                  }))
                   : []
               }
               required
@@ -501,8 +591,93 @@ const CreatePurchaseorder = () => {
             handleInputChange={handleInputChange}
             updateTotals={updateTotals}
           />
+          <hr />
+          <div className="flex flex-wrap text-sm w-full mb-16">
+            <div className="m-2">
+              <label className="mb-2 block">
+                Note
+              </label>
+              <textarea
+                name="note"
+                placeholder="Add any additional notes or instructions here"
+                rows={5}
+                value={purchaseOrder.note}
+                onChange={handleInputChange}
+                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+              />
+            </div>
+            <div className="m-2 w-full max-w-md">
+              <label className="mb-2 block font-medium text-gray-700">
+                Attachments
+              </label>
+              <div
+                className={[
+                  "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 bg-gray-50",
+                  isDragging && attachmentFiles.length < 2 ? "border-customPrimary bg-customPrimary/10" : "border-gray-300",
+                  attachmentFiles.length >= 2 ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400",
+                ].join(" ")}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                role="region"
+                aria-label="File upload area"
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg"
+                  onChange={handleAttachmentChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={attachmentFiles.length >= 2}
+                  aria-describedby="attachment-instructions"
+                />
+                <div className="flex flex-col items-center">
+                  <p className="text-gray-600 text-sm">
+                    {attachmentFiles.length >= 2
+                      ? "Maximum 2 attachments reached"
+                      : "Drag and drop PDF or JPG/JPEG files here, or click to select"}
+                  </p>
+                  <p id="attachment-instructions" className="text-xs text-gray-400 mt-1">
+                    Max 2 files, 3MB each. Only PDF and JPG/JPEG allowed.
+                  </p>
+                </div>
+              </div>
+              {attachmentFiles.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Selected Attachments:</p>
+                  <div className="space-y-2">
+                    {attachmentFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">{getFileIcon(file.name)}</span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                            <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(index)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="absolute w-full bottom-0 bg-white border-t">
-            <button type="submit" className="rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-2 px-2 text-white text-[16px]">
+            <button
+              type="submit"
+              className="rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-2 px-2 text-white text-[16px]"
+            >
               Submit
             </button>
           </div>
