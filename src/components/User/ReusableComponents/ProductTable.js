@@ -721,7 +721,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                         <ul className="max-h-40 overflow-y-auto">
                           {filteredProducts.map((prod, prodIndex) => (
                             <li
-                              key={prod._id}
+                              key={prod.id}
                               className={`p-2 cursor-pointer hover:bg-gray-200 ${
                                 highlightedIndex.product === prodIndex ? "bg-gray-200" : ""
                               }`}

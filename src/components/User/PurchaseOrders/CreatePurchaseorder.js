@@ -24,7 +24,7 @@ const CreatePurchaseorder = () => {
   const [availableStorage, setAvailableStorage] = useState([]);
   const [userAddress, setUserAddress] = useState(null);
   const [attachmentFiles, setAttachmentFiles] = useState([]);
-  const [isDragging, setIsDragging] = useState(false); // State for drag-and-drop highlight
+  const [isDragging, setIsDragging] = useState(false);
 
   const [purchaseOrder, setPurchaseOrder] = useState({
     vendorId: "",
@@ -83,6 +83,7 @@ const CreatePurchaseorder = () => {
           const userAddressOption = {
             value: formattedAddress,
             label: `${user?.name || "User"}, ${address.state}`,
+            state: address.state, // Store state explicitly for easier access
           };
           setUserAddress(userAddressOption);
           setPurchaseOrder((prev) => ({
@@ -116,15 +117,13 @@ const CreatePurchaseorder = () => {
     const files = Array.from(e.target.files);
     const maxAttachments = 2;
     const maxFileSize = 3 * 1024 * 1024; // 3 MB
-    const allowedTypes = ["application/pdf", "image/jpeg"]; // Only PDF and JPG/JPEG
+    const allowedTypes = ["application/pdf", "image/jpeg"];
 
-    // Validate number of attachments
     if (attachmentFiles.length + files.length > maxAttachments) {
       setAlert({ message: `You can only upload up to ${maxAttachments} attachments.`, type: "error" });
       return;
     }
 
-    // Validate file sizes and types
     const validFiles = files.filter((file) => {
       if (!allowedTypes.includes(file.type)) {
         setAlert({ message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG files are allowed.`, type: "error" });
@@ -137,10 +136,7 @@ const CreatePurchaseorder = () => {
       return true;
     });
 
-    // Update attachmentFiles state with new valid files
     setAttachmentFiles((prev) => [...prev, ...validFiles]);
-
-    // Update purchaseOrder.attachments with file metadata
     setPurchaseOrder((prev) => ({
       ...prev,
       attachments: [...prev.attachments, ...validFiles.map((file) => ({ name: file.name, size: file.size }))],
@@ -155,7 +151,6 @@ const CreatePurchaseorder = () => {
     }));
   };
 
-  // Drag-and-drop handlers
   const handleDragOver = (e) => {
     e.preventDefault();
     if (attachmentFiles.length < 2) {
@@ -203,18 +198,27 @@ const CreatePurchaseorder = () => {
           products: value,
         }));
       } else if (name === "deliveryLocation" && value) {
-        try {
-          const response = await axios.get(`/api/storage/getStorageDetails/${value}`);
-          const storageState = response.data.storage.storageState || "";
-          const storageAddress = response.data.storage.storageAddress || "";
+        if (userAddress && value === userAddress.value) {
           setPurchaseOrder((prev) => ({
             ...prev,
-            deliveryState: storageState,
-            shippingAddress: storageAddress,
+            deliveryState: userAddress.state || "",
+            shippingAddress: userAddress.value,
             deliveryLocation: value,
           }));
-        } catch (error) {
-          setAlert({ message: "Failed to fetch storage details.", type: "error" });
+        } else {
+          try {
+            const response = await axios.get(`/api/storage/getStorageDetails/${value}`);
+            const storageState = response.data.storage.storageState || "";
+            const storageAddress = response.data.storage.storageAddress || "";
+            setPurchaseOrder((prev) => ({
+              ...prev,
+              deliveryState: storageState,
+              shippingAddress: storageAddress,
+              deliveryLocation: value,
+            }));
+          } catch (error) {
+            setAlert({ message: error.response?.data?.message || "Failed to fetch storage details.", type: "error" });
+          }
         }
       } else {
         setPurchaseOrder((prev) => ({
@@ -409,11 +413,31 @@ const CreatePurchaseorder = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!purchaseOrder.vendorId) {
+      setAlert({ message: "Please select a vendor", type: "error" });
+      return;
+    }
+
+    if (!purchaseOrder.purchaseOrderNumber) {
+      setAlert({ message: "Purchase order number is required", type: "error" });
+      return;
+    }
+
+    if (!purchaseOrder.orderDate) {
+      setAlert({ message: "Order date is required", type: "error" });
+      return;
+    }
+
+    if (purchaseOrder.products.length === 0 || purchaseOrder.products.some(p => !p.productId)) {
+      setAlert({ message: "Please add at least one valid product", type: "error" });
+      return;
+    }
+
     try {
-      // Upload attachments to the server
+      const formData = new FormData();
       const uploadedAttachments = [];
+
       for (const file of attachmentFiles) {
-        const formData = new FormData();
         formData.append("file", file);
 
         const uploadResponse = await axios.post("/api/upload/attachment", formData, {
@@ -425,29 +449,104 @@ const CreatePurchaseorder = () => {
 
         if (uploadResponse.status === 200) {
           uploadedAttachments.push({
-            name: file.name,
-            url: uploadResponse.data.url,
-            size: file.size,
+            fileName: file.name,
+            filePath: uploadResponse.data.url,
+            uploadedBy: user.id,
+            uploadedAt: new Date()
           });
         }
+
+        formData.delete("file");
       }
 
-      // Update purchase order with uploaded attachment details
-      const updatedPurchaseOrder = {
+      const validatedProducts = purchaseOrder.products.map(product => ({
+        ...product,
+        quantity: parseFloat(product.quantity) || 0,
+        rate: parseFloat(product.rate) || 0,
+        inProductDiscount: parseFloat(product.inProductDiscount) || 0,
+        totalPrice: parseFloat(product.totalPrice) || 0,
+        taxes: product.taxes.map(tax => ({
+          ...tax,
+          rate: parseFloat(tax.rate) || 0,
+          amount: parseFloat(tax.amount) || 0
+        }))
+      }));
+
+      const purchaseOrderData = {
         ...purchaseOrder,
+        businessId: user.businessId,
         attachments: uploadedAttachments,
+        products: validatedProducts,
+        discount: parseFloat(purchaseOrder.discount) || 0,
+        totalAmountOfDiscount: parseFloat(purchaseOrder.totalAmountOfDiscount) || 0,
+        taxAmount: parseFloat(purchaseOrder.taxAmount) || 0,
+        totalAmount: parseFloat(purchaseOrder.totalAmount) || 0,
+        paidAmount: parseFloat(purchaseOrder.paidAmount) || 0,
+        dueAmount: parseFloat(purchaseOrder.dueAmount) || 0,
+        roundOffAmount: parseFloat(purchaseOrder.roundOffAmount) || 0,
+        orderDate: new Date(purchaseOrder.orderDate),
+        dueDate: purchaseOrder.dueDate ? new Date(purchaseOrder.dueDate) : null,
+        billDate: purchaseOrder.billDate ? new Date(purchaseOrder.billDate) : null,
+        status: purchaseOrder.status || "Pending",
+        paymentStatus: purchaseOrder.paidAmount > 0
+          ? parseFloat(purchaseOrder.paidAmount) >= parseFloat(purchaseOrder.totalAmount)
+            ? "Paid"
+            : "Partially Paid"
+          : "UnPaid"
       };
 
-      // Submit the purchase order
-      const response = await axios.post("/api/purchase-order/create", updatedPurchaseOrder, {
+      const response = await axios.post("/api/purchase-order/create", purchaseOrderData, {
         withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       if (response.status === 200) {
-        setAlert({ message: "Purchase order created successfully!", type: "success" });
+        setAlert({
+          message: "Purchase order created successfully!",
+          type: "success"
+        });
+
+        setPurchaseOrder({
+          ...purchaseOrder,
+          vendorId: "",
+          vendorName: "",
+          billNumber: "",
+          dueDate: "",
+          referenceNumber: "",
+          note: "",
+          products: [{
+            productId: "",
+            productName: "",
+            quantity: "0",
+            unit: "nos",
+            rate: "0",
+            inProductDiscount: "0",
+            inProductDiscountValueType: "Percent",
+            taxes: [],
+            totalPrice: "0",
+          }],
+          discount: "0",
+          discountType: "Flat",
+          discountValueType: "Percent",
+          totalAmountOfDiscount: "0",
+          roundOff: false,
+          roundOffAmount: "0",
+          taxAmount: "0",
+          totalAmount: "0",
+          paidAmount: "0",
+          dueAmount: "0",
+          attachments: [],
+        });
+        setAttachmentFiles([]);
       }
     } catch (error) {
-      setAlert({ message: "Failed to create purchase order or upload attachments.", type: "error" });
+      console.error("Error creating purchase order:", error);
+      setAlert({
+        message: error.response?.data?.message || "Failed to create purchase order",
+        type: "error"
+      });
     }
   };
 
@@ -461,7 +560,6 @@ const CreatePurchaseorder = () => {
       : []),
   ];
 
-  // Get file icon based on file type
   const getFileIcon = (fileName) => {
     const extension = fileName.split('.').pop().toLowerCase();
     return extension === 'pdf' ? '📄' : '🖼️';
@@ -600,13 +698,13 @@ const CreatePurchaseorder = () => {
               <textarea
                 name="note"
                 placeholder="Add any additional notes or instructions here"
-                rows={5}
+                rows={4}
                 value={purchaseOrder.note}
                 onChange={handleInputChange}
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
-            <div className="m-2 w-full max-w-md">
+            <div className="m-2 w-fit">
               <label className="mb-2 block font-medium text-gray-700">
                 Attachments
               </label>
@@ -642,8 +740,10 @@ const CreatePurchaseorder = () => {
                   </p>
                 </div>
               </div>
+            </div>
+            <div className="m-2 w-fit">
               {attachmentFiles.length > 0 && (
-                <div className="mt-4">
+                <div className="ms-1 w-fit">
                   <p className="text-sm font-medium text-gray-700 mb-2">Selected Attachments:</p>
                   <div className="space-y-2">
                     {attachmentFiles.map((file, index) => (
@@ -661,7 +761,7 @@ const CreatePurchaseorder = () => {
                         <button
                           type="button"
                           onClick={() => removeAttachment(index)}
-                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                          className="text-red-500 hover:text-red-700 text-sm ms-2 font-medium"
                           aria-label={`Remove ${file.name}`}
                         >
                           Remove
@@ -679,6 +779,13 @@ const CreatePurchaseorder = () => {
               className="rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-2 px-2 text-white text-[16px]"
             >
               Submit
+            </button>
+            <button
+              type="button"
+              onClick={() => console.log("Preview functionality not implemented yet")}
+              className="rounded-lg bg-gray-200 hover:bg-gray-300 m-2 py-2 px-2 text-gray-700 text-[16px]"
+            >
+              Preview
             </button>
           </div>
         </form>
