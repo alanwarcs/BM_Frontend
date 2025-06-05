@@ -407,7 +407,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
 
     updatedProducts[index] = {
       ...updatedProducts[index],
-      productId: product._id,
+      productId: product.id,
       productName: product.itemName,
       rate: product.rate || "0",
       unit: product.unit || "nos",

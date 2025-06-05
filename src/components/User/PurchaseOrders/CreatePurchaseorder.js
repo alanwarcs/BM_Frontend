@@ -9,6 +9,8 @@ import { useUser } from "../../../context/userContext";
 import VendorDropdown from "../ReusableComponents/VendorDropdown";
 import { State } from "country-state-city";
 import ProductTable from "../ReusableComponents/ProductTable";
+import PreviewModal from "../ReusableComponents/PreviewModal";
+import PurchaseOrderPreview from "../ReusableComponents/PurchaseOrderPreview";
 
 const today = new Date();
 const nextYear = new Date();
@@ -25,8 +27,10 @@ const CreatePurchaseorder = () => {
   const [userAddress, setUserAddress] = useState(null);
   const [attachmentFiles, setAttachmentFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [purchaseOrder, setPurchaseOrder] = useState({
+    businessId: user ? user.businessId : "",
     vendorId: "",
     vendorName: "",
     purchaseOrderNumber: "",
@@ -45,6 +49,7 @@ const CreatePurchaseorder = () => {
       {
         productId: "",
         productName: "",
+        hsnOrSacCode: "",
         quantity: "0",
         unit: "nos",
         rate: "0",
@@ -64,6 +69,8 @@ const CreatePurchaseorder = () => {
     totalAmount: "0",
     paidAmount: "0",
     dueAmount: "0",
+    deliveryTerms: "as per agreement",
+    termsAndConditions: "",
     attachments: [],
     createdBy: user ? user.id : "",
     updatedBy: user ? user.id : "",
@@ -690,7 +697,7 @@ const CreatePurchaseorder = () => {
             updateTotals={updateTotals}
           />
           <hr />
-          <div className="flex flex-wrap text-sm w-full mb-16">
+          <div className="flex flex-wrap text-sm w-full">
             <div className="m-2">
               <label className="mb-2 block">
                 Note
@@ -704,6 +711,48 @@ const CreatePurchaseorder = () => {
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
+            <div className="m-2">
+              <label className="mb-2 block">
+                Payment Terms
+              </label>
+              <textarea
+                name="paymentTerms"
+                placeholder="Specify payment terms"
+                rows={4}
+                value={purchaseOrder.paymentTerms}
+                onChange={handleInputChange}
+                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+              />
+            </div>
+            <div className="m-2">
+              <label className="mb-2 block">
+                Delivery Terms
+              </label>
+              <textarea
+                name="deliveryTerms"
+                placeholder="Specify delivery terms"
+                rows={4}
+                value={purchaseOrder.deliveryTerms}
+                onChange={handleInputChange}
+                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+              />
+            </div>
+            <div className="m-2">
+              <label className="mb-2 block">
+                Terms and Conditions
+              </label>
+              <textarea
+                name="termsAndConditions"
+                placeholder="Specify terms and conditions"
+                rows={4}
+                value={purchaseOrder.termsAndConditions}
+                onChange={handleInputChange}
+                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+              />
+            </div>
+          </div>
+          <hr />
+          <div className="flex flex-wrap w-full mb-16">
             <div className="m-2 w-fit">
               <label className="mb-2 block font-medium text-gray-700">
                 Attachments
@@ -782,7 +831,7 @@ const CreatePurchaseorder = () => {
             </button>
             <button
               type="button"
-              onClick={() => console.log("Preview functionality not implemented yet")}
+              onClick={() => setIsPreviewOpen(true)}
               className="rounded-lg bg-gray-200 hover:bg-gray-300 m-2 py-2 px-2 text-gray-700 text-[16px]"
             >
               Preview
@@ -797,6 +846,11 @@ const CreatePurchaseorder = () => {
           handleClose={() => setAlert(null)}
         />
       )}
+      {/* Modal For Preview */}
+      <PreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)}>
+        <PurchaseOrderPreview data={purchaseOrder} />
+      </PreviewModal>
+
     </UserLayout>
   );
 };
