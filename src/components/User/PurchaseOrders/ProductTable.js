@@ -44,6 +44,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
         });
         if (taxResponse.data.success) {
           setTaxes(taxResponse.data.taxes || []);
+          console.log("Fetched Taxes:", taxResponse.data.taxes);
         } else {
           setAlert({
             message: taxResponse.data.message || "Failed to fetch taxes.",

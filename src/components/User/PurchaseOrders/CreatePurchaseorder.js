@@ -11,7 +11,6 @@ import { State } from "country-state-city";
 import ProductTable from "./ProductTable";
 import PreviewModal from "../ReusableComponents/PreviewModal";
 import PurchaseOrderPreview from "../ReusableComponents/PurchaseOrderPreview";
-import PaymentSummary from "./PaymentSummary";
 
 const today = new Date();
 const nextYear = new Date();
@@ -29,7 +28,6 @@ const CreatePurchaseorder = () => {
   const [attachmentFiles, setAttachmentFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [addPaymentDetails, setAddPaymentDetails] = useState(false);
 
   const [purchaseOrder, setPurchaseOrder] = useState({
     businessId: user ? user.businessId : "",
@@ -698,14 +696,6 @@ const CreatePurchaseorder = () => {
             handleInputChange={handleInputChange}
             updateTotals={updateTotals}
           />
-          <hr />
-          <PaymentSummary
-            purchaseOrder={purchaseOrder}
-            handleInputChange={handleInputChange}
-            updateTotals={updateTotals}
-            addPaymentDetails={addPaymentDetails}
-            onClose={() => setAddPaymentDetails(false)}
-          />
           <div className="flex flex-wrap text-sm w-full">
             <div className="m-2">
               <label className="mb-2 block">
@@ -831,15 +821,6 @@ const CreatePurchaseorder = () => {
               className="rounded-lg bg-gray-200 hover:bg-gray-300 m-2 py-2 px-2 text-gray-700 text-[16px]"
             >
               Preview
-            </button>
-            <button
-              type="button"
-              className="text-customPrimary hover:underline m-2"
-              onClick={
-                () => setAddPaymentDetails(true)
-              }
-            >
-              Add Payment Details
             </button>
           </div>
         </form>

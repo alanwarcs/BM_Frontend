@@ -16,6 +16,7 @@ const TextInput = ({ id, label, required, placeholder, value, onChange, type = "
         value={value}
         onChange={onChange}
         disabled={disabled} // Pass the 'disabled' prop
+        autocomplete="off"
         {...rest}
       />
     </div>
