@@ -69,8 +69,9 @@ const CreatePurchaseorder = () => {
     totalAmount: "0",
     paidAmount: "0",
     dueAmount: "0",
-    deliveryTerms: "",
-    termsAndConditions: "",
+    deliveryTerms: "-",
+    paymentTerms: "Net 30 days from the date of invoice.",
+    termsAndConditions: "Payment is due within 30 days of receipt of goods. Please reference the purchase order number on all invoices. Goods must be delivered to the specified shipping address. Any discrepancies must be reported within 7 days of receipt.",
     attachments: [],
     createdBy: user ? user.id : "",
     updatedBy: user ? user.id : "",
@@ -78,49 +79,68 @@ const CreatePurchaseorder = () => {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchData = async () => {
       try {
         const poRes = await axios.get("/api/purchase-order/generate", {
           withCredentials: true,
+          signal: controller.signal,
         });
-        if (poRes.status === 200) {
+        if (poRes.status === 200 && poRes.data?.organization?.address) {
           const { purchaseOrderId, organization } = poRes.data;
           const address = organization.address;
-          const formattedAddress = `${address.address}, ${address.state}, ${address.country}, ${address.pincode}`;
+          const formattedAddress = address.address && address.state && address.country && address.pincode
+            ? `${address.address}, ${address.state}, ${address.country}, ${address.pincode}`
+            : "";
           const userAddressOption = {
             value: formattedAddress,
-            label: `${user?.name || "User"}, ${address.state}`,
-            state: address.state, // Store state explicitly for easier access
+            label: formattedAddress ? `${user?.name || "User"}, ${address.state}` : "Default Address",
+            state: address.state || "",
           };
           setUserAddress(userAddressOption);
           setPurchaseOrder((prev) => ({
             ...prev,
-            purchaseOrderNumber: purchaseOrderId,
-            deliveryState: address.state,
+            purchaseOrderNumber: purchaseOrderId || `PO-${Date.now()}`,
+            deliveryState: address.state || "",
             billingAddress: formattedAddress,
             shippingAddress: formattedAddress,
             deliveryLocation: formattedAddress,
           }));
+        } else {
+          setAlert({ message: "Invalid organization address data", type: "error" });
         }
 
-        const vendorRes = await axios.get("/api/vendor/vendors/list");
-        if (vendorRes.status === 200) {
+        const vendorRes = await axios.get("/api/vendor/vendors/list", {
+          signal: controller.signal,
+        });
+        if (vendorRes.status === 200 && vendorRes.data?.data) {
           setVendors(vendorRes.data.data);
+        } else {
+          setAlert({ message: "No vendors found", type: "error" });
         }
 
-        const response = await axios.get("/api/storage/getList");
-        setAvailableStorage(response.data.data.storage || []);
+        const response = await axios.get("/api/storage/getList", {
+          signal: controller.signal,
+        });
+        setAvailableStorage(response.data?.data?.storage || []);
 
-        const allStates = State.getStatesOfCountry("IN");
-        setStates(allStates || []);
+        const allStates = State.getStatesOfCountry("IN") || [];
+        setStates(allStates);
       } catch (err) {
-        setAlert({ message: "Error fetching initial data", type: "error" });
+        if (err.name === "AbortError") return;
+        setAlert({ message: err.response?.data?.message || "Error fetching initial data", type: "error" });
       }
     };
     fetchData();
-  }, [user]);
+    return () => controller.abort();
+  }, [user?.businessId, user?.name, user?.id]);
 
   const handleAttachmentChange = (e) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      setAlert({ message: "No files selected", type: "error" });
+      return;
+    }
+
     const files = Array.from(e.target.files);
     const maxAttachments = 2;
     const maxFileSize = 3 * 1024 * 1024; // 3 MB
@@ -140,8 +160,17 @@ const CreatePurchaseorder = () => {
         setAlert({ message: `File ${file.name} exceeds 3 MB limit.`, type: "error" });
         return false;
       }
+      if (file.size === 0) {
+        setAlert({ message: `File ${file.name} is empty.`, type: "error" });
+        return false;
+      }
       return true;
     });
+
+    if (validFiles.length === 0) {
+      setAlert({ message: "No valid files selected", type: "error" });
+      return;
+    }
 
     setAttachmentFiles((prev) => [...prev, ...validFiles]);
     setPurchaseOrder((prev) => ({
@@ -199,6 +228,15 @@ const CreatePurchaseorder = () => {
 
       const { name, value } = event.target;
 
+      if (name === "dueDate" && value && purchaseOrder.orderDate) {
+        const dueDate = new Date(value);
+        const orderDate = new Date(purchaseOrder.orderDate);
+        if (dueDate < orderDate) {
+          setAlert({ message: "Due date cannot be before order date", type: "error" });
+          return;
+        }
+      }
+
       if (name === "products") {
         setPurchaseOrder((prev) => ({
           ...prev,
@@ -215,8 +253,8 @@ const CreatePurchaseorder = () => {
         } else {
           try {
             const response = await axios.get(`/api/storage/getStorageDetails/${value}`);
-            const storageState = response.data.storage.storageState || "";
-            const storageAddress = response.data.storage.storageAddress || "";
+            const storageState = response.data?.storage?.storageState || "";
+            const storageAddress = response.data?.storage?.storageAddress || "";
             setPurchaseOrder((prev) => ({
               ...prev,
               deliveryState: storageState,
@@ -317,7 +355,7 @@ const CreatePurchaseorder = () => {
           taxes = [
             {
               type: "custom",
-              subType: matchingTax.description,
+              subType: matchingTax.description || "Custom Tax",
               rate: customRate,
               amount: ((customRate / 100) * amountBase).toFixed(2),
             },
@@ -326,10 +364,11 @@ const CreatePurchaseorder = () => {
       } else {
         taxes = gstType === "intra"
           ? [
-            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-          ]
+              { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+              { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+            ]
           : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
+        setAlert({ message: "No matching tax found, defaulting to zero tax rate", type: "warning" });
       }
 
       const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -362,7 +401,7 @@ const CreatePurchaseorder = () => {
       const response = await axios.get(`/api/vendor/getVendorDetails/${vendorId}`);
       const vendorDetails = response?.data?.vendorDetails;
 
-      if (vendorDetails) {
+      if (vendorDetails && vendorDetails.taxDetails?.sourceState) {
         const taxResponse = await axios.get("/api/tax/getTax", { withCredentials: true });
         const taxes = taxResponse.data.success ? taxResponse.data.taxes || [] : [];
         const gstRates = [
@@ -411,9 +450,11 @@ const CreatePurchaseorder = () => {
             products: updatedProducts,
           };
         });
+      } else {
+        setAlert({ message: "Vendor details or tax information not found.", type: "error" });
       }
     } catch (error) {
-      setAlert({ message: "Failed to fetch selected vendor's details.", type: "error" });
+      setAlert({ message: error.response?.data?.message || "Failed to fetch selected vendor's details.", type: "error" });
     }
   };
 
@@ -447,20 +488,26 @@ const CreatePurchaseorder = () => {
       for (const file of attachmentFiles) {
         formData.append("file", file);
 
-        const uploadResponse = await axios.post("/api/upload/attachment", formData, {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-
-        if (uploadResponse.status === 200) {
-          uploadedAttachments.push({
-            fileName: file.name,
-            filePath: uploadResponse.data.url,
-            uploadedBy: user.id,
-            uploadedAt: new Date()
+        try {
+          const uploadResponse = await axios.post("/api/upload/attachment", formData, {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           });
+
+          if (uploadResponse.status === 200 && uploadResponse.data?.url) {
+            uploadedAttachments.push({
+              fileName: file.name,
+              filePath: uploadResponse.data.url,
+              uploadedBy: user.id,
+              uploadedAt: new Date(),
+            });
+          } else {
+            setAlert({ message: `Failed to upload file ${file.name}`, type: "error" });
+          }
+        } catch (error) {
+          setAlert({ message: `Error uploading file ${file.name}: ${error.response?.data?.message || "Upload failed"}`, type: "error" });
         }
 
         formData.delete("file");
@@ -475,8 +522,8 @@ const CreatePurchaseorder = () => {
         taxes: product.taxes.map(tax => ({
           ...tax,
           rate: parseFloat(tax.rate) || 0,
-          amount: parseFloat(tax.amount) || 0
-        }))
+          amount: parseFloat(tax.amount) || 0,
+        })),
       }));
 
       const purchaseOrderData = {
@@ -499,7 +546,7 @@ const CreatePurchaseorder = () => {
           ? parseFloat(purchaseOrder.paidAmount) >= parseFloat(purchaseOrder.totalAmount)
             ? "Paid"
             : "Partially Paid"
-          : "UnPaid"
+          : "UnPaid",
       };
 
       const response = await axios.post("/api/purchase-order/create", purchaseOrderData, {
@@ -512,7 +559,7 @@ const CreatePurchaseorder = () => {
       if (response.status === 200) {
         setAlert({
           message: "Purchase order created successfully!",
-          type: "success"
+          type: "success",
         });
 
         setPurchaseOrder({
@@ -526,6 +573,7 @@ const CreatePurchaseorder = () => {
           products: [{
             productId: "",
             productName: "",
+            hsnOrSacCode: "",
             quantity: "0",
             unit: "nos",
             rate: "0",
@@ -549,10 +597,9 @@ const CreatePurchaseorder = () => {
         setAttachmentFiles([]);
       }
     } catch (error) {
-      console.error("Error creating purchase order:", error);
       setAlert({
         message: error.response?.data?.message || "Failed to create purchase order",
-        type: "error"
+        type: "error",
       });
     }
   };
@@ -561,9 +608,9 @@ const CreatePurchaseorder = () => {
     userAddress || { value: "", label: "Loading user address..." },
     ...(Array.isArray(availableStorage)
       ? availableStorage.map((storage) => ({
-        value: storage.address || storage.name || storage._id,
-        label: `${storage.storageName}`,
-      }))
+          value: storage.address || storage.name || storage._id,
+          label: `${storage.storageName}`,
+        }))
       : []),
   ];
 
@@ -654,9 +701,9 @@ const CreatePurchaseorder = () => {
               options={
                 states.length > 0
                   ? states.map((state) => ({
-                    value: state.name,
-                    label: state.name,
-                  }))
+                      value: state.name,
+                      label: state.name,
+                    }))
                   : []
               }
               required
@@ -719,6 +766,19 @@ const CreatePurchaseorder = () => {
                 placeholder="Specify delivery terms"
                 rows={4}
                 value={purchaseOrder.deliveryTerms}
+                onChange={handleInputChange}
+                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
+              />
+            </div>
+            <div className="m-2">
+              <label className="mb-2 block">
+                Payment Terms
+              </label>
+              <textarea
+                name="paymentTerms"
+                placeholder="Specify payment terms"
+                rows={4}
+                value={purchaseOrder.paymentTerms}
                 onChange={handleInputChange}
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
@@ -832,11 +892,9 @@ const CreatePurchaseorder = () => {
           handleClose={() => setAlert(null)}
         />
       )}
-      {/* Modal For Preview */}
       <PreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)}>
         <PurchaseOrderPreview data={purchaseOrder} />
       </PreviewModal>
-
     </UserLayout>
   );
 };

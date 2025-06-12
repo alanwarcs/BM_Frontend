@@ -53,10 +53,10 @@ const PurchaseOrderPreview = ({ data }) => {
     const hasCustomTax = data.products.some(product =>
         product.taxes.some(tax => tax.type === 'custom')
     );
-    const hasIGST = !hasCustomTax && data.products.some(product =>
+    const hasIGST = data.products.some(product =>
         product.taxes.some(tax => tax.type === 'IGST')
     );
-    const hasGST = !hasCustomTax && data.products.some(product =>
+    const hasGST = data.products.some(product =>
         product.taxes.some(tax => tax.type === 'GST')
     );
     const hasProductDiscount = data.discountType === 'Product' && data.products.some(product =>
@@ -88,20 +88,37 @@ const PurchaseOrderPreview = ({ data }) => {
         return '0.00';
     };
 
+    // Calculate total tax amounts
+    const totalCustomTax = data.products
+        .reduce((sum, product) => {
+            const customTax = product.taxes.find(tax => tax.type === 'custom')?.amount || 0;
+            return sum + parseFloat(customTax);
+        }, 0)
+        .toFixed(2);
+    const totalCGST = data.products
+        .reduce((sum, product) => {
+            const cgst = product.taxes.find(tax => tax.subType === 'CGST')?.amount || 0;
+            return sum + parseFloat(cgst);
+        }, 0)
+        .toFixed(2);
+    const totalSGST = data.products
+        .reduce((sum, product) => {
+            const sgst = product.taxes.find(tax => tax.subType === 'SGST')?.amount || 0;
+            return sum + parseFloat(sgst);
+        }, 0)
+        .toFixed(2);
+    const totalIGST = data.products
+        .reduce((sum, product) => {
+            const igst = product.taxes.find(tax => tax.subType === 'IGST')?.amount || 0;
+            return sum + parseFloat(igst);
+        }, 0)
+        .toFixed(2);
+
     return (
         <div className="purchase-order relative">
             {/* Watermark */}
             <div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                style={{
-                    zIndex: 0,
-                    opacity: 0.2,
-                    transform: 'rotate(-45deg)',
-                    fontSize: '4rem',
-                    color: 'red',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase',
-                }}
+                className="watermark-preview"
             >
                 PREVIEW
             </div>
@@ -161,28 +178,23 @@ const PurchaseOrderPreview = ({ data }) => {
             </table>
 
             {/* Product Table */}
-            <table className="no-inner-borders table-items" border="1" style={{ position: 'relative', zIndex: 1 }}>
+            <table className="no-inner-borders" border="1" style={{ position: 'relative', zIndex: 1 }}>
                 <thead>
                     <tr>
                         <th>Sr No.</th>
                         <th>Description</th>
                         <th>HSN/SAC</th>
-                        <th>Quantity</th>
                         <th>Rate</th>
+                        <th>Quantity</th>
                         <th>Unit</th>
-                        {hasCustomTax ? (
-                            <th>Tax</th>
-                        ) : (
+                        {hasGST && (
                             <>
-                                {hasGST && (
-                                    <>
-                                        <th>CGST</th>
-                                        <th>SGST</th>
-                                    </>
-                                )}
-                                {hasIGST && <th>IGST</th>}
+                                <th>CGST</th>
+                                <th>SGST</th>
                             </>
                         )}
+                        {hasIGST && <th>IGST</th>}
+                        {hasCustomTax && <th>Other Tax</th>}
                         {hasProductDiscount && <th>Discount</th>}
                         <th>Total</th>
                     </tr>
@@ -204,42 +216,39 @@ const PurchaseOrderPreview = ({ data }) => {
                             return (
                                 <tr key={product.productId || index}>
                                     <td>{index + 1}</td>
-                                    <td>{product.productName || 'N/A'}</td>
+                                    <td style={{ padding: 2 }}>{product.productName || 'N/A'}</td>
                                     <td>{product.hsnSac || '-'}</td>
-                                    <td>{parseFloat(product.quantity).toFixed(2)}</td>
                                     <td>{parseFloat(product.rate).toFixed(2)}</td>
+                                    <td>{parseFloat(product.quantity).toFixed(2)}</td>
                                     <td>{product.unit || 'pcs'}</td>
-                                    {hasCustomTax ? (
-                                        <td>
-                                            {customTax ? `${customTax.rate}% (₹${parseFloat(customTax.amount).toFixed(2)})` : '0% (₹0.00)'}
-                                        </td>
-                                    ) : (
+                                    {hasGST && (
                                         <>
-                                            {hasGST && (
-                                                <>
-                                                    <td>
-                                                        {cgst ? `₹${parseFloat(cgst.amount).toFixed(2)} (${cgst.rate}%)` : '₹0.00 (0%)'}
-                                                    </td>
-                                                    <td>
-                                                        {sgst ? `₹${parseFloat(sgst.amount).toFixed(2)} (${sgst.rate}%)` : '₹0.00 (0%)'}
-                                                    </td>
-                                                </>
-                                            )}
-                                            {hasIGST && (
-                                                <td>
-                                                    {igst ? `₹${parseFloat(igst.amount).toFixed(2)} (${igst.rate}%)` : '₹0.00 (0%)'}
-                                                </td>
-                                            )}
+                                            <td>
+                                                {cgst ? `${parseFloat(cgst.amount).toFixed(2)} (${cgst.rate.toFixed(2)}%)` : '0.00(0%)'}
+                                            </td>
+                                            <td>
+                                                {sgst ? `${parseFloat(sgst.amount).toFixed(2)} (${sgst.rate.toFixed(2)}%)` : '0.00(0%)'}
+                                            </td>
                                         </>
                                     )}
+                                    {hasIGST && (
+                                        <td>
+                                            {igst ? `${parseFloat(igst.amount).toFixed(2)} (${igst.rate.toFixed(2)}%)` : '0.00(0%)'}
+                                        </td>
+                                    )}
+                                    {hasCustomTax && (
+                                        <td>
+                                            {customTax ? `${parseFloat(customTax.amount).toFixed(2)} (${customTax.rate.toFixed(2)}%)` : '0.00(0%)'}
+                                        </td>
+                                    )}
                                     {hasProductDiscount && <td>{discountDisplay}</td>}
-                                    <td style={{ textAlign: 'end' }}>{parseFloat(product.totalPrice).toFixed(2)}</td>
+                                    <td>{parseFloat(product.totalPrice).toFixed(2)}</td>
                                 </tr>
                             );
                         })
                     ) : (
                         <tr>
-                            <td colSpan={hasCustomTax ? 8 : (hasGST ? 9 : (hasIGST ? 8 : 7))} style={{ textAlign: 'center' }}>
+                            <td colSpan={6 + (hasCustomTax ? 1 : 0) + (hasGST ? 2 : 0) + (hasIGST ? 1 : 0) + (hasProductDiscount ? 1 : 0)} style={{ textAlign: 'center' }}>
                                 No products available
                             </td>
                         </tr>
@@ -250,70 +259,56 @@ const PurchaseOrderPreview = ({ data }) => {
             {/* Subtotal Table */}
             <table className="subtotal-table" style={{ position: 'relative', zIndex: 1 }}>
                 <tr>
-                    <td rowSpan={hasCustomTax ? (data.roundOff ? 5 : 4) : (hasGST ? (data.roundOff ? 6 : 5) : (data.roundOff ? 5 : 4))} style={{ width: '60%' }}>
+                    <td rowSpan={(hasCustomTax ? 1 : 0) + (hasGST ? 2 : 0) + (hasIGST ? 1 : 0) + (hasTotalDiscount ? 1 : 0) + (data.roundOff ? 1 : 0) + 1 + 1} style={{ width: '60%' }}>
                         <p style={{ fontWeight: 'bold' }}>Notes</p>
                         <p>{data.note || '-'}</p>
                     </td>
-                    <td className="subtotal">Subtotal(Excl. Tax)</td>
-                    <td style={{ textAlign: 'end' }}>{parseFloat(data.totalAmount - data.taxAmount).toFixed(2)}</td>
+                    <td className="subtotal">Subtotal(Excl. Tax & Discount)</td>
+                    <td style={{ textAlign: 'end' }}>
+                        {data.products && data.products.length > 0
+                            ? parseFloat(
+                                data.products.reduce((sum, product) => {
+                                    const quantity = parseFloat(product.quantity) || 0;
+                                    const rate = parseFloat(product.rate) || 0;
+                                    return sum + quantity * rate;
+                                }, 0)
+                            ).toFixed(2)
+                            : '0.00'}
+                    </td>
                 </tr>
                 {hasTotalDiscount && (
                     <tr>
                         <td className="subtotal">Discount</td>
                         <td style={{ textAlign: 'end' }}>
                             {data.discountType === 'Flat' && parseFloat(data.discount) > 0 && data.discountValueType === 'Percent'
-                                ? `${parseFloat(data.discount).toFixed(2)}% (₹${calculateFlatDiscountAmount()})`
+                                ? `${parseFloat(data.discount).toFixed(2)}% (-${calculateFlatDiscountAmount()})`
                                 : parseFloat(data.totalAmountOfDiscount).toFixed(2)}
                         </td>
                     </tr>
                 )}
-                {hasCustomTax ? (
-                    <tr>
-                        <td className="subtotal">Tax</td>
-                        <td style={{ textAlign: 'end' }}>{parseFloat(data.taxAmount).toFixed(2)}</td>
-                    </tr>
-                ) : (
+                {hasGST && (
                     <>
-                        {hasGST && (
-                            <>
-                                <tr>
-                                    <td className="subtotal">Total CGST</td>
-                                    <td style={{ textAlign: 'end' }}>
-                                        {data.products
-                                            .reduce((sum, product) => {
-                                                const cgst = product.taxes.find(tax => tax.subType === 'CGST')?.amount || 0;
-                                                return sum + parseFloat(cgst);
-                                            }, 0)
-                                            .toFixed(2)}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="subtotal">Total SGST</td>
-                                    <td style={{ textAlign: 'end' }}>
-                                        {data.products
-                                            .reduce((sum, product) => {
-                                                const sgst = product.taxes.find(tax => tax.subType === 'SGST')?.amount || 0;
-                                                return sum + parseFloat(sgst);
-                                            }, 0)
-                                            .toFixed(2)}
-                                    </td>
-                                </tr>
-                            </>
-                        )}
-                        {hasIGST && (
-                            <tr>
-                                <td className="subtotal">Total IGST</td>
-                                <td style={{ textAlign: 'end' }}>
-                                    {data.products
-                                        .reduce((sum, product) => {
-                                            const igst = product.taxes.find(tax => tax.subType === 'IGST')?.amount || 0;
-                                            return sum + parseFloat(igst);
-                                        }, 0)
-                                        .toFixed(2)}
-                                </td>
-                            </tr>
-                        )}
+                        <tr>
+                            <td className="subtotal">Total CGST</td>
+                            <td style={{ textAlign: 'end' }}>{totalCGST}</td>
+                        </tr>
+                        <tr>
+                            <td className="subtotal">Total SGST</td>
+                            <td style={{ textAlign: 'end' }}>{totalSGST}</td>
+                        </tr>
                     </>
+                )}
+                {hasIGST && (
+                    <tr>
+                        <td className="subtotal">Total IGST</td>
+                        <td style={{ textAlign: 'end' }}>{totalIGST}</td>
+                    </tr>
+                )}
+                {hasCustomTax && (
+                    <tr>
+                        <td className="subtotal">Other Tax</td>
+                        <td style={{ textAlign: 'end' }}>{totalCustomTax}</td>
+                    </tr>
                 )}
                 {data.roundOff && (
                     <tr>
@@ -323,7 +318,7 @@ const PurchaseOrderPreview = ({ data }) => {
                 )}
                 <tr>
                     <td className="subtotal">Total</td>
-                    <td style={{ textAlign: 'end', fontWeight: 'bold' }}>{parseFloat(data.totalAmount).toFixed(2)}</td>
+                    <td style={{ textAlign: 'end', fontWeight: 'bold' }}>₹{parseFloat(data.totalAmount).toFixed(2)}</td>
                 </tr>
             </table>
 
@@ -331,21 +326,18 @@ const PurchaseOrderPreview = ({ data }) => {
                 <tr>
                     <td style={{ textAlign: 'start', padding: '10px' }}>
                         <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Payment Terms</p>
-                        <p style={{ marginTop: '0' }}>Net 30 days from the date of invoice.</p>
+                        <p style={{ marginTop: '0' }}>{data.paymentTerms}</p>
                     </td>
                     <td style={{ textAlign: 'start', padding: '10px' }}>
                         <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Delivery Terms</p>
-                        <p style={{ marginTop: '0' }}>10-15-2023</p>
+                        <p style={{ marginTop: '0' }}>{data.deliveryTerms}</p>
                     </td>
                 </tr>
                 <tr>
                     <td colSpan="2">
                         <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Terms and Conditions</p>
                         <p style={{ marginTop: '0' }}>
-                            1. Payment is due within 30 days of receipt of goods.<br />
-                            2. Please reference the purchase order number on all invoices.<br />
-                            3. Goods must be delivered to the specified shipping address.<br />
-                            4. Any discrepancies must be reported within 7 days of receipt.
+                            {data.termsAndConditions || 'No terms and conditions provided.'}
                         </p>
                     </td>
                 </tr>

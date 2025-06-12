@@ -84,25 +84,75 @@ table {
 
 .no-inner-borders {
   border: 1px solid #000;
-  /* Surrounding border for the table */
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+  font-size: 14px;
 }
 
-.no-inner-borders
-thead th {
+.no-inner-borders thead th {
   background-color: rgba(242, 242, 242, 0.80);
 }
 
 .no-inner-borders th,
 .no-inner-borders td {
-  padding: 4px 8px;
+  padding: 4px;
   vertical-align: top;
   border-left: 1px solid #000;
   border-right: 1px solid #000;
+  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+  text-align: left;
 }
 
 .no-inner-borders.table-items thead {
   border-bottom: 1px solid #000;
-  /* Border after thead */
+}
+
+.no-inner-borders td:nth-child(2) {
+  /* Description column */
+  min-width: 300px;
+  max-width: 400px;
+}
+
+.no-inner-borders td:nth-child(1),
+/* Sr No. */
+.no-inner-borders td:nth-child(3),
+/* HSN/SAC */
+.no-inner-borders td:nth-child(4),
+/* Quantity */
+.no-inner-borders td:nth-child(5),
+/* Rate */
+.no-inner-borders td:nth-child(6) {
+  /* Unit */
+  max-width: 200px;
+}
+
+.watermark-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  text-align: center;
+  opacity: 0.2;
+  font-size: 100px;
+  color: red;
+  font-weight: bold;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
+
+.no-inner-borders td:nth-child(n+7) {
+  /* Tax, Discount, Total */
+  max-width: 80px;
+  text-align: right;
 }
 
 th {

@@ -163,9 +163,9 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
       if (discountValue > 0) {
         const flatDiscountAmount =
           purchaseOrder.discountValueType === "Percent"
-            ? (taxableAmount * discountValue) / 100
+            ? (totalBaseAmount * discountValue) / 100
             : discountValue;
-        taxableAmount -= flatDiscountAmount;
+        totalBaseAmount -= flatDiscountAmount;
         totalDiscount += flatDiscountAmount;
       }
     }
@@ -259,9 +259,9 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     } else {
       taxes = gstType === "intra"
         ? [
-            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-          ]
+          { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+          { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+        ]
         : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
     }
 
@@ -397,9 +397,9 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     } else {
       taxes = gstType === "intra"
         ? [
-            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-          ]
+          { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+          { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+        ]
         : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
     }
 
@@ -588,9 +588,9 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
       inProductDiscountValueType: purchaseOrder.discountValueType || "Percent",
       taxes: gstType === "intra"
         ? [
-            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-          ]
+          { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+          { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+        ]
         : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }],
       totalPrice: "0",
     };
@@ -669,7 +669,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
 
   const totals = calculateTotals(purchaseOrder.products, purchaseOrder);
   const hasCustomTax = parseFloat(totals.customTaxTotal) > 0;
-  const showTaxBreakdown = !hasCustomTax && (parseFloat(totals.cgstTotal) > 0 || parseFloat(totals.sgstTotal) > 0 || parseFloat(totals.igstTotal) > 0);
+  const showTaxBreakdown = parseFloat(totals.cgstTotal) > 0 || parseFloat(totals.sgstTotal) > 0 || parseFloat(totals.igstTotal) > 0;
 
   return (
     <div className="flex flex-col w-full">
@@ -723,9 +723,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                           {filteredProducts.map((prod, prodIndex) => (
                             <li
                               key={prod.id}
-                              className={`p-2 cursor-pointer hover:bg-gray-200 ${
-                                highlightedIndex.product === prodIndex ? "bg-gray-200" : ""
-                              }`}
+                              className={`p-2 cursor-pointer hover:bg-gray-200 ${highlightedIndex.product === prodIndex ? "bg-gray-200" : ""
+                                }`}
                               onClick={() => handleProductSelect(index, prod)}
                               onMouseEnter={() =>
                                 setHighlightedIndex((prev) => ({ ...prev, product: prodIndex }))
@@ -877,9 +876,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                           {filteredTaxes.map((tax, taxIndex) => (
                             <li
                               key={`${tax.type}-${tax.value}`}
-                              className={`p-2 cursor-pointer hover:bg-gray-200 ${
-                                highlightedIndex.tax === taxIndex ? "bg-gray-200" : ""
-                              }`}
+                              className={`p-2 cursor-pointer hover:bg-gray-200 ${highlightedIndex.tax === taxIndex ? "bg-gray-200" : ""
+                                }`}
                               onClick={() => handleTaxSelect(index, tax)}
                               onMouseEnter={() =>
                                 setHighlightedIndex((prev) => ({ ...prev, tax: taxIndex }))
@@ -925,11 +923,10 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                 <td>
                   <button
                     type="button"
-                    className={`p-0 focus:outline-none ${
-                      purchaseOrder.products.length === 1
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-customPrimary hover:underline"
-                    }`}
+                    className={`p-0 focus:outline-none ${purchaseOrder.products.length === 1
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-customPrimary hover:underline"
+                      }`}
                     onClick={() => handleRemoveProduct(index)}
                     disabled={purchaseOrder.products.length === 1}
                   >
@@ -953,8 +950,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
               <td colSpan={purchaseOrder.discountType === "Flat" ? 4 : 4} className="m-2 p-2">
                 <div className="flex flex-col text-gray-700 text-sm">
                   <div className="flex justify-between items-center py-1">
-                    <span className="font-semibold">Subtotal (excl. Tax & Discount):</span>
-                    <span>₹{totals.totalBaseAmount}</span>
+                    <span className="font-semibold">Subtotal (Excl. Tax & Discount):</span>
+                    <span>{totals.totalBaseAmount}</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="font-semibold">Discount:</span>
@@ -1005,36 +1002,41 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                           </select>
                         </div>
                       )}
-                      <span className="ps-2">₹{totals.totalDiscount}</span>
+                      <span className="ps-2">-{totals.totalDiscount}</span>
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="font-semibold">Taxable Amount:</span>
-                    <span>₹{totals.taxableAmount}</span>
+                    <span>{totals.taxableAmount}</span>
                   </div>
-                  {hasCustomTax ? (
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-semibold">Total Tax:</span>
-                      <span>₹{totals.customTaxTotal}</span>
-                    </div>
-                  ) : showTaxBreakdown && (
+                  {(hasCustomTax || showTaxBreakdown) && (
                     <>
-                      {gstType === "intra" ? (
-                        <>
-                          <div className="flex justify-between items-center py-1">
-                            <span className="font-semibold">CGST:</span>
-                            <span>₹{totals.cgstTotal}</span>
-                          </div>
-                          <div className="flex justify-between items-center py-1">
-                            <span className="font-semibold">SGST:</span>
-                            <span>₹{totals.sgstTotal}</span>
-                          </div>
-                        </>
-                      ) : (
+                      {hasCustomTax && (
                         <div className="flex justify-between items-center py-1">
-                          <span className="font-semibold">IGST:</span>
-                          <span>₹{totals.igstTotal}</span>
+                          <span className="font-semibold">Total Custom Tax:</span>
+                          <span>₹{totals.customTaxTotal}</span>
                         </div>
+                      )}
+                      {showTaxBreakdown && (
+                        <>
+                          {gstType === "intra" ? (
+                            <>
+                              <div className="flex justify-between items-center py-1">
+                                <span className="font-semibold">Total CGST:</span>
+                                <span>{totals.cgstTotal}</span>
+                              </div>
+                              <div className="flex justify-between items-center py-1">
+                                <span className="font-semibold">Total SGST:</span>
+                                <span>{totals.sgstTotal}</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex justify-between items-center py-1">
+                              <span className="font-semibold">Total IGST:</span>
+                              <span>{totals.igstTotal}</span>
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   )}
@@ -1050,7 +1052,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                         className="ms-2 rounded border-gray-300 focus:ring-customSecondary"
                       />
                     </span>
-                    <span>₹{totals.roundOffAmount}</span>
+                    <span>{totals.roundOffAmount}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 mt-2 border-t border-gray-300 pt-2">
                     <span className="font-semibold text-base">Total (incl. Tax):</span>
