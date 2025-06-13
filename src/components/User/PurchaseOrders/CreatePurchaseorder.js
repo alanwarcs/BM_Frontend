@@ -10,7 +10,7 @@ import VendorDropdown from "../ReusableComponents/VendorDropdown";
 import { State } from "country-state-city";
 import ProductTable from "./ProductTable";
 import PreviewModal from "../ReusableComponents/PreviewModal";
-import PurchaseOrderPreview from "../ReusableComponents/PurchaseOrderPreview";
+import PurchaseOrderPreview from "../PurchaseOrders/PurchaseOrderPreview";
 
 const today = new Date();
 const nextYear = new Date();
@@ -78,6 +78,7 @@ const CreatePurchaseorder = () => {
     isDeleted: false,
   });
 
+  //Fetch user,PO,Vendors List,Storage List from backend
   useEffect(() => {
     const controller = new AbortController();
     const fetchData = async () => {
@@ -135,6 +136,7 @@ const CreatePurchaseorder = () => {
     return () => controller.abort();
   }, [user?.businessId, user?.name, user?.id]);
 
+  //Handle Attachment Selection
   const handleAttachmentChange = (e) => {
     if (!e.target.files || e.target.files.length === 0) {
       setAlert({ message: "No files selected", type: "error" });
@@ -179,6 +181,7 @@ const CreatePurchaseorder = () => {
     }));
   };
 
+  //Remove Selected Attachment
   const removeAttachment = (index) => {
     setAttachmentFiles((prev) => prev.filter((_, i) => i !== index));
     setPurchaseOrder((prev) => ({
@@ -187,6 +190,7 @@ const CreatePurchaseorder = () => {
     }));
   };
 
+  //Drage and Drop Methods to atachnment
   const handleDragOver = (e) => {
     e.preventDefault();
     if (attachmentFiles.length < 2) {
@@ -208,6 +212,7 @@ const CreatePurchaseorder = () => {
     }
   };
 
+  //Update Total for product,total amount,discount etc.
   const updateTotals = (totals) => {
     setPurchaseOrder((prev) => ({
       ...prev,
@@ -219,6 +224,7 @@ const CreatePurchaseorder = () => {
     }));
   };
 
+  //handle change in fields and set it on PO state
   const handleInputChange = async (...events) => {
     for (const event of events) {
       if (!event || !event.target || typeof event.target !== "object") {
@@ -274,6 +280,7 @@ const CreatePurchaseorder = () => {
     }
   };
 
+  //Re-Calculate Product Tax on changes made for seleted tax,source state,delivery state,remove or add product etc,
   const recalculateProductTaxes = (products, sourceState, deliveryState, filteredTaxes) => {
     const gstType = sourceState === deliveryState ? "intra" : "inter";
     return products.map((product) => {
@@ -382,6 +389,7 @@ const CreatePurchaseorder = () => {
     });
   };
 
+  //Handle slected vedor and fetch all its details like GSTIN, etc.
   const handleVendorSelect = async ({ vendorId, vendorName }) => {
     setPurchaseOrder((prev) => ({
       ...prev,
@@ -458,6 +466,7 @@ const CreatePurchaseorder = () => {
     }
   };
 
+  //Handle Submit of add purchase order form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -604,6 +613,7 @@ const CreatePurchaseorder = () => {
     }
   };
 
+  //Set options for storage(Delivery Location)
   const deliveryLocationOptions = [
     userAddress || { value: "", label: "Loading user address..." },
     ...(Array.isArray(availableStorage)
@@ -614,6 +624,7 @@ const CreatePurchaseorder = () => {
       : []),
   ];
 
+  //Set file icon for attachments
   const getFileIcon = (fileName) => {
     const extension = fileName.split('.').pop().toLowerCase();
     return extension === 'pdf' ? '📄' : '🖼️';

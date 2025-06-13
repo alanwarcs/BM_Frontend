@@ -22,6 +22,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
   const gstRates = gstData.gstRates;
   const gstType = purchaseOrder.sourceState === purchaseOrder.deliveryState ? "intra" : "inter";
 
+  //Fetch Items and Tax List
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -62,6 +63,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     fetchData();
   }, [user]);
 
+  //Handle click outside of custom product and custom tax dropdown to close it
   useEffect(() => {
     const handleClickOutside = (event) => {
       let clickedOutsideAll = true;
@@ -88,6 +90,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     };
   }, []);
 
+  //Set GST and Fatched Tax as Filterd tax to select
   useEffect(() => {
     const customGstRates = gstRates.map((rate) => {
       if (gstType === "intra") {
@@ -118,6 +121,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     setFilteredTaxes([...customGstRates, ...formattedTaxes]);
   }, [gstType, gstRates, taxes]);
 
+  //Calculate Totals based on Selected Producr and Set on PO
   const calculateTotals = (products, purchaseOrder) => {
     let totalBaseAmount = 0;
     let totalDiscount = 0;
@@ -194,6 +198,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     };
   };
 
+  //Recalculate totals on Product change
   const recalculateProduct = (product, gstType, tax = null) => {
     const quantity = parseFloat(product.quantity) || 0;
     const rate = parseFloat(product.rate) || 0;
@@ -275,6 +280,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     };
   };
 
+  //check duplicate product selected and show merge option
   const checkDuplicates = (updatedProducts) => {
     const newWarnings = {};
     updatedProducts.forEach((product, index) => {
@@ -292,6 +298,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     setDuplicateWarnings(newWarnings);
   };
 
+  //handle change in inputs and set it in PO
   const handleInputChangeProduct = (index, field, value) => {
     const updatedProducts = [...purchaseOrder.products];
     updatedProducts[index] = {
@@ -335,6 +342,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle selection of product and se tax,rates,units etc accordingly
   const handleProductSelect = (index, product) => {
     const updatedProducts = [...purchaseOrder.products];
     const quantity = parseFloat(updatedProducts[index].quantity) || 0;
@@ -426,6 +434,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle Merge Duplicate peoduct
   const handleMergeDuplicate = (index, existingIndex) => {
     const updatedProducts = [...purchaseOrder.products];
     const existingQuantity = parseFloat(updatedProducts[existingIndex].quantity) || 0;
@@ -442,6 +451,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle Tax change and set new selectes tax to po and trigger recalculation method
   const handleTaxSelect = (index, tax) => {
     const updatedProducts = [...purchaseOrder.products];
     const product = updatedProducts[index];
@@ -512,6 +522,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle select Product with key's
   const handleProductKeyDown = (e, index) => {
     if (!itemDropdownVisible[index]) {
       if (e.key === "Enter" || e.key === "ArrowDown") {
@@ -545,6 +556,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     }
   };
 
+  //Handle select Tax with key's
   const handleTaxKeyDown = (e, index) => {
     if (!taxDropdownVisible[index]) {
       if (e.key === "Enter" || e.key === "ArrowDown") {
@@ -577,6 +589,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     }
   };
 
+  //Handle add new peoduct to list
   const handleAddProduct = () => {
     const newProduct = {
       productId: "",
@@ -602,6 +615,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle Remove Peoduct from list
   const handleRemoveProduct = (index) => {
     const updatedProducts = purchaseOrder.products.filter((_, i) => i !== index);
     handleInputChange({ target: { name: "products", value: updatedProducts } });
@@ -611,6 +625,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle Discount type change for InProdct and Flat Discount
   const handleDiscountTypeChange = (value) => {
     const updatedProducts = purchaseOrder.products.map((product) => {
       const resetProduct = {
@@ -632,6 +647,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle Discount Value type change for amount and precent based discount
   const handleDiscountValueTypeChange = (value) => {
     handleInputChange(
       { target: { name: "discountValueType", value } },
@@ -646,6 +662,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Handle Discount change and trigger Calculate Totals
   const handleDiscountChange = (value) => {
     handleInputChange({ target: { name: "discount", value } });
 
@@ -656,6 +673,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
+  //Hanlde Round off amout to nearest value
   const handleRoundOffChange = (e) => {
     const roundOff = e.target.checked;
     handleInputChange({ target: { name: "roundOff", value: roundOff } });

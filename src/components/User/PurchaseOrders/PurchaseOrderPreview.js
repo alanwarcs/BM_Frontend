@@ -6,6 +6,7 @@ const PurchaseOrderPreview = ({ data }) => {
     const [vendorDetails, setVendorDetails] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    //Fetch details of vendor and business from backend as per PO Data
     useEffect(() => {
         const fetchBusinessDetails = async () => {
             try {
@@ -36,12 +37,9 @@ const PurchaseOrderPreview = ({ data }) => {
         fetchBusinessDetails();
     }, [data?.vendorId]);
 
-    console.log('Purchase Order Data:', data);
-
     if (loading) {
         return <div className="p-4">Loading...</div>;
     }
-
     if (!businessDetails) {
         return <div className="p-4 text-red-500">Failed to load business details</div>;
     }
@@ -117,9 +115,7 @@ const PurchaseOrderPreview = ({ data }) => {
     return (
         <div className="purchase-order relative">
             {/* Watermark */}
-            <div
-                className="watermark-preview"
-            >
+            <div className="watermark-preview">
                 PREVIEW
             </div>
 
