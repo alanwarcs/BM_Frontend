@@ -11,6 +11,7 @@ import { State } from "country-state-city";
 import ProductTable from "./ProductTable";
 import PreviewModal from "../ReusableComponents/PreviewModal";
 import PurchaseOrderPreview from "../PurchaseOrders/PurchaseOrderPreview";
+import gstRatesData from '../../../data/gstRates.json'; // Adjust path as needed
 
 const today = new Date();
 const nextYear = new Date();
@@ -28,6 +29,7 @@ const CreatePurchaseorder = () => {
   const [attachmentFiles, setAttachmentFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [taxes, setTaxes] = useState([]); // New state for taxes
 
   const [purchaseOrder, setPurchaseOrder] = useState({
     businessId: user ? user.businessId : "",
@@ -78,7 +80,7 @@ const CreatePurchaseorder = () => {
     isDeleted: false,
   });
 
-  //Fetch user,PO,Vendors List,Storage List from backend
+  // Fetch user, PO, vendors, storage, and taxes
   useEffect(() => {
     const controller = new AbortController();
     const fetchData = async () => {
@@ -120,23 +122,33 @@ const CreatePurchaseorder = () => {
           setAlert({ message: "No vendors found", type: "error" });
         }
 
-        const response = await axios.get("/api/storage/getList", {
+        const storageRes = await axios.get("/api/storage/getList", {
           signal: controller.signal,
         });
-        setAvailableStorage(response.data?.data?.storage || []);
+        setAvailableStorage(storageRes.data?.data?.storage || []);
+
+        const taxRes = await axios.get("/api/tax/getTax", {
+          withCredentials: true,
+          signal: controller.signal,
+        });
+        if (taxRes.data.success) {
+          setTaxes(taxRes.data.taxes || []);
+        } else {
+          setAlert({ message: "Failed to fetch taxes", type: "error" });
+        }
 
         const allStates = State.getStatesOfCountry("IN") || [];
         setStates(allStates);
       } catch (err) {
-        if (err.name === "AbortError") return;
+        if (axios.isCancel(err)) return;
         setAlert({ message: err.response?.data?.message || "Error fetching initial data", type: "error" });
       }
     };
     fetchData();
     return () => controller.abort();
-  }, [user?.businessId, user?.name, user?.id]);
+  }, [user?.organization?.businessId, user?.name, user?.id]);
 
-  //Handle Attachment Selection
+  // Handle Attachment Selection
   const handleAttachmentChange = (e) => {
     if (!e.target.files || e.target.files.length === 0) {
       setAlert({ message: "No files selected", type: "error" });
@@ -181,7 +193,7 @@ const CreatePurchaseorder = () => {
     }));
   };
 
-  //Remove Selected Attachment
+  // Remove Selected Attachment
   const removeAttachment = (index) => {
     setAttachmentFiles((prev) => prev.filter((_, i) => i !== index));
     setPurchaseOrder((prev) => ({
@@ -190,7 +202,7 @@ const CreatePurchaseorder = () => {
     }));
   };
 
-  //Drage and Drop Methods to atachnment
+  // Drag and Drop Methods for Attachment
   const handleDragOver = (e) => {
     e.preventDefault();
     if (attachmentFiles.length < 2) {
@@ -212,7 +224,7 @@ const CreatePurchaseorder = () => {
     }
   };
 
-  //Update Total for product,total amount,discount etc.
+  // Update Total for product, total amount, discount, etc.
   const updateTotals = (totals) => {
     setPurchaseOrder((prev) => ({
       ...prev,
@@ -224,8 +236,42 @@ const CreatePurchaseorder = () => {
     }));
   };
 
-  //handle change in fields and set it on PO state
+  // Generate filtered taxes based on gstType
+  const getFilteredTaxes = (gstType) => {
+    const gstRates = gstRatesData.gstRates;
+
+    const customGstRates = gstRates.map((rate) => {
+      if (gstType === "intra") {
+        return {
+          label: `GST (${rate.intraState.cgst.rate + rate.intraState.sgst.rate}%)`,
+          value: rate.totalRate,
+          rate: rate.intraState.cgst.rate + rate.intraState.sgst.rate,
+          type: "GST",
+        };
+      } else {
+        return {
+          label: `IGST (${rate.interState.igst.rate}%)`,
+          value: rate.totalRate,
+          rate: rate.interState.igst.rate,
+          type: "IGST",
+        };
+      }
+    });
+
+    const formattedTaxes = taxes.map((tax) => ({
+      label: `${tax.name} (${tax.rate}${tax.rateType === "Percent" ? "%" : ""})`,
+      value: tax.rate,
+      rate: tax.rate,
+      description: tax.name,
+      type: "custom",
+    }));
+
+    return [...customGstRates, ...formattedTaxes];
+  };
+
+  // Handle change in fields and set it on PO state
   const handleInputChange = async (...events) => {
+    let updatedPurchaseOrder = { ...purchaseOrder };
     for (const event of events) {
       if (!event || !event.target || typeof event.target !== "object") {
         setAlert({ message: "Invalid input event", type: "error" });
@@ -234,9 +280,9 @@ const CreatePurchaseorder = () => {
 
       const { name, value } = event.target;
 
-      if (name === "dueDate" && value && purchaseOrder.orderDate) {
+      if (name === "dueDate" && value && updatedPurchaseOrder.orderDate) {
         const dueDate = new Date(value);
-        const orderDate = new Date(purchaseOrder.orderDate);
+        const orderDate = new Date(updatedPurchaseOrder.orderDate);
         if (dueDate < orderDate) {
           setAlert({ message: "Due date cannot be before order date", type: "error" });
           return;
@@ -244,43 +290,74 @@ const CreatePurchaseorder = () => {
       }
 
       if (name === "products") {
-        setPurchaseOrder((prev) => ({
-          ...prev,
+        updatedPurchaseOrder = {
+          ...updatedPurchaseOrder,
           products: value,
-        }));
+        };
       } else if (name === "deliveryLocation" && value) {
+        let storageState = "";
+        let storageAddress = "";
         if (userAddress && value === userAddress.value) {
-          setPurchaseOrder((prev) => ({
-            ...prev,
-            deliveryState: userAddress.state || "",
-            shippingAddress: userAddress.value,
-            deliveryLocation: value,
-          }));
+          storageState = userAddress.state || "";
+          storageAddress = userAddress.value;
         } else {
           try {
             const response = await axios.get(`/api/storage/getStorageDetails/${value}`);
-            const storageState = response.data?.storage?.storageState || "";
-            const storageAddress = response.data?.storage?.storageAddress || "";
-            setPurchaseOrder((prev) => ({
-              ...prev,
-              deliveryState: storageState,
-              shippingAddress: storageAddress,
-              deliveryLocation: value,
-            }));
+            storageState = response.data?.storage?.storageState || "";
+            storageAddress = response.data?.storage?.storageAddress || "";
           } catch (error) {
             setAlert({ message: error.response?.data?.message || "Failed to fetch storage details.", type: "error" });
+            continue;
           }
         }
+
+        const gstType = updatedPurchaseOrder.sourceState === storageState ? "intra" : "inter";
+        const filteredTaxes = getFilteredTaxes(gstType);
+        const updatedProducts = recalculateProductTaxes(
+          updatedPurchaseOrder.products,
+          updatedPurchaseOrder.sourceState,
+          storageState,
+          filteredTaxes
+        );
+
+        updatedPurchaseOrder = {
+          ...updatedPurchaseOrder,
+          deliveryState: storageState,
+          shippingAddress: storageAddress,
+          deliveryLocation: value,
+          products: updatedProducts,
+        };
+      } else if (name === "deliveryState") {
+        const gstType = updatedPurchaseOrder.sourceState === value ? "intra" : "inter";
+        const filteredTaxes = getFilteredTaxes(gstType);
+        const updatedProducts = recalculateProductTaxes(
+          updatedPurchaseOrder.products,
+          updatedPurchaseOrder.sourceState,
+          value,
+          filteredTaxes
+        );
+
+        updatedPurchaseOrder = {
+          ...updatedPurchaseOrder,
+          deliveryState: value,
+          products: updatedProducts,
+        };
       } else {
-        setPurchaseOrder((prev) => ({
-          ...prev,
+        updatedPurchaseOrder = {
+          ...updatedPurchaseOrder,
           [name]: name === "roundOff" ? value === "true" || value === true : value,
-        }));
+        };
       }
     }
+
+    setPurchaseOrder(updatedPurchaseOrder);
+
+    // Recalculate totals after updating purchase order
+    const totals = calculateTotals(updatedPurchaseOrder.products, updatedPurchaseOrder);
+    updateTotals(totals);
   };
 
-  //Re-Calculate Product Tax on changes made for seleted tax,source state,delivery state,remove or add product etc,
+  // Re-Calculate Product Tax
   const recalculateProductTaxes = (products, sourceState, deliveryState, filteredTaxes) => {
     const gstType = sourceState === deliveryState ? "intra" : "inter";
     return products.map((product) => {
@@ -389,7 +466,84 @@ const CreatePurchaseorder = () => {
     });
   };
 
-  //Handle slected vedor and fetch all its details like GSTIN, etc.
+  // Calculate Totals (move to CreatePurchaseorder for consistency)
+  const calculateTotals = (products, purchaseOrder) => {
+    let totalBaseAmount = 0;
+    let totalDiscount = 0;
+    let taxableAmount = 0;
+    let cgstTotal = 0;
+    let sgstTotal = 0;
+    let igstTotal = 0;
+    let customTaxTotal = 0;
+
+    products.forEach((product) => {
+      const qty = parseFloat(product.quantity) || 0;
+      const rate = parseFloat(product.rate) || 0;
+      const subtotal = qty * rate;
+      totalBaseAmount += subtotal;
+
+      let discountAmount = 0;
+      if (purchaseOrder.discountType === "Product") {
+        const discountValue = parseFloat(product.inProductDiscount) || 0;
+        discountAmount =
+          product.inProductDiscountValueType === "Percent"
+            ? (subtotal * discountValue) / 100
+            : discountValue;
+        totalDiscount += discountAmount;
+      }
+      taxableAmount += subtotal - discountAmount;
+
+      product.taxes.forEach((tax) => {
+        const taxAmount = parseFloat(tax.amount || 0);
+        if (tax.type === "GST" && tax.subType === "CGST") {
+          cgstTotal += taxAmount;
+        } else if (tax.type === "GST" && tax.subType === "SGST") {
+          sgstTotal += taxAmount;
+        } else if (tax.type === "IGST") {
+          igstTotal += taxAmount;
+        } else if (tax.type === "custom") {
+          customTaxTotal += taxAmount;
+        }
+      });
+    });
+
+    if (purchaseOrder.discountType === "Flat") {
+      const discountValue = parseFloat(purchaseOrder.discount) || 0;
+      if (discountValue > 0) {
+        const flatDiscountAmount =
+          purchaseOrder.discountValueType === "Percent"
+            ? (totalBaseAmount * discountValue) / 100
+            : discountValue;
+        totalBaseAmount -= flatDiscountAmount;
+        totalDiscount += flatDiscountAmount;
+      }
+    }
+
+    const totalTax = cgstTotal + sgstTotal + igstTotal + customTaxTotal;
+    let totalInclTax = taxableAmount + totalTax;
+    let roundOffAmount = "0.00";
+
+    if (purchaseOrder.roundOff) {
+      const roundedTotal = Math.round(totalInclTax);
+      roundOffAmount = (roundedTotal - totalInclTax).toFixed(2);
+      totalInclTax = roundedTotal;
+    }
+
+    return {
+      totalBaseAmount: totalBaseAmount.toFixed(2),
+      totalDiscount: totalDiscount.toFixed(2),
+      taxableAmount: taxableAmount.toFixed(2),
+      totalTax: totalTax.toFixed(2),
+      totalInclTax: totalInclTax.toFixed(2),
+      cgstTotal: cgstTotal.toFixed(2),
+      sgstTotal: sgstTotal.toFixed(2),
+      igstTotal: igstTotal.toFixed(2),
+      customTaxTotal: customTaxTotal.toFixed(2),
+      roundOffAmount,
+    };
+  };
+
+  // Handle selected vendor
   const handleVendorSelect = async ({ vendorId, vendorName }) => {
     setPurchaseOrder((prev) => ({
       ...prev,
@@ -410,54 +564,23 @@ const CreatePurchaseorder = () => {
       const vendorDetails = response?.data?.vendorDetails;
 
       if (vendorDetails && vendorDetails.taxDetails?.sourceState) {
-        const taxResponse = await axios.get("/api/tax/getTax", { withCredentials: true });
-        const taxes = taxResponse.data.success ? taxResponse.data.taxes || [] : [];
-        const gstRates = [
-          { totalRate: 5, intraState: { cgst: { rate: 2.5 }, sgst: { rate: 2.5 } }, interState: { igst: { rate: 5 } } },
-          { totalRate: 12, intraState: { cgst: { rate: 6 }, sgst: { rate: 6 } }, interState: { igst: { rate: 12 } } },
-          { totalRate: 18, intraState: { cgst: { rate: 9 }, sgst: { rate: 9 } }, interState: { igst: { rate: 18 } } },
-          { totalRate: 28, intraState: { cgst: { rate: 14 }, sgst: { rate: 14 } }, interState: { igst: { rate: 28 } } },
-        ];
         const gstType = vendorDetails.taxDetails.sourceState === purchaseOrder.deliveryState ? "intra" : "inter";
-        const customGstRates = gstRates.map((rate) => {
-          if (gstType === "intra") {
-            return {
-              label: `GST (${rate.intraState.cgst.rate + rate.intraState.sgst.rate}%)`,
-              value: rate.totalRate,
-              rate: rate.intraState.cgst.rate + rate.intraState.sgst.rate,
-              type: "GST",
-            };
-          } else {
-            return {
-              label: `IGST (${rate.interState.igst.rate}%)`,
-              value: rate.totalRate,
-              rate: rate.interState.igst.rate,
-              type: "IGST",
-            };
-          }
-        });
-        const formattedTaxes = taxes.map((tax) => ({
-          label: `${tax.name} (${tax.rate}${tax.rateType === "Percent" ? "%" : ""})`,
-          value: tax.rate,
-          rate: tax.rate,
-          description: tax.name,
-          type: "custom",
-        }));
-        const filteredTaxes = [...customGstRates, ...formattedTaxes];
+        const filteredTaxes = getFilteredTaxes(gstType);
+        const updatedProducts = recalculateProductTaxes(
+          purchaseOrder.products,
+          vendorDetails.taxDetails.sourceState,
+          purchaseOrder.deliveryState,
+          filteredTaxes
+        );
 
-        setPurchaseOrder((prev) => {
-          const updatedProducts = recalculateProductTaxes(
-            prev.products,
-            vendorDetails.taxDetails.sourceState,
-            prev.deliveryState,
-            filteredTaxes
-          );
-          return {
-            ...prev,
-            sourceState: vendorDetails.taxDetails.sourceState,
-            products: updatedProducts,
-          };
-        });
+        setPurchaseOrder((prev) => ({
+          ...prev,
+          sourceState: vendorDetails.taxDetails.sourceState,
+          products: updatedProducts,
+        }));
+
+        const totals = calculateTotals(updatedProducts, purchaseOrder);
+        updateTotals(totals);
       } else {
         setAlert({ message: "Vendor details or tax information not found.", type: "error" });
       }
@@ -466,12 +589,11 @@ const CreatePurchaseorder = () => {
     }
   };
 
-  //Handle Submit of add purchase order form
+  // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-     
+      // Implement submission logic
     } catch (error) {
       setAlert({
         message: error.response?.data?.message || "Failed to create purchase order",
@@ -480,7 +602,7 @@ const CreatePurchaseorder = () => {
     }
   };
 
-  //Set options for storage(Delivery Location)
+  // Set options for storage (Delivery Location)
   const deliveryLocationOptions = [
     userAddress || { value: "", label: "Loading user address..." },
     ...(Array.isArray(availableStorage)
@@ -491,7 +613,7 @@ const CreatePurchaseorder = () => {
       : []),
   ];
 
-  //Set file icon for attachments
+  // Set file icon for attachments
   const getFileIcon = (fileName) => {
     const extension = fileName.split('.').pop().toLowerCase();
     return extension === 'pdf' ? '📄' : '🖼️';
@@ -620,6 +742,7 @@ const CreatePurchaseorder = () => {
             purchaseOrder={purchaseOrder}
             handleInputChange={handleInputChange}
             updateTotals={updateTotals}
+            taxes={taxes} // Pass taxes to ProductTable
           />
           <div className="flex flex-wrap text-sm w-full">
             <div className="m-2">
