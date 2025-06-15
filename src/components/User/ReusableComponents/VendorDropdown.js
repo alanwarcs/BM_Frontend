@@ -102,7 +102,6 @@ const VendorDropdown = ({ vendors, onSelectVendor, initialVendorName }) => {
         value={initialVendorName || ''}
         onChange={(e) => handleVendorSearch(e.target.value)}
         onFocus={() => {
-          console.log('Input focused, vendors:', vendors.length);
           setFilteredVendors(vendors);
           setVendorDropdownVisible(true);
           setHighlightedIndex(vendors.length > 0 ? 0 : -1);

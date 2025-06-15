@@ -122,55 +122,57 @@ const PurchaseOrderPreview = ({ data }) => {
             <h2>Purchase Order</h2>
             {/* Header Table with Borders */}
             <table className="header-table" border="1" style={{ position: 'relative', zIndex: 1 }}>
-                <tr>
-                    <td colSpan="6" rowSpan="2" className="company-info">
-                        <div>
-                            <p style={{ fontWeight: 'bold' }}>{businessDetails.organizationName}</p>
-                            <p style={{ maxWidth: '250px' }}>{businessDetails.address.address}</p>
-                            <p>{businessDetails.address.region}, {businessDetails.address.country} - {businessDetails.address.pincode}.</p>
-                            <p>Phone: {businessDetails.phone}</p>
-                            <p>Email: {businessDetails.email}</p>
-                            <p style={{ marginTop: '10px', fontWeight: 'bold' }}>
-                                GSTIN: {businessDetails.gstin}
+                <tbody>
+                    <tr>
+                        <td colSpan="6" rowSpan="2" className="company-info">
+                            <div>
+                                <p style={{ fontWeight: 'bold' }}>{businessDetails.organizationName}</p>
+                                <p style={{ maxWidth: '250px' }}>{businessDetails.address.address}</p>
+                                <p>{businessDetails.address.region}, {businessDetails.address.country} - {businessDetails.address.pincode}.</p>
+                                <p>Phone: {businessDetails.phone}</p>
+                                <p>Email: {businessDetails.email}</p>
+                                <p style={{ marginTop: '10px', fontWeight: 'bold' }}>
+                                    GSTIN: {businessDetails.gstin}
+                                </p>
+                            </div>
+                        </td>
+                        <td colSpan="4" className="order-details">
+                            <p style={{ fontWeight: 'bold' }}>Order Number: {data.purchaseOrderNumber}</p>
+                            <p style={{ fontWeight: 'bold' }}>Reference Number: {data.referenceNumber || '-'}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colSpan="4" className="order-details">
+                            <p style={{ fontWeight: 'bold' }}>Order Date: {data.orderDate}</p>
+                            <p style={{ fontWeight: 'bold' }}>Due Date: {data.dueDate || '-'}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colSpan="6" className="vendor-info">
+                            <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Vendor To:</p>
+                            <p style={{ fontWeight: 'bold' }}>{data.vendorName}</p>
+                            <p style={{ maxWidth: '250px' }}>{vendorDetails.billingAddress.addressLine1}</p>
+                            <p style={{ maxWidth: '250px' }}>{vendorDetails.billingAddress.city}, {vendorDetails.billingAddress.state}, {vendorDetails.billingAddress.country} - {vendorDetails.billingAddress.postalCode}</p>
+                            <p>Phone: {vendorDetails.phone}</p>
+                            <p>Email: {vendorDetails.emailAddress}</p>
+                            <p style={{ fontWeight: 'bold', marginTop: '10px' }}>
+                                GSTIN: {vendorDetails.taxDetails.gstin || 'Not Provided'}
                             </p>
-                        </div>
-                    </td>
-                    <td colSpan="4" className="order-details">
-                        <p style={{ fontWeight: 'bold' }}>Order Number: {data.purchaseOrderNumber}</p>
-                        <p style={{ fontWeight: 'bold' }}>Reference Number: {data.referenceNumber || '-'}</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td colSpan="4" className="order-details">
-                        <p style={{ fontWeight: 'bold' }}>Order Date: {data.orderDate}</p>
-                        <p style={{ fontWeight: 'bold' }}>Due Date: {data.dueDate || '-'}</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td colSpan="6" className="vendor-info">
-                        <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Vendor To:</p>
-                        <p style={{ fontWeight: 'bold' }}>{data.vendorName}</p>
-                        <p style={{ maxWidth: '250px' }}>{vendorDetails.billingAddress.addressLine1}</p>
-                        <p style={{ maxWidth: '250px' }}>{vendorDetails.billingAddress.city}, {vendorDetails.billingAddress.state}, {vendorDetails.billingAddress.country} - {vendorDetails.billingAddress.postalCode}</p>
-                        <p>Phone: {vendorDetails.phone}</p>
-                        <p>Email: {vendorDetails.emailAddress}</p>
-                        <p style={{ fontWeight: 'bold', marginTop: '10px' }}>
-                            GSTIN: {vendorDetails.taxDetails.gstin || 'Not Provided'}
-                        </p>
-                        <p style={{ fontWeight: 'bold' }}>PAN: {vendorDetails.taxDetails.panNumber}</p>
-                        <p style={{ fontWeight: 'bold' }}>Place of Supply: {data.deliveryState}</p>
-                    </td>
-                    <td colSpan="2" className="bill-to">
-                        <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Bill To:</p>
-                        <p style={{ fontWeight: 'bold' }}>{businessDetails.organizationName}</p>
-                        <p style={{ maxWidth: '250px' }}>{data.billingAddress}</p>
-                    </td>
-                    <td colSpan="2" className="ship-to">
-                        <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Ship To:</p>
-                        <p style={{ fontWeight: 'bold' }}>{businessDetails.organizationName}</p>
-                        <p style={{ maxWidth: '250px' }}>{data.shippingAddress}</p>
-                    </td>
-                </tr>
+                            <p style={{ fontWeight: 'bold' }}>PAN: {vendorDetails.taxDetails.panNumber}</p>
+                            <p style={{ fontWeight: 'bold' }}>Place of Supply: {data.deliveryState}</p>
+                        </td>
+                        <td colSpan="2" className="bill-to">
+                            <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Bill To:</p>
+                            <p style={{ fontWeight: 'bold' }}>{businessDetails.organizationName}</p>
+                            <p style={{ maxWidth: '250px' }}>{data.billingAddress}</p>
+                        </td>
+                        <td colSpan="2" className="ship-to">
+                            <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Ship To:</p>
+                            <p style={{ fontWeight: 'bold' }}>{businessDetails.organizationName}</p>
+                            <p style={{ maxWidth: '250px' }}>{data.shippingAddress}</p>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
 
             {/* Product Table */}
@@ -254,99 +256,103 @@ const PurchaseOrderPreview = ({ data }) => {
 
             {/* Subtotal Table */}
             <table className="subtotal-table" style={{ position: 'relative', zIndex: 1 }}>
-                <tr>
-                    <td rowSpan={(hasCustomTax ? 1 : 0) + (hasGST ? 2 : 0) + (hasIGST ? 1 : 0) + (hasTotalDiscount ? 1 : 0) + (data.roundOff ? 1 : 0) + 1 + 1} style={{ width: '60%' }}>
-                        <p style={{ fontWeight: 'bold' }}>Notes</p>
-                        <p>{data.note || '-'}</p>
-                    </td>
-                    <td className="subtotal">Subtotal(Excl. Tax & Discount)</td>
-                    <td style={{ textAlign: 'end' }}>
-                        {data.products && data.products.length > 0
-                            ? parseFloat(
-                                data.products.reduce((sum, product) => {
-                                    const quantity = parseFloat(product.quantity) || 0;
-                                    const rate = parseFloat(product.rate) || 0;
-                                    return sum + quantity * rate;
-                                }, 0)
-                            ).toFixed(2)
-                            : '0.00'}
-                    </td>
-                </tr>
-                {hasTotalDiscount && (
+                <tbody>
                     <tr>
-                        <td className="subtotal">Discount</td>
+                        <td rowSpan={(hasCustomTax ? 1 : 0) + (hasGST ? 2 : 0) + (hasIGST ? 1 : 0) + (hasTotalDiscount ? 1 : 0) + (data.roundOff ? 1 : 0) + 1 + 1} style={{ width: '60%' }}>
+                            <p style={{ fontWeight: 'bold' }}>Notes</p>
+                            <p>{data.note || '-'}</p>
+                        </td>
+                        <td className="subtotal">Subtotal(Excl. Tax & Discount)</td>
                         <td style={{ textAlign: 'end' }}>
-                            {data.discountType === 'Flat' && parseFloat(data.discount) > 0 && data.discountValueType === 'Percent'
-                                ? `${parseFloat(data.discount).toFixed(2)}% (-${calculateFlatDiscountAmount()})`
-                                : parseFloat(data.totalAmountOfDiscount).toFixed(2)}
+                            {data.products && data.products.length > 0
+                                ? parseFloat(
+                                    data.products.reduce((sum, product) => {
+                                        const quantity = parseFloat(product.quantity) || 0;
+                                        const rate = parseFloat(product.rate) || 0;
+                                        return sum + quantity * rate;
+                                    }, 0)
+                                ).toFixed(2)
+                                : '0.00'}
                         </td>
                     </tr>
-                )}
-                {hasGST && (
-                    <>
+                    {hasTotalDiscount && (
                         <tr>
-                            <td className="subtotal">Total CGST</td>
-                            <td style={{ textAlign: 'end' }}>{totalCGST}</td>
+                            <td className="subtotal">Discount</td>
+                            <td style={{ textAlign: 'end' }}>
+                                {data.discountType === 'Flat' && parseFloat(data.discount) > 0 && data.discountValueType === 'Percent'
+                                    ? `${parseFloat(data.discount).toFixed(2)}% (-${calculateFlatDiscountAmount()})`
+                                    : parseFloat(data.totalAmountOfDiscount).toFixed(2)}
+                            </td>
                         </tr>
+                    )}
+                    {hasGST && (
+                        <>
+                            <tr>
+                                <td className="subtotal">Total CGST</td>
+                                <td style={{ textAlign: 'end' }}>{totalCGST}</td>
+                            </tr>
+                            <tr>
+                                <td className="subtotal">Total SGST</td>
+                                <td style={{ textAlign: 'end' }}>{totalSGST}</td>
+                            </tr>
+                        </>
+                    )}
+                    {hasIGST && (
                         <tr>
-                            <td className="subtotal">Total SGST</td>
-                            <td style={{ textAlign: 'end' }}>{totalSGST}</td>
+                            <td className="subtotal">Total IGST</td>
+                            <td style={{ textAlign: 'end' }}>{totalIGST}</td>
                         </tr>
-                    </>
-                )}
-                {hasIGST && (
+                    )}
+                    {hasCustomTax && (
+                        <tr>
+                            <td className="subtotal">Other Tax</td>
+                            <td style={{ textAlign: 'end' }}>{totalCustomTax}</td>
+                        </tr>
+                    )}
+                    {data.roundOff && (
+                        <tr>
+                            <td className="subtotal">Round Off</td>
+                            <td style={{ textAlign: 'end' }}>{parseFloat(data.roundOffAmount).toFixed(2)}</td>
+                        </tr>
+                    )}
                     <tr>
-                        <td className="subtotal">Total IGST</td>
-                        <td style={{ textAlign: 'end' }}>{totalIGST}</td>
+                        <td className="subtotal">Total</td>
+                        <td style={{ textAlign: 'end', fontWeight: 'bold' }}>₹{parseFloat(data.totalAmount).toFixed(2)}</td>
                     </tr>
-                )}
-                {hasCustomTax && (
-                    <tr>
-                        <td className="subtotal">Other Tax</td>
-                        <td style={{ textAlign: 'end' }}>{totalCustomTax}</td>
-                    </tr>
-                )}
-                {data.roundOff && (
-                    <tr>
-                        <td className="subtotal">Round Off</td>
-                        <td style={{ textAlign: 'end' }}>{parseFloat(data.roundOffAmount).toFixed(2)}</td>
-                    </tr>
-                )}
-                <tr>
-                    <td className="subtotal">Total</td>
-                    <td style={{ textAlign: 'end', fontWeight: 'bold' }}>₹{parseFloat(data.totalAmount).toFixed(2)}</td>
-                </tr>
+                </tbody>
             </table>
 
             <table className="header-table" border="1" style={{ position: 'relative', zIndex: 1 }}>
-                <tr>
-                    <td style={{ textAlign: 'start', padding: '10px' }}>
-                        <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Payment Terms</p>
-                        <p style={{ marginTop: '0' }}>{data.paymentTerms}</p>
-                    </td>
-                    <td style={{ textAlign: 'start', padding: '10px' }}>
-                        <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Delivery Terms</p>
-                        <p style={{ marginTop: '0' }}>{data.deliveryTerms}</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td colSpan="2">
-                        <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Terms and Conditions</p>
-                        <p style={{ marginTop: '0' }}>
-                            {data.termsAndConditions || 'No terms and conditions provided.'}
-                        </p>
-                    </td>
-                </tr>
-                <tr>
-                    <td colSpan="1" style={{ textAlign: 'center', padding: '10px' }}>
-                        <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Authorized Signature</p>
-                        <p style={{ marginTop: '0' }}>_________________________</p>
-                    </td>
-                    <td colSpan="1" style={{ textAlign: 'center', padding: '10px' }}>
-                        <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Vendor Signature</p>
-                        <p style={{ marginTop: '0' }}>__________________</p>
-                    </td>
-                </tr>
+                <tbody>
+                    <tr>
+                        <td style={{ textAlign: 'start', padding: '10px' }}>
+                            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Payment Terms</p>
+                            <p style={{ marginTop: '0' }}>{data.paymentTerms}</p>
+                        </td>
+                        <td style={{ textAlign: 'start', padding: '10px' }}>
+                            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Delivery Terms</p>
+                            <p style={{ marginTop: '0' }}>{data.deliveryTerms}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colSpan="2">
+                            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Terms and Conditions</p>
+                            <p style={{ marginTop: '0' }}>
+                                {data.termsAndConditions || 'No terms and conditions provided.'}
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colSpan="1" style={{ textAlign: 'center', padding: '10px' }}>
+                            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Authorized Signature</p>
+                            <p style={{ marginTop: '0' }}>_________________________</p>
+                        </td>
+                        <td colSpan="1" style={{ textAlign: 'center', padding: '10px' }}>
+                            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Vendor Signature</p>
+                            <p style={{ marginTop: '0' }}>__________________</p>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     );
