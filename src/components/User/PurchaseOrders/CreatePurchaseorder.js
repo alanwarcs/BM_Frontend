@@ -30,24 +30,44 @@ const CreatePurchaseorder = () => {
   const [attachmentFiles, setAttachmentFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [taxes, setTaxes] = useState([]); // New state for taxes
+  const [taxes, setTaxes] = useState([]);
 
   const [purchaseOrder, setPurchaseOrder] = useState({
-    businessId: user ? user.organization.businessId : "",
-    vendorId: "",
-    vendorName: "",
-    purchaseOrderNumber: "",
-    billNumber: "",
+    business: {
+      id: user ? user.organization.businessId : "",
+      name: "",
+      gstinStatus: "",
+      gstin: "",
+      state: "",
+      address: "",
+      phone: "",
+      email: "",
+    },
+    vendor: {
+      id: "",
+      name: "",
+      gstin: "",
+      gstStatus: "",
+      state: "",
+      address: "",
+      phone: "",
+    },
+    poNumber: "",
     orderDate: formatDate(today),
-    billDate: "",
+    isBillGenerated: false,
     dueDate: "",
+    status: "Pending",
+    paymentStatus: "UnPaid",
+    paymentType: "",
     referenceNumber: "",
-    billingAddress: "",
-    shippingAddress: "",
-    sourceState: "",
-    deliveryState: "",
-    deliveryLocation: "",
     note: "",
+    address: {
+      billing: "",
+      shipping: "",
+      sourceState: "",
+      deliveryState: "",
+      deliveryLocation: "",
+    },
     products: [
       {
         productId: "",
@@ -62,26 +82,37 @@ const CreatePurchaseorder = () => {
         totalPrice: "0",
       },
     ],
+    emiDetails: {
+      frequency: "",
+      interestRate: 0,
+      totalWithInterest: "0",
+      advancePayment: "0",
+      installments: [],
+    },
     discount: "0",
     discountType: "Flat",
     discountValueType: "Percent",
     totalAmountOfDiscount: "0",
+    subtotal: "0",
+    totalBeforeDiscount: "0",
     roundOff: false,
     roundOffAmount: "0",
     taxAmount: "0",
-    totalAmount: "0",
+    grandAmount: "0",
     paidAmount: "0",
     dueAmount: "0",
     deliveryTerms: "-",
-    paymentTerms: "Net 30 days from the date of invoice.",
-    termsAndConditions: "Payment is due within 30 days of receipt of goods. Please reference the purchase order number on all invoices. Goods must be delivered to the specified shipping address. Any discrepancies must be reported within 7 days of receipt.",
+    termsAndConditions:
+      "Payment is due within 30 days of receipt of goods. Please reference the purchase order number on all invoices. Goods must be delivered to the specified shipping address. Any discrepancies must be reported within 7 days of receipt.",
     attachments: [],
     createdBy: user ? user.id : "",
     updatedBy: user ? user.id : "",
     isDeleted: false,
   });
+
   const navigate = useNavigate();
-  // Fetch user, PO, vendors, storage, and taxes
+
+  // Fetch initial data
   useEffect(() => {
     const controller = new AbortController();
     const fetchData = async () => {
@@ -93,9 +124,10 @@ const CreatePurchaseorder = () => {
         if (poRes.status === 200 && poRes.data?.organization?.address) {
           const { purchaseOrderId, organization } = poRes.data;
           const address = organization.address;
-          const formattedAddress = address.address && address.state && address.country && address.pincode
-            ? `${address.address}, ${address.state}, ${address.country}, ${address.pincode}`
-            : "";
+          const formattedAddress =
+            address.address && address.state && address.country && address.pincode
+              ? `${address.address}, ${address.state}, ${address.country}, ${address.pincode}`
+              : "";
           const userAddressOption = {
             value: formattedAddress,
             label: formattedAddress ? `${user?.name || "User"}, ${address.state}` : "Default Address",
@@ -104,11 +136,24 @@ const CreatePurchaseorder = () => {
           setUserAddress(userAddressOption);
           setPurchaseOrder((prev) => ({
             ...prev,
-            purchaseOrderNumber: purchaseOrderId || `PO-${Date.now()}`,
-            deliveryState: address.state || "",
-            billingAddress: formattedAddress,
-            shippingAddress: formattedAddress,
-            deliveryLocation: formattedAddress,
+            poNumber: purchaseOrderId || `PO-${Date.now()}`,
+            business: {
+              id: user.organization.businessId,
+              name: organization.name || "",
+              gstinStatus: organization.gstStatus || "",
+              gstin: organization.gstNumber || "",
+              state: address.state || "",
+              address: formattedAddress,
+              phone: organization.phone || "",
+              email: organization.email || "",
+            },
+            address: {
+              ...prev.address,
+              deliveryState: address.state || "",
+              billing: formattedAddress,
+              shipping: formattedAddress,
+              deliveryLocation: formattedAddress,
+            },
           }));
         } else {
           setAlert({ message: "Invalid organization address data", type: "error" });
@@ -168,7 +213,10 @@ const CreatePurchaseorder = () => {
 
     const validFiles = files.filter((file) => {
       if (!allowedTypes.includes(file.type)) {
-        setAlert({ message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG files are allowed.`, type: "error" });
+        setAlert({
+          message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG files are allowed.`,
+          type: "error",
+        });
         return false;
       }
       if (file.size > maxFileSize) {
@@ -190,7 +238,15 @@ const CreatePurchaseorder = () => {
     setAttachmentFiles((prev) => [...prev, ...validFiles]);
     setPurchaseOrder((prev) => ({
       ...prev,
-      attachments: [...prev.attachments, ...validFiles.map((file) => ({ name: file.name, size: file.size }))],
+      attachments: [
+        ...prev.attachments,
+        ...validFiles.map((file) => ({
+          fileName: file.name,
+          filePath: `/Uploads/${file.name}`,
+          uploadedBy: user.id,
+          uploadedAt: new Date(),
+        })),
+      ],
     }));
   };
 
@@ -225,13 +281,15 @@ const CreatePurchaseorder = () => {
     }
   };
 
-  // Update Total for product, total amount, discount, etc.
+  // Update Totals
   const updateTotals = (totals) => {
     setPurchaseOrder((prev) => ({
       ...prev,
       totalAmountOfDiscount: totals.totalDiscount,
       taxAmount: totals.totalTax,
-      totalAmount: totals.totalInclTax,
+      subtotal: totals.totalBaseAmount,
+      totalBeforeDiscount: totals.taxableAmount,
+      grandAmount: totals.totalInclTax,
       dueAmount: (parseFloat(totals.totalInclTax) - parseFloat(prev.paidAmount)).toFixed(2),
       roundOffAmount: totals.roundOffAmount,
     }));
@@ -270,7 +328,7 @@ const CreatePurchaseorder = () => {
     return [...customGstRates, ...formattedTaxes];
   };
 
-  // Handle change in fields and set it on PO state
+  // Handle input changes
   const handleInputChange = async (...events) => {
     let updatedPurchaseOrder = { ...purchaseOrder };
     for (const event of events) {
@@ -281,21 +339,34 @@ const CreatePurchaseorder = () => {
 
       const { name, value } = event.target;
 
-      if (name === "dueDate" && value && updatedPurchaseOrder.orderDate) {
+      // Handle nested fields
+      const setNestedValue = (obj, path, val) => {
+        const keys = path.split(".");
+        let current = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+          current[keys[i]] = { ...current[keys[i]] };
+          current = current[keys[i]];
+        }
+        current[keys[keys.length - 1]] = val;
+      };
+
+      if (name.includes(".")) {
+        setNestedValue(updatedPurchaseOrder, name, value);
+      } else if (name === "dueDate" && value && updatedPurchaseOrder.orderDate) {
         const dueDate = new Date(value);
         const orderDate = new Date(updatedPurchaseOrder.orderDate);
         if (dueDate < orderDate) {
           setAlert({ message: "Due date cannot be before order date", type: "error" });
           return;
         }
+        updatedPurchaseOrder.dueDate = value;
+      } else if (name === "products") {
+        updatedPurchaseOrder.products = value;
+      } else {
+        updatedPurchaseOrder[name] = name === "roundOff" ? value === "true" || value === true : value;
       }
 
-      if (name === "products") {
-        updatedPurchaseOrder = {
-          ...updatedPurchaseOrder,
-          products: value,
-        };
-      } else if (name === "deliveryLocation" && value) {
+      if (name === "address.deliveryLocation" && value) {
         let storageState = "";
         let storageAddress = "";
         if (userAddress && value === userAddress.value) {
@@ -312,48 +383,43 @@ const CreatePurchaseorder = () => {
           }
         }
 
-        const gstType = updatedPurchaseOrder.sourceState === storageState ? "intra" : "inter";
+        const gstType = updatedPurchaseOrder.address.sourceState === storageState ? "intra" : "inter";
         const filteredTaxes = getFilteredTaxes(gstType);
         const updatedProducts = recalculateProductTaxes(
           updatedPurchaseOrder.products,
-          updatedPurchaseOrder.sourceState,
+          updatedPurchaseOrder.address.sourceState,
           storageState,
           filteredTaxes
         );
 
-        updatedPurchaseOrder = {
-          ...updatedPurchaseOrder,
+        updatedPurchaseOrder.address = {
+          ...updatedPurchaseOrder.address,
           deliveryState: storageState,
-          shippingAddress: storageAddress,
+          shipping: storageAddress,
           deliveryLocation: value,
-          products: updatedProducts,
         };
-      } else if (name === "deliveryState") {
-        const gstType = updatedPurchaseOrder.sourceState === value ? "intra" : "inter";
+        updatedPurchaseOrder.products = updatedProducts;
+      } else if (name === "address.deliveryState") {
+        const gstType = updatedPurchaseOrder.address.sourceState === value ? "intra" : "inter";
         const filteredTaxes = getFilteredTaxes(gstType);
         const updatedProducts = recalculateProductTaxes(
           updatedPurchaseOrder.products,
-          updatedPurchaseOrder.sourceState,
+          updatedPurchaseOrder.address.sourceState,
           value,
           filteredTaxes
         );
 
-        updatedPurchaseOrder = {
-          ...updatedPurchaseOrder,
+        updatedPurchaseOrder.address = {
+          ...updatedPurchaseOrder.address,
           deliveryState: value,
-          products: updatedProducts,
         };
-      } else {
-        updatedPurchaseOrder = {
-          ...updatedPurchaseOrder,
-          [name]: name === "roundOff" ? value === "true" || value === true : value,
-        };
+        updatedPurchaseOrder.products = updatedProducts;
       }
     }
 
     setPurchaseOrder(updatedPurchaseOrder);
 
-    // Recalculate totals after updating purchase order
+    // Recalculate totals
     const totals = calculateTotals(updatedPurchaseOrder.products, updatedPurchaseOrder);
     updateTotals(totals);
   };
@@ -416,13 +482,13 @@ const CreatePurchaseorder = () => {
               type: "GST",
               subType: "CGST",
               rate: cgstRate,
-              amount: ((cgstRate / 100) * amountBase).toFixed(2),
+              amount: ((cgstRate / 100) * amountBase).toFixed(2).toString(),
             },
             {
               type: "GST",
               subType: "SGST",
               rate: sgstRate,
-              amount: ((sgstRate / 100) * amountBase).toFixed(2),
+              amount: ((sgstRate / 100) * amountBase).toFixed(2).toString(),
             },
           ];
         } else if (gstType === "inter" && matchingTax.type === "IGST") {
@@ -432,7 +498,7 @@ const CreatePurchaseorder = () => {
               type: "IGST",
               subType: "IGST",
               rate: igstRate,
-              amount: ((igstRate / 100) * amountBase).toFixed(2),
+              amount: ((igstRate / 100) * amountBase).toFixed(2).toString(),
             },
           ];
         } else if (matchingTax.type === "custom") {
@@ -441,8 +507,8 @@ const CreatePurchaseorder = () => {
             {
               type: "custom",
               subType: matchingTax.description || "Custom Tax",
-              rate: customRate,
-              amount: ((customRate / 100) * amountBase).toFixed(2),
+              rate: customRate, // Fixed: Replaced t.rate with customRate
+              amount: ((customRate / 100) * amountBase).toFixed(2).toString(),
             },
           ];
         }
@@ -457,7 +523,7 @@ const CreatePurchaseorder = () => {
       }
 
       const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-      const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+      const totalPrice = (amountBase + totalTaxAmount).toFixed(2).toString();
 
       return {
         ...product,
@@ -467,7 +533,7 @@ const CreatePurchaseorder = () => {
     });
   };
 
-  // Calculate Totals (move to CreatePurchaseorder for consistency)
+  // Calculate Totals
   const calculateTotals = (products, purchaseOrder) => {
     let totalBaseAmount = 0;
     let totalDiscount = 0;
@@ -526,20 +592,20 @@ const CreatePurchaseorder = () => {
 
     if (purchaseOrder.roundOff) {
       const roundedTotal = Math.round(totalInclTax);
-      roundOffAmount = (roundedTotal - totalInclTax).toFixed(2);
+      roundOffAmount = (roundedTotal - totalInclTax).toFixed(2).toString();
       totalInclTax = roundedTotal;
     }
 
     return {
-      totalBaseAmount: totalBaseAmount.toFixed(2),
-      totalDiscount: totalDiscount.toFixed(2),
-      taxableAmount: taxableAmount.toFixed(2),
-      totalTax: totalTax.toFixed(2),
-      totalInclTax: totalInclTax.toFixed(2),
-      cgstTotal: cgstTotal.toFixed(2),
-      sgstTotal: sgstTotal.toFixed(2),
-      igstTotal: igstTotal.toFixed(2),
-      customTaxTotal: customTaxTotal.toFixed(2),
+      totalBaseAmount: totalBaseAmount.toFixed(2).toString(),
+      totalDiscount: totalDiscount.toFixed(2).toString(),
+      taxableAmount: (taxableAmount + totalTax).toFixed(2).toString(),
+      totalTax: totalTax.toFixed(2).toString(),
+      totalInclTax: totalInclTax.toFixed(2).toString(),
+      cgstTotal: cgstTotal.toFixed(2).toString(),
+      sgstTotal: sgstTotal.toFixed(2).toString(),
+      igstTotal: igstTotal.toFixed(2).toString(),
+      customTaxTotal: customTaxTotal.toFixed(2).toString(),
       roundOffAmount,
     };
   };
@@ -548,14 +614,13 @@ const CreatePurchaseorder = () => {
   const handleVendorSelect = async ({ vendorId, vendorName }) => {
     setPurchaseOrder((prev) => ({
       ...prev,
-      vendorId,
-      vendorName,
+      vendor: { ...prev.vendor, id: vendorId, name: vendorName },
     }));
 
     if (!vendorId) {
       setPurchaseOrder((prev) => ({
         ...prev,
-        sourceState: "",
+        address: { ...prev.address, sourceState: "" },
       }));
       return;
     }
@@ -563,75 +628,92 @@ const CreatePurchaseorder = () => {
     try {
       const response = await axios.get(`/api/vendor/getVendorDetails/${vendorId}`);
       const vendorDetails = response?.data?.vendorDetails;
+      const vendorAddress = vendorDetails.billingAddress.addressLine1 && vendorDetails.billingAddress.city && vendorDetails.billingAddress.state && vendorDetails.billingAddress.country && vendorDetails.billingAddress.postalCode
+              ? `${vendorDetails.billingAddress.addressLine1}, ${vendorDetails.billingAddress.city}, ${vendorDetails.billingAddress.state}, ${ vendorDetails.billingAddress.country}, ${vendorDetails.billingAddress.postalCode}`
+              : "";
+      console.log("vendorDetails:",vendorDetails);
 
-      if (vendorDetails && vendorDetails.taxDetails?.sourceState) {
-        const gstType = vendorDetails.taxDetails.sourceState === purchaseOrder.deliveryState ? "intra" : "inter";
+      if (vendorDetails) {
+        const gstType = vendorDetails.taxDetails?.sourceState === purchaseOrder.address.deliveryState ? "intra" : "inter";
         const filteredTaxes = getFilteredTaxes(gstType);
         const updatedProducts = recalculateProductTaxes(
           purchaseOrder.products,
-          vendorDetails.taxDetails.sourceState,
-          purchaseOrder.deliveryState,
+          vendorDetails.taxDetails?.sourceState,
+          purchaseOrder.address.deliveryState,
           filteredTaxes
         );
 
         setPurchaseOrder((prev) => ({
           ...prev,
-          sourceState: vendorDetails.taxDetails.sourceState,
+          vendor: {
+            id: vendorId,
+            name: vendorName,
+            gstin: vendorDetails.taxDetails?.gstin || "",
+            gstStatus: vendorDetails.taxDetails?.taxStatus || "",
+            state: vendorDetails.taxDetails?.sourceState || "",
+            address: vendorAddress || "",
+            phone: vendorDetails.phone || "",
+          },
+          address: {
+            ...prev.address,
+            sourceState: vendorDetails.taxDetails?.sourceState || "",
+          },
           products: updatedProducts,
         }));
 
         const totals = calculateTotals(updatedProducts, purchaseOrder);
         updateTotals(totals);
       } else {
-        setAlert({ message: "Vendor details or tax information not found.", type: "error" });
+        setAlert({ message: "Vendor details not found.", type: "error" });
       }
     } catch (error) {
       setAlert({ message: error.response?.data?.message || "Failed to fetch selected vendor's details.", type: "error" });
     }
   };
 
+  // Validate form
   const validateForm = () => {
     let isValid = true;
-    let errorMessage = '';
+    let errorMessage = "";
 
-    if (!purchaseOrder.businessId) {
-      errorMessage = 'You must be logged in to create a purchase order.';
+    if (!purchaseOrder.business.id) {
+      errorMessage = "You must be logged in to create a purchase order.";
       isValid = false;
-    } else if (!purchaseOrder.vendorId) {
-      errorMessage = 'Please select a vendor for the purchase order.';
+    } else if (!purchaseOrder.vendor.id) {
+      errorMessage = "Please select a vendor for the purchase order.";
       isValid = false;
-    } else if (!purchaseOrder.purchaseOrderNumber || purchaseOrder.purchaseOrderNumber.trim() === '') {
-      errorMessage = 'Purchase order number is required.';
+    } else if (!purchaseOrder.poNumber || purchaseOrder.poNumber.trim() === "") {
+      errorMessage = "Purchase order number is required.";
       isValid = false;
     } else if (!purchaseOrder.orderDate) {
-      errorMessage = 'Order date is required.';
+      errorMessage = "Order date is required.";
       isValid = false;
     } else if (purchaseOrder.dueDate) {
       const dueDate = new Date(purchaseOrder.dueDate);
       const orderDate = new Date(purchaseOrder.orderDate);
       if (dueDate < orderDate) {
-        errorMessage = 'Due date cannot be before the order date.';
+        errorMessage = "Due date cannot be before the order date.";
         isValid = false;
       }
-    } else if (!purchaseOrder.billingAddress || purchaseOrder.billingAddress.trim() === '') {
-      errorMessage = 'Billing address is required.';
+    } else if (!purchaseOrder.address.billing || purchaseOrder.address.billing.trim() === "") {
+      errorMessage = "Billing address is required.";
       isValid = false;
-    } else if (!purchaseOrder.shippingAddress || purchaseOrder.shippingAddress.trim() === '') {
-      errorMessage = 'Shipping address is required.';
+    } else if (!purchaseOrder.address.shipping || purchaseOrder.address.shipping.trim() === "") {
+      errorMessage = "Shipping address is required.";
       isValid = false;
-    } else if (!purchaseOrder.deliveryLocation) {
-      errorMessage = 'Delivery location is required.';
+    } else if (!purchaseOrder.address.deliveryLocation) {
+      errorMessage = "Delivery location is required.";
       isValid = false;
-    } else if (!purchaseOrder.deliveryState) {
-      errorMessage = 'Delivery state (Place of Supply) is required.';
+    } else if (!purchaseOrder.address.deliveryState) {
+      errorMessage = "Delivery state (Place of Supply) is required.";
       isValid = false;
     } else if (!purchaseOrder.products || purchaseOrder.products.length === 0) {
-      errorMessage = 'At least one product is required for the purchase order.';
+      errorMessage = "At least one product is required for the purchase order.";
       isValid = false;
     } else {
       for (let i = 0; i < purchaseOrder.products.length; i++) {
         const product = purchaseOrder.products[i];
-        if (!product.productName || product.productName.trim() === '') {
+        if (!product.productName || product.productName.trim() === "") {
           errorMessage = `Product name is required for product ${i + 1}.`;
           isValid = false;
           break;
@@ -650,17 +732,17 @@ const CreatePurchaseorder = () => {
     }
 
     if (isValid && purchaseOrder.discount && parseFloat(purchaseOrder.discount) < 0) {
-      errorMessage = 'Discount cannot be negative.';
+      errorMessage = "Discount cannot be negative.";
       isValid = false;
     }
 
     if (isValid && purchaseOrder.paidAmount && parseFloat(purchaseOrder.paidAmount) < 0) {
-      errorMessage = 'Paid amount cannot be negative.';
+      errorMessage = "Paid amount cannot be negative.";
       isValid = false;
     }
 
     if (!isValid) {
-      setAlert({ message: errorMessage, type: 'error' });
+      setAlert({ message: errorMessage, type: "error" });
     }
 
     return isValid;
@@ -679,12 +761,12 @@ const CreatePurchaseorder = () => {
       });
       const result = await response.json();
       if (response.ok) {
-        setAlert({ message: "Item added successfully!", type: "success" });
+        setAlert({ message: "Purchase order created successfully!", type: "success" });
         setTimeout(() => {
-          navigate("/createpurchaseorder"); // Redirect to purchase order list
+          navigate("/purchaseorder");
         }, 1000);
       } else {
-        setAlert({ message: result.message || "Failed to add item!", type: "error" });
+        setAlert({ message: result.message || "Failed to create purchase order!", type: "error" });
       }
     } catch (error) {
       setAlert({
@@ -711,6 +793,8 @@ const CreatePurchaseorder = () => {
     return extension === 'pdf' ? '📄' : '🖼️';
   };
 
+  console.log(purchaseOrder);
+
   return (
     <UserLayout>
       <div className="flex flex-col relative h-full w-full text-start overflow-visible">
@@ -728,9 +812,9 @@ const CreatePurchaseorder = () => {
           <div className="flex flex-wrap w-full">
             <TextInput
               label="Purchase Order Number"
-              name="purchaseOrderNumber"
-              value={purchaseOrder.purchaseOrderNumber}
-              onChange={handleInputChange}
+              name="poNumber"
+              value={purchaseOrder.poNumber}
+              onChange={(e) => handleInputChange({ target: { name: "poNumber", value: e.target.value } })}
               required
               disabled
             />
@@ -739,7 +823,7 @@ const CreatePurchaseorder = () => {
               label="Order Date"
               name="orderDate"
               value={purchaseOrder.orderDate}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange({ target: { name: "orderDate", value: e.target.value } })}
               max={formatDate(nextYear)}
               required
             />
@@ -748,14 +832,14 @@ const CreatePurchaseorder = () => {
               label="Due Date"
               name="dueDate"
               value={purchaseOrder.dueDate}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange({ target: { name: "dueDate", value: e.target.value } })}
               max={formatDate(nextYear)}
             />
             <SelectInput
               label="Order Status"
               name="status"
               value={purchaseOrder.status}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange({ target: { name: "status", value: e.target.value } })}
               options={[
                 { value: "Completed", label: "Completed" },
                 { value: "Pending", label: "Pending" },
@@ -766,29 +850,33 @@ const CreatePurchaseorder = () => {
             <VendorDropdown
               vendors={vendors}
               onSelectVendor={handleVendorSelect}
-              initialVendorName={purchaseOrder.vendorName}
+              initialVendorName={purchaseOrder.vendor.name}
             />
             <TextInput
               label="Reference Number"
               name="referenceNumber"
               value={purchaseOrder.referenceNumber}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange({ target: { name: "referenceNumber", value: e.target.value } })}
               placeholder="Reference Number"
             />
             <SelectInput
               label="Delivery Location"
-              name="deliveryLocation"
+              name="address.deliveryLocation"
               id="deliveryLocation"
-              value={purchaseOrder.deliveryLocation}
-              onChange={handleInputChange}
+              value={purchaseOrder.address.deliveryLocation}
+              onChange={(e) =>
+                handleInputChange({ target: { name: "address.deliveryLocation", value: e.target.value } })
+              }
               options={deliveryLocationOptions}
               required
             />
             <SelectInput
               label="Delivery State (Place Of Supply)"
-              name="deliveryState"
-              value={purchaseOrder.deliveryState}
-              onChange={handleInputChange}
+              name="address.deliveryState"
+              value={purchaseOrder.address.deliveryState}
+              onChange={(e) =>
+                handleInputChange({ target: { name: "address.deliveryState", value: e.target.value } })
+              }
               options={
                 states.length > 0
                   ? states.map((state) => ({
@@ -805,10 +893,12 @@ const CreatePurchaseorder = () => {
                   Billing Address <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  name="billingAddress"
+                  name="address.billing"
                   rows={5}
-                  value={purchaseOrder.billingAddress}
-                  onChange={handleInputChange}
+                  value={purchaseOrder.address.billing}
+                  onChange={(e) =>
+                    handleInputChange({ target: { name: "address.billing", value: e.target.value } })
+                  }
                   className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                   required
                 />
@@ -818,73 +908,101 @@ const CreatePurchaseorder = () => {
                   Shipping Address <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  name="shippingAddress"
+                  name="address.shipping"
                   rows={5}
-                  value={purchaseOrder.shippingAddress}
-                  onChange={handleInputChange}
+                  value={purchaseOrder.address.shipping}
+                  onChange={(e) =>
+                    handleInputChange({ target: { name: "address.shipping", value: e.target.value } })
+                  }
                   className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                   required
                 />
               </div>
             </div>
+            {purchaseOrder.paymentType === "EMI" && (
+              <div className="flex flex-wrap text-sm w-full">
+                <SelectInput
+                  label="EMI Frequency"
+                  name="emiDetails.frequency"
+                  value={purchaseOrder.emiDetails.frequency}
+                  onChange={(e) =>
+                    handleInputChange({ target: { name: "emiDetails.frequency", value: e.target.value } })
+                  }
+                  options={[
+                    { value: "", label: "Select Frequency" },
+                    { value: "Monthly", label: "Monthly" },
+                    { value: "Quarterly", label: "Quarterly" },
+                    { value: "Half-Yearly", label: "Half-Yearly" },
+                    { value: "Yearly", label: "Yearly" },
+                  ]}
+                />
+                <TextInput
+                  type="number"
+                  label="Interest Rate (%)"
+                  name="emiDetails.interestRate"
+                  value={purchaseOrder.emiDetails.interestRate}
+                  onChange={(e) =>
+                    handleInputChange({ target: { name: "emiDetails.interestRate", value: e.target.value } })
+                  }
+                  placeholder="0"
+                />
+                <TextInput
+                  type="number"
+                  label="Advance Payment"
+                  name="emiDetails.advancePayment"
+                  value={purchaseOrder.emiDetails.advancePayment}
+                  onChange={(e) =>
+                    handleInputChange({
+                      target: { name: "emiDetails.advancePayment", value: e.target.value },
+                    })
+                  }
+                  placeholder="0"
+                />
+              </div>
+            )}
           </div>
           <hr />
           <ProductTable
             purchaseOrder={purchaseOrder}
             handleInputChange={handleInputChange}
             updateTotals={updateTotals}
-            taxes={taxes} // Pass taxes to ProductTable
+            taxes={taxes}
           />
           <div className="flex flex-wrap text-sm w-full">
             <div className="m-2">
-              <label className="mb-2 block">
-                Note
-              </label>
+              <label className="mb-2 block">Note</label>
               <textarea
                 name="note"
                 placeholder="Add any additional notes or instructions here"
                 rows={4}
                 value={purchaseOrder.note}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange({ target: { name: "note", value: e.target.value } })}
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
             <div className="m-2">
-              <label className="mb-2 block">
-                Delivery Terms
-              </label>
+              <label className="mb-2 block">Delivery Terms</label>
               <textarea
                 name="deliveryTerms"
                 placeholder="Specify delivery terms"
                 rows={4}
                 value={purchaseOrder.deliveryTerms}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  handleInputChange({ target: { name: "deliveryTerms", value: e.target.value } })
+                }
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
             <div className="m-2">
-              <label className="mb-2 block">
-                Payment Terms
-              </label>
-              <textarea
-                name="paymentTerms"
-                placeholder="Specify payment terms"
-                rows={4}
-                value={purchaseOrder.paymentTerms}
-                onChange={handleInputChange}
-                className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
-              />
-            </div>
-            <div className="m-2">
-              <label className="mb-2 block">
-                Terms and Conditions
-              </label>
+              <label className="mb-2 block">Terms and Conditions</label>
               <textarea
                 name="termsAndConditions"
                 placeholder="Specify terms and conditions"
                 rows={4}
                 value={purchaseOrder.termsAndConditions}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  handleInputChange({ target: { name: "termsAndConditions", value: e.target.value } })
+                }
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
@@ -892,9 +1010,7 @@ const CreatePurchaseorder = () => {
           <hr />
           <div className="flex flex-wrap w-full text-sm mb-16">
             <div className="m-2 w-fit">
-              <label className="mb-2 block font-medium text-gray-700">
-                Attachments
-              </label>
+              <label className="mb-2 block font-medium text-gray-700">Attachments</label>
               <div
                 className={[
                   "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 bg-gray-50",
@@ -939,9 +1055,9 @@ const CreatePurchaseorder = () => {
                         className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center space-x-2">
-                          <span className="text-lg">{getFileIcon(file.name)}</span>
+                          <span className="text-lg">{getFileIcon(file.fileName)}</span>
                           <div>
-                            <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                            <p className="text-sm font-medium text-gray-700">{file.fileName}</p>
                             <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                           </div>
                         </div>
@@ -949,7 +1065,7 @@ const CreatePurchaseorder = () => {
                           type="button"
                           onClick={() => removeAttachment(index)}
                           className="text-red-500 hover:text-red-700 text-sm ms-2 font-medium"
-                          aria-label={`Remove ${file.name}`}
+                          aria-label={`Remove ${file.fileName}`}
                         >
                           Remove
                         </button>

@@ -5,12 +5,11 @@ import { useUser } from "../../../context/userContext";
 import measurementData from "../../../data/measurementCategories.json";
 import gstData from "../../../data/gstRates.json";
 
-const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
+const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals, taxes }) => {
   const { user } = useUser();
   const [alert, setAlert] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [taxes, setTaxes] = useState([]);
   const [filteredTaxes, setFilteredTaxes] = useState([]);
   const [itemDropdownVisible, setItemDropdownVisible] = useState({});
   const [taxDropdownVisible, setTaxDropdownVisible] = useState({});
@@ -20,9 +19,9 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
   const taxDropdownRef = useRef();
 
   const gstRates = gstData.gstRates;
-  const gstType = purchaseOrder.sourceState === purchaseOrder.deliveryState ? "intra" : "inter";
+  const gstType = purchaseOrder.address.sourceState === purchaseOrder.address.deliveryState ? "intra" : "inter";
 
-  //Fetch Items and Tax List
+  // Fetch Items
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -39,22 +38,10 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
             type: "error",
           });
         }
-
-        const taxResponse = await axios.get("/api/tax/getTax", {
-          withCredentials: true,
-        });
-        if (taxResponse.data.success) {
-          setTaxes(taxResponse.data.taxes || []);
-        } else {
-          setAlert({
-            message: taxResponse.data.message || "Failed to fetch taxes.",
-            type: "error",
-          });
-        }
       } catch (error) {
         const errorMessage =
           error.response?.data?.message ||
-          "Failed to retrieve items or taxes. Please try again later.";
+          "Failed to retrieve items. Please try again later.";
         setAlert({ message: errorMessage, type: "error" });
       }
     };
@@ -62,9 +49,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     fetchData();
   }, [user]);
 
-  console.log(products);
-
-  //Handle click outside of custom product and custom tax dropdown to close it
+  // Handle click outside of dropdowns to close them
   useEffect(() => {
     const handleClickOutside = (event) => {
       let clickedOutsideAll = true;
@@ -91,7 +76,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     };
   }, []);
 
-  //Set GST and Fatched Tax as Filterd tax to select
+  // Set filtered taxes
   useEffect(() => {
     const customGstRates = gstRates.map((rate) => {
       if (gstType === "intra") {
@@ -122,15 +107,17 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     setFilteredTaxes([...customGstRates, ...formattedTaxes]);
   }, [gstType, gstRates, taxes]);
 
-  //Calculate Totals based on Selected Producr and Set on PO
+  // Calculate Totals
   const calculateTotals = (products, purchaseOrder) => {
-    let totalBaseAmount = 0;
-    let totalDiscount = 0;
-    let taxableAmount = 0;
+    let totalBaseAmount = 0; // Subtotal: Sum of (quantity * rate) for each product
+    let totalDiscount = 0; // Total discount applied (product or flat)
+    let taxableAmount = 0; // Amount after discounts, before taxes
     let cgstTotal = 0;
     let sgstTotal = 0;
     let igstTotal = 0;
     let customTaxTotal = 0;
+    let totalTax = 0;
+    let totalBeforeDiscount = 0; // Subtotal + taxes, before discounts
 
     products.forEach((product) => {
       const qty = parseFloat(product.quantity) || 0;
@@ -149,8 +136,10 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
       }
       taxableAmount += subtotal - discountAmount;
 
+      let productTaxAmount = 0;
       product.taxes.forEach((tax) => {
         const taxAmount = parseFloat(tax.amount || 0);
+        productTaxAmount += taxAmount;
         if (tax.type === "GST" && tax.subType === "CGST") {
           cgstTotal += taxAmount;
         } else if (tax.type === "GST" && tax.subType === "SGST") {
@@ -161,6 +150,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
           customTaxTotal += taxAmount;
         }
       });
+      totalTax += productTaxAmount;
+      totalBeforeDiscount += subtotal + productTaxAmount;
     });
 
     if (purchaseOrder.discountType === "Flat") {
@@ -170,36 +161,38 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
           purchaseOrder.discountValueType === "Percent"
             ? (totalBaseAmount * discountValue) / 100
             : discountValue;
-        totalBaseAmount -= flatDiscountAmount;
         totalDiscount += flatDiscountAmount;
+        taxableAmount = totalBaseAmount - flatDiscountAmount;
+      } else {
+        taxableAmount = totalBaseAmount;
       }
     }
 
-    const totalTax = cgstTotal + sgstTotal + igstTotal + customTaxTotal;
     let totalInclTax = taxableAmount + totalTax;
     let roundOffAmount = "0.00";
 
     if (purchaseOrder.roundOff) {
       const roundedTotal = Math.round(totalInclTax);
-      roundOffAmount = (roundedTotal - totalInclTax).toFixed(2);
+      roundOffAmount = (roundedTotal - totalInclTax).toFixed(2).toString();
       totalInclTax = roundedTotal;
     }
 
     return {
-      totalBaseAmount: totalBaseAmount.toFixed(2),
-      totalDiscount: totalDiscount.toFixed(2),
-      taxableAmount: taxableAmount.toFixed(2),
-      totalTax: totalTax.toFixed(2),
-      totalInclTax: totalInclTax.toFixed(2),
-      cgstTotal: cgstTotal.toFixed(2),
-      sgstTotal: sgstTotal.toFixed(2),
-      igstTotal: igstTotal.toFixed(2),
-      customTaxTotal: customTaxTotal.toFixed(2),
+      totalBaseAmount: totalBaseAmount.toFixed(2).toString(), // Subtotal (quantity * rate)
+      totalDiscount: totalDiscount.toFixed(2).toString(), // Total discount
+      taxableAmount: taxableAmount.toFixed(2).toString(), // Amount after discounts, before taxes
+      totalTax: totalTax.toFixed(2).toString(), // Total tax amount
+      totalInclTax: totalInclTax.toFixed(2).toString(), // Grand total including taxes
+      cgstTotal: cgstTotal.toFixed(2).toString(),
+      sgstTotal: sgstTotal.toFixed(2).toString(),
+      igstTotal: igstTotal.toFixed(2).toString(),
+      customTaxTotal: customTaxTotal.toFixed(2).toString(),
       roundOffAmount,
+      totalBeforeDiscount: totalBeforeDiscount.toFixed(2).toString(), // Subtotal + taxes, before discounts
     };
   };
 
-  //Recalculate totals on Product change
+  // Recalculate Product
   const recalculateProduct = (product, gstType, tax = null) => {
     const quantity = parseFloat(product.quantity) || 0;
     const rate = parseFloat(product.rate) || 0;
@@ -227,13 +220,13 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
             type: "GST",
             subType: "CGST",
             rate: cgstRate,
-            amount: ((cgstRate / 100) * amountBase).toFixed(2),
+            amount: ((cgstRate / 100) * amountBase).toFixed(2).toString(),
           },
           {
             type: "GST",
             subType: "SGST",
             rate: sgstRate,
-            amount: ((sgstRate / 100) * amountBase).toFixed(2),
+            amount: ((sgstRate / 100) * amountBase).toFixed(2).toString(),
           },
         ];
       } else if (tax.type === "IGST" && gstType === "inter") {
@@ -243,7 +236,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
             type: "IGST",
             subType: "IGST",
             rate: igstRate,
-            amount: ((igstRate / 100) * amountBase).toFixed(2),
+            amount: ((igstRate / 100) * amountBase).toFixed(2).toString(),
           },
         ];
       } else if (tax.type === "custom") {
@@ -253,35 +246,37 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
             type: "custom",
             subType: tax.description,
             rate: customRate,
-            amount: ((customRate / 100) * amountBase).toFixed(2),
+            amount: ((customRate / 100) * amountBase).toFixed(2).toString(),
           },
         ];
       }
     } else if (product.taxes && product.taxes.length > 0) {
       taxes = product.taxes.map((t) => ({
         ...t,
-        amount: ((t.rate / 100) * amountBase).toFixed(2),
+        amount: ((t.rate / 100) * amountBase).toFixed(2).toString(),
       }));
     } else {
       taxes = gstType === "intra"
         ? [
-          { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-          { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-        ]
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
         : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
     }
 
     const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-    const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+    const totalPrice = (amountBase + totalTaxAmount).toFixed(2).toString();
 
     return {
       ...product,
+      rate: rate.toFixed(2).toString(),
+      inProductDiscount: discountValue.toFixed(2).toString(),
       taxes,
       totalPrice,
     };
   };
 
-  //check duplicate product selected and show merge option
+  // Check for duplicate products
   const checkDuplicates = (updatedProducts) => {
     const newWarnings = {};
     updatedProducts.forEach((product, index) => {
@@ -299,7 +294,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     setDuplicateWarnings(newWarnings);
   };
 
-  //handle change in inputs and set it in PO
+  // Handle input changes
   const handleInputChangeProduct = (index, field, value) => {
     const updatedProducts = [...purchaseOrder.products];
     updatedProducts[index] = {
@@ -343,7 +338,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle selection of product and set tax,rates,units etc accordingly
+  // Handle product selection
   const handleProductSelect = (index, product) => {
     const updatedProducts = [...purchaseOrder.products];
     const quantity = parseFloat(updatedProducts[index].quantity) || 0;
@@ -383,13 +378,13 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
             type: "GST",
             subType: "CGST",
             rate: cgstRate,
-            amount: ((cgstRate / 100) * amountBase).toFixed(2),
+            amount: ((cgstRate / 100) * amountBase).toFixed(2).toString(),
           },
           {
             type: "GST",
             subType: "SGST",
             rate: sgstRate,
-            amount: ((sgstRate / 100) * amountBase).toFixed(2),
+            amount: ((sgstRate / 100) * amountBase).toFixed(2).toString(),
           },
         ];
       } else {
@@ -399,29 +394,29 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
             type: "IGST",
             subType: "IGST",
             rate: igstRate,
-            amount: ((igstRate / 100) * amountBase).toFixed(2),
+            amount: ((igstRate / 100) * amountBase).toFixed(2).toString(),
           },
         ];
       }
     } else {
       taxes = gstType === "intra"
         ? [
-          { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-          { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-        ]
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
         : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
     }
 
     const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-    const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+    const totalPrice = (amountBase + totalTaxAmount).toFixed(2).toString();
 
     updatedProducts[index] = {
       ...updatedProducts[index],
       productId: product.id,
       productName: product.itemName,
-      rate: product.rate || "0",
+      rate: rate.toFixed(2).toString(),
       unit: product.unit || "nos",
-      hsnOrSacCode: product.hsnOrSac,
+      hsnOrSacCode: product.hsnOrSac || "",
       taxes,
       totalPrice,
     };
@@ -436,7 +431,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle Merge Duplicate peoduct
+  // Handle merge duplicate product
   const handleMergeDuplicate = (index, existingIndex) => {
     const updatedProducts = [...purchaseOrder.products];
     const existingQuantity = parseFloat(updatedProducts[existingIndex].quantity) || 0;
@@ -453,7 +448,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle Tax change and set new selectes tax to po and trigger recalculation method
+  // Handle tax selection
   const handleTaxSelect = (index, tax) => {
     const updatedProducts = [...purchaseOrder.products];
     const product = updatedProducts[index];
@@ -476,13 +471,13 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
           type: "GST",
           subType: "CGST",
           rate: cgstRate,
-          amount: ((cgstRate / 100) * amountBase).toFixed(2),
+          amount: ((cgstRate / 100) * amountBase).toFixed(2).toString(),
         },
         {
           type: "GST",
           subType: "SGST",
           rate: sgstRate,
-          amount: ((sgstRate / 100) * amountBase).toFixed(2),
+          amount: ((sgstRate / 100) * amountBase).toFixed(2).toString(),
         },
       ];
     } else if (tax.type === "IGST" && gstType === "inter") {
@@ -492,7 +487,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
           type: "IGST",
           subType: "IGST",
           rate: igstRate,
-          amount: ((igstRate / 100) * amountBase).toFixed(2),
+          amount: ((igstRate / 100) * amountBase).toFixed(2).toString(),
         },
       ];
     } else if (tax.type === "custom") {
@@ -502,13 +497,13 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
           type: "custom",
           subType: tax.description,
           rate: customRate,
-          amount: ((customRate / 100) * amountBase).toFixed(2),
+          amount: ((customRate / 100) * amountBase).toFixed(2).toString(),
         },
       ];
     }
 
     const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-    const totalPrice = (amountBase + totalTaxAmount).toFixed(2);
+    const totalPrice = (amountBase + totalTaxAmount).toFixed(2).toString();
 
     updatedProducts[index] = {
       ...product,
@@ -524,7 +519,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle select Product with key's
+  // Handle product key down
   const handleProductKeyDown = (e, index) => {
     if (!itemDropdownVisible[index]) {
       if (e.key === "Enter" || e.key === "ArrowDown") {
@@ -558,7 +553,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     }
   };
 
-  //Handle select Tax with key's
+  // Handle tax key down
   const handleTaxKeyDown = (e, index) => {
     if (!taxDropdownVisible[index]) {
       if (e.key === "Enter" || e.key === "ArrowDown") {
@@ -591,7 +586,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     }
   };
 
-  //Handle add new peoduct to list
+  // Handle add new product
   const handleAddProduct = () => {
     const newProduct = {
       productId: "",
@@ -599,13 +594,14 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
       quantity: "0",
       unit: "nos",
       rate: "0",
+      hsnOrSacCode: "",
       inProductDiscount: "0",
       inProductDiscountValueType: purchaseOrder.discountValueType || "Percent",
       taxes: gstType === "intra"
         ? [
-          { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-          { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-        ]
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
         : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }],
       totalPrice: "0",
     };
@@ -617,7 +613,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle Remove Peoduct from list
+  // Handle remove product
   const handleRemoveProduct = (index) => {
     const updatedProducts = purchaseOrder.products.filter((_, i) => i !== index);
     handleInputChange({ target: { name: "products", value: updatedProducts } });
@@ -627,7 +623,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle Discount type change for InProdct and Flat Discount
+  // Handle discount type change
   const handleDiscountTypeChange = (value) => {
     const updatedProducts = purchaseOrder.products.map((product) => {
       const resetProduct = {
@@ -649,7 +645,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle Discount Value type change for amount and precent based discount
+  // Handle discount value type change
   const handleDiscountValueTypeChange = (value) => {
     handleInputChange(
       { target: { name: "discountValueType", value } },
@@ -664,7 +660,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle Discount change and trigger Calculate Totals
+  // Handle discount change
   const handleDiscountChange = (value) => {
     handleInputChange({ target: { name: "discount", value } });
 
@@ -675,7 +671,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Hanlde Round off amout to nearest value
+  // Handle round off change
   const handleRoundOffChange = (e) => {
     const roundOff = e.target.checked;
     handleInputChange({ target: { name: "roundOff", value: roundOff } });
@@ -743,8 +739,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                           {filteredProducts.map((prod, prodIndex) => (
                             <li
                               key={prod.id}
-                              className={`p-2 cursor-pointer hover:bg-gray-200 ${highlightedIndex.product === prodIndex ? "bg-gray-200" : ""
-                                }`}
+                              className={`p-2 cursor-pointer hover:bg-gray-200 ${highlightedIndex.product === prodIndex ? "bg-gray-200" : ""}`}
                               onClick={() => handleProductSelect(index, prod)}
                               onMouseEnter={() =>
                                 setHighlightedIndex((prev) => ({ ...prev, product: prodIndex }))
@@ -896,8 +891,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                           {filteredTaxes.map((tax, taxIndex) => (
                             <li
                               key={`${tax.type}-${tax.value}`}
-                              className={`p-2 cursor-pointer hover:bg-gray-200 ${highlightedIndex.tax === taxIndex ? "bg-gray-200" : ""
-                                }`}
+                              className={`p-2 cursor-pointer hover:bg-gray-200 ${highlightedIndex.tax === taxIndex ? "bg-gray-200" : ""}`}
                               onClick={() => handleTaxSelect(index, tax)}
                               onMouseEnter={() =>
                                 setHighlightedIndex((prev) => ({ ...prev, tax: taxIndex }))
@@ -971,7 +965,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                 <div className="flex flex-col text-gray-700 text-sm">
                   <div className="flex justify-between items-center py-1">
                     <span className="font-semibold">Subtotal (Excl. Tax & Discount):</span>
-                    <span>{totals.totalBaseAmount}</span>
+                    <span>₹{totals.totalBaseAmount}</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="font-semibold">Discount:</span>
@@ -1022,12 +1016,12 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                           </select>
                         </div>
                       )}
-                      <span className="ps-2">-{totals.totalDiscount}</span>
+                      <span className="ps-2">-₹{totals.totalDiscount}</span>
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="font-semibold">Taxable Amount:</span>
-                    <span>{totals.taxableAmount}</span>
+                    <span>₹{totals.taxableAmount}</span>
                   </div>
                   {(hasCustomTax || showTaxBreakdown) && (
                     <>
@@ -1043,23 +1037,27 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                             <>
                               <div className="flex justify-between items-center py-1">
                                 <span className="font-semibold">Total CGST:</span>
-                                <span>{totals.cgstTotal}</span>
+                                <span>₹{totals.cgstTotal}</span>
                               </div>
                               <div className="flex justify-between items-center py-1">
                                 <span className="font-semibold">Total SGST:</span>
-                                <span>{totals.sgstTotal}</span>
+                                <span>₹{totals.sgstTotal}</span>
                               </div>
                             </>
                           ) : (
                             <div className="flex justify-between items-center py-1">
                               <span className="font-semibold">Total IGST:</span>
-                              <span>{totals.igstTotal}</span>
+                              <span>₹{totals.igstTotal}</span>
                             </div>
                           )}
                         </>
                       )}
                     </>
                   )}
+                  <div className="flex justify-between items-center py-1">
+                    <span className="font-semibold">Total Tax:</span>
+                    <span>₹{totals.totalTax}</span>
+                  </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="flex items-center font-semibold">
                       Round Off
@@ -1072,10 +1070,10 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
                         className="ms-2 rounded border-gray-300 focus:ring-customSecondary"
                       />
                     </span>
-                    <span>{totals.roundOffAmount}</span>
+                    <span>₹{totals.roundOffAmount}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 mt-2 border-t border-gray-300 pt-2">
-                    <span className="font-semibold text-base">Total (incl. Tax):</span>
+                    <span className="font-semibold text-base">Grand Total (Incl. Tax):</span>
                     <span className="text-base font-semibold">₹{totals.totalInclTax}</span>
                   </div>
                 </div>
