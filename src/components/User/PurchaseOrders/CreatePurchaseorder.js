@@ -32,7 +32,7 @@ const CreatePurchaseorder = () => {
   const [taxes, setTaxes] = useState([]); // New state for taxes
 
   const [purchaseOrder, setPurchaseOrder] = useState({
-    businessId: user ? user.businessId : "",
+    businessId: user ? user.organization.businessId : "",
     vendorId: "",
     vendorName: "",
     purchaseOrderNumber: "",
@@ -448,9 +448,9 @@ const CreatePurchaseorder = () => {
       } else {
         taxes = gstType === "intra"
           ? [
-              { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
-              { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
-            ]
+            { type: "GST", subType: "CGST", rate: 0, amount: "0.00" },
+            { type: "GST", subType: "SGST", rate: 0, amount: "0.00" },
+          ]
           : [{ type: "IGST", subType: "IGST", rate: 0, amount: "0.00" }];
         setAlert({ message: "No matching tax found, defaulting to zero tax rate", type: "warning" });
       }
@@ -589,11 +589,111 @@ const CreatePurchaseorder = () => {
     }
   };
 
+  const validateForm = () => {
+    let isValid = true;
+    let errorMessage = '';
+
+    if (!purchaseOrder.businessId) {
+      errorMessage = 'You must be logged in to create a purchase order.';
+      isValid = false;
+    } else if (!purchaseOrder.vendorId) {
+      errorMessage = 'Please select a vendor for the purchase order.';
+      isValid = false;
+    } else if (!purchaseOrder.purchaseOrderNumber || purchaseOrder.purchaseOrderNumber.trim() === '') {
+      errorMessage = 'Purchase order number is required.';
+      isValid = false;
+    } else if (!purchaseOrder.orderDate) {
+      errorMessage = 'Order date is required.';
+      isValid = false;
+    } else if (purchaseOrder.dueDate) {
+      const dueDate = new Date(purchaseOrder.dueDate);
+      const orderDate = new Date(purchaseOrder.orderDate);
+      if (dueDate < orderDate) {
+        errorMessage = 'Due date cannot be before the order date.';
+        isValid = false;
+      }
+    } else if (!purchaseOrder.billingAddress || purchaseOrder.billingAddress.trim() === '') {
+      errorMessage = 'Billing address is required.';
+      isValid = false;
+    } else if (!purchaseOrder.shippingAddress || purchaseOrder.shippingAddress.trim() === '') {
+      errorMessage = 'Shipping address is required.';
+      isValid = false;
+    } else if (!purchaseOrder.deliveryLocation) {
+      errorMessage = 'Delivery location is required.';
+      isValid = false;
+    } else if (!purchaseOrder.deliveryState) {
+      errorMessage = 'Delivery state (Place of Supply) is required.';
+      isValid = false;
+    } else if (!purchaseOrder.products || purchaseOrder.products.length === 0) {
+      errorMessage = 'At least one product is required for the purchase order.';
+      isValid = false;
+    } else {
+      for (let i = 0; i < purchaseOrder.products.length; i++) {
+        const product = purchaseOrder.products[i];
+        if (!product.productName || product.productName.trim() === '') {
+          errorMessage = `Product name is required for product ${i + 1}.`;
+          isValid = false;
+          break;
+        }
+        if (!product.quantity || parseFloat(product.quantity) <= 0) {
+          errorMessage = `Quantity must be a positive number for product ${i + 1}.`;
+          isValid = false;
+          break;
+        }
+        if (!product.rate || parseFloat(product.rate) <= 0) {
+          errorMessage = `Rate must be a positive number for product ${i + 1}.`;
+          isValid = false;
+          break;
+        }
+      }
+    }
+
+    if (isValid && purchaseOrder.discount && parseFloat(purchaseOrder.discount) < 0) {
+      errorMessage = 'Discount cannot be negative.';
+      isValid = false;
+    }
+
+    if (isValid && purchaseOrder.paidAmount && parseFloat(purchaseOrder.paidAmount) < 0) {
+      errorMessage = 'Paid amount cannot be negative.';
+      isValid = false;
+    }
+
+    if (!isValid) {
+      setAlert({ message: errorMessage, type: 'error' });
+    }
+
+    return isValid;
+  };
+
   // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       // Implement submission logic
+      const response = await fetch("/api/purchase-order/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(purchaseOrder),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        setAlert({ message: "Item added successfully!", type: "success" });
+
+        setTimeout(() => {
+          setAlert({ message: "Item added successfully!", type: "success" });
+        }, 1000);
+
+      } else {
+        setAlert({ message: result.message || "Failed to add item!", type: "error" });
+
+      }
     } catch (error) {
       setAlert({
         message: error.response?.data?.message || "Failed to create purchase order",
@@ -607,9 +707,9 @@ const CreatePurchaseorder = () => {
     userAddress || { value: "", label: "Loading user address..." },
     ...(Array.isArray(availableStorage)
       ? availableStorage.map((storage) => ({
-          value: storage.address || storage.name || storage._id,
-          label: `${storage.storageName}`,
-        }))
+        value: storage.address || storage.name || storage._id,
+        label: `${storage.storageName}`,
+      }))
       : []),
   ];
 
@@ -682,7 +782,6 @@ const CreatePurchaseorder = () => {
               value={purchaseOrder.referenceNumber}
               onChange={handleInputChange}
               placeholder="Reference Number"
-              required
             />
             <SelectInput
               label="Delivery Location"
@@ -701,9 +800,9 @@ const CreatePurchaseorder = () => {
               options={
                 states.length > 0
                   ? states.map((state) => ({
-                      value: state.name,
-                      label: state.name,
-                    }))
+                    value: state.name,
+                    label: state.name,
+                  }))
                   : []
               }
               required
