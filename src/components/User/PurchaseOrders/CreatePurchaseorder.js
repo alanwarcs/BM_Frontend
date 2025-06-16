@@ -631,7 +631,6 @@ const CreatePurchaseorder = () => {
       const vendorAddress = vendorDetails.billingAddress.addressLine1 && vendorDetails.billingAddress.city && vendorDetails.billingAddress.state && vendorDetails.billingAddress.country && vendorDetails.billingAddress.postalCode
               ? `${vendorDetails.billingAddress.addressLine1}, ${vendorDetails.billingAddress.city}, ${vendorDetails.billingAddress.state}, ${ vendorDetails.billingAddress.country}, ${vendorDetails.billingAddress.postalCode}`
               : "";
-      console.log("vendorDetails:",vendorDetails);
 
       if (vendorDetails) {
         const gstType = vendorDetails.taxDetails?.sourceState === purchaseOrder.address.deliveryState ? "intra" : "inter";
