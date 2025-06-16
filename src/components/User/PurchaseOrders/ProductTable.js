@@ -62,6 +62,8 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     fetchData();
   }, [user]);
 
+  console.log(products);
+
   //Handle click outside of custom product and custom tax dropdown to close it
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -341,7 +343,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
     updateTotals(totals);
   };
 
-  //Handle selection of product and se tax,rates,units etc accordingly
+  //Handle selection of product and set tax,rates,units etc accordingly
   const handleProductSelect = (index, product) => {
     const updatedProducts = [...purchaseOrder.products];
     const quantity = parseFloat(updatedProducts[index].quantity) || 0;
@@ -419,6 +421,7 @@ const ProductTable = ({ purchaseOrder, handleInputChange, updateTotals }) => {
       productName: product.itemName,
       rate: product.rate || "0",
       unit: product.unit || "nos",
+      hsnOrSacCode: product.hsnOrSac,
       taxes,
       totalPrice,
     };

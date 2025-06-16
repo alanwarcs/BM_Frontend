@@ -215,7 +215,7 @@ const PurchaseOrderPreview = ({ data }) => {
                                 <tr key={product.productId || index}>
                                     <td>{index + 1}</td>
                                     <td style={{ padding: 2 }}>{product.productName || 'N/A'}</td>
-                                    <td>{product.hsnSac || '-'}</td>
+                                    <td>{product.hsnOrSacCode || '-'}</td>
                                     <td>{parseFloat(product.rate).toFixed(2)}</td>
                                     <td>{parseFloat(product.quantity).toFixed(2)}</td>
                                     <td>{product.unit || 'pcs'}</td>

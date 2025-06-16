@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SelectInput from "../ReusableComponents/SelectInput";
 import UserLayout from "../ReusableComponents/UserLayout";
 import TextInput from "../ReusableComponents/TextInput";
@@ -79,7 +80,7 @@ const CreatePurchaseorder = () => {
     updatedBy: user ? user.id : "",
     isDeleted: false,
   });
-
+  const navigate = useNavigate();
   // Fetch user, PO, vendors, storage, and taxes
   useEffect(() => {
     const controller = new AbortController();
@@ -668,31 +669,22 @@ const CreatePurchaseorder = () => {
   // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      // Implement submission logic
       const response = await fetch("/api/purchase-order/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(purchaseOrder),
       });
       const result = await response.json();
       if (response.ok) {
         setAlert({ message: "Item added successfully!", type: "success" });
-
         setTimeout(() => {
-          setAlert({ message: "Item added successfully!", type: "success" });
+          navigate("/createpurchaseorder"); // Redirect to purchase order list
         }, 1000);
-
       } else {
         setAlert({ message: result.message || "Failed to add item!", type: "error" });
-
       }
     } catch (error) {
       setAlert({
