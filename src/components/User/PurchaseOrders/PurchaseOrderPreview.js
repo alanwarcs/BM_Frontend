@@ -263,7 +263,12 @@ const PurchaseOrderPreview = ({ data }) => {
                     <tr>
                         <td style={{ textAlign: 'start', padding: '10px' }}>
                             <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Payment Terms</p>
-                            <p style={{ marginTop: '0' }}>{data.paymentTerms || '-'}</p>
+                            <p style={{ marginTop: '0' }}>
+                                {data.paymentStatus === "UnPaid"
+                                ? "-"
+                                : data.paymentStatus
+                                }
+                            </p>
                         </td>
                         <td style={{ textAlign: 'start', padding: '10px' }}>
                             <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Delivery Terms</p>

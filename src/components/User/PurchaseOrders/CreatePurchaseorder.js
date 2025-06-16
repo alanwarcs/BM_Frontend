@@ -212,6 +212,10 @@ const CreatePurchaseorder = () => {
     }
 
     const validFiles = files.filter((file) => {
+      if (!file.name) {
+        setAlert({ message: "Invalid file: missing name.", type: "error" });
+        return false;
+      }
       if (!allowedTypes.includes(file.type)) {
         setAlert({
           message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG files are allowed.`,
@@ -507,7 +511,7 @@ const CreatePurchaseorder = () => {
             {
               type: "custom",
               subType: matchingTax.description || "Custom Tax",
-              rate: customRate, // Fixed: Replaced t.rate with customRate
+              rate: customRate,
               amount: ((customRate / 100) * amountBase).toFixed(2).toString(),
             },
           ];
@@ -629,8 +633,8 @@ const CreatePurchaseorder = () => {
       const response = await axios.get(`/api/vendor/getVendorDetails/${vendorId}`);
       const vendorDetails = response?.data?.vendorDetails;
       const vendorAddress = vendorDetails.billingAddress.addressLine1 && vendorDetails.billingAddress.city && vendorDetails.billingAddress.state && vendorDetails.billingAddress.country && vendorDetails.billingAddress.postalCode
-              ? `${vendorDetails.billingAddress.addressLine1}, ${vendorDetails.billingAddress.city}, ${vendorDetails.billingAddress.state}, ${ vendorDetails.billingAddress.country}, ${vendorDetails.billingAddress.postalCode}`
-              : "";
+        ? `${vendorDetails.billingAddress.addressLine1}, ${vendorDetails.billingAddress.city}, ${vendorDetails.billingAddress.state}, ${vendorDetails.billingAddress.country}, ${vendorDetails.billingAddress.postalCode}`
+        : "";
 
       if (vendorDetails) {
         const gstType = vendorDetails.taxDetails?.sourceState === purchaseOrder.address.deliveryState ? "intra" : "inter";
@@ -788,11 +792,12 @@ const CreatePurchaseorder = () => {
 
   // Set file icon for attachments
   const getFileIcon = (fileName) => {
+    if (!fileName || typeof fileName !== 'string') {
+      return '📎'; // Default icon for invalid or missing file names
+    }
     const extension = fileName.split('.').pop().toLowerCase();
     return extension === 'pdf' ? '📄' : '🖼️';
   };
-
-  console.log(purchaseOrder);
 
   return (
     <UserLayout>
@@ -1054,9 +1059,9 @@ const CreatePurchaseorder = () => {
                         className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center space-x-2">
-                          <span className="text-lg">{getFileIcon(file.fileName)}</span>
+                          <span className="text-lg">{getFileIcon(file.name)}</span>
                           <div>
-                            <p className="text-sm font-medium text-gray-700">{file.fileName}</p>
+                            <p className="text-sm font-medium text-gray-700">{file.name}</p>
                             <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                           </div>
                         </div>
@@ -1064,7 +1069,7 @@ const CreatePurchaseorder = () => {
                           type="button"
                           onClick={() => removeAttachment(index)}
                           className="text-red-500 hover:text-red-700 text-sm ms-2 font-medium"
-                          aria-label={`Remove ${file.fileName}`}
+                          aria-label={`Remove ${file.name || 'attachment'}`}
                         >
                           Remove
                         </button>
