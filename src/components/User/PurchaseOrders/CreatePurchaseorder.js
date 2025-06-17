@@ -585,8 +585,8 @@ const CreatePurchaseorder = () => {
           purchaseOrder.discountValueType === "Percent"
             ? (totalBaseAmount * discountValue) / 100
             : discountValue;
-        totalBaseAmount -= flatDiscountAmount;
         totalDiscount += flatDiscountAmount;
+        taxableAmount -= flatDiscountAmount; // Apply flat discount to taxable amount
       }
     }
 
@@ -603,7 +603,7 @@ const CreatePurchaseorder = () => {
     return {
       totalBaseAmount: totalBaseAmount.toFixed(2).toString(),
       totalDiscount: totalDiscount.toFixed(2).toString(),
-      taxableAmount: (taxableAmount + totalTax).toFixed(2).toString(),
+      taxableAmount: taxableAmount.toFixed(2).toString(), // Corrected: taxableAmount before tax
       totalTax: totalTax.toFixed(2).toString(),
       totalInclTax: totalInclTax.toFixed(2).toString(),
       cgstTotal: cgstTotal.toFixed(2).toString(),
@@ -710,6 +710,9 @@ const CreatePurchaseorder = () => {
     } else if (!purchaseOrder.address.deliveryState) {
       errorMessage = "Delivery state (Place of Supply) is required.";
       isValid = false;
+    } else if (!purchaseOrder.address.sourceState) {
+      errorMessage = "Source state is required.";
+      isValid = false;
     } else if (!purchaseOrder.products || purchaseOrder.products.length === 0) {
       errorMessage = "At least one product is required for the purchase order.";
       isValid = false;
@@ -728,6 +731,11 @@ const CreatePurchaseorder = () => {
         }
         if (!product.rate || parseFloat(product.rate) <= 0) {
           errorMessage = `Rate must be a positive number for product ${i + 1}.`;
+          isValid = false;
+          break;
+        }
+        if (!product.unit || product.unit.trim() === "") {
+          errorMessage = `Unit is required for product ${i + 1}.`;
           isValid = false;
           break;
         }
