@@ -239,7 +239,10 @@ const CreatePurchaseorder = () => {
       return;
     }
 
+    // Save actual files for FormData
     setAttachmentFiles((prev) => [...prev, ...validFiles]);
+
+    // Save metadata in purchaseOrder.attachments
     setPurchaseOrder((prev) => ({
       ...prev,
       attachments: [
@@ -762,30 +765,38 @@ const CreatePurchaseorder = () => {
   // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!validateForm()) return;
+
+    const formData = new FormData();
+
+    // Add JSON string
+    formData.append("purchaseOrder", JSON.stringify(purchaseOrder));
+
+    // Append actual File objects
+    attachmentFiles.forEach((file) => {
+      formData.append("attachments", file); // must match multer field name
+    });
 
     try {
       const response = await fetch("/api/purchase-order/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(purchaseOrder),
+        body: formData,
       });
+
       const result = await response.json();
+
       if (response.ok) {
         setAlert({ message: "Purchase order created successfully!", type: "success" });
-        setTimeout(() => {
-          navigate("/purchaseorder");
-        }, 1000);
+        setTimeout(() => navigate("/purchaseorder"), 1000);
       } else {
         setAlert({ message: result.message || "Failed to create purchase order!", type: "error" });
       }
     } catch (error) {
-      setAlert({
-        message: error.response?.data?.message || "Failed to create purchase order",
-        type: "error",
-      });
+      setAlert({ message: "Failed to create purchase order", type: "error" });
     }
   };
+
 
   // Set options for storage (Delivery Location)
   const deliveryLocationOptions = [
