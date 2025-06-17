@@ -386,21 +386,11 @@ const Item = () => {
                                                 {item.itemName || '-'}
                                             </td>
                                             <td className="px-6 py-2">{item.itemType || '-'}</td>
-                                            <td className="px-6 py-2">
-                                                {item.sellInfo?.price ? `${item.sellInfo.price} ${item.sellInfo.currency}` : '-'}
-                                            </td>
-                                            <td className="px-6 py-2">
-                                                {item.purchaseInfo?.purchasePrice
-                                                    ? `${item.purchaseInfo.purchasePrice} ${item.purchaseInfo.purchaseCurrency}`
-                                                    : '-'}
-                                            </td>
+                                            <td className="px-6 py-2">{item.sellingPrice || '-'}</td>
+                                            <td className="px-6 py-2">{item.purchasePrice || '-'}</td>
                                             <td className="px-6 py-2">{item.taxPreference || '-'}</td>
-                                            <td className="px-6 py-2">
-                                                {item.storage ? item.storage.reduce((total, storage) => total + (storage.quantity || 0), 0) : 0}
-                                            </td>
-                                            <td className="px-6 py-2">
-                                                {item.stockValue ? `${item.stockValue} Units` : '-'}
-                                            </td>
+                                            <td className="px-6 py-2">{item.availableQty || 0}</td>
+                                            <td className="px-6 py-2">{item.stockValue || '-'}</td>
                                             <td className="relative px-6 py-2">
                                                 <button
                                                     ref={editorButtonRef}
@@ -421,11 +411,11 @@ const Item = () => {
                                                         >
                                                             Edit
                                                         </button>
-                                                        <button  
+                                                        <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
                                                             onClick={() => navigate(`/viewitem/${item._id}`)}
                                                         >
-                                                           View
+                                                            View
                                                         </button>
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
