@@ -437,7 +437,7 @@ const PurchaseOrder = () => {
                                                     <div ref={editorRef} className="absolute right-5 top-0 z-20 mt-2 bg-white border border-gray-300 rounded shadow-lg w-24 overflow-hidden">
                                                         <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                            onClick={() => navigate(`/editpurchaseorder/${po._id}`)}
+                                                            onClick={() => navigate(`/editPurchaseOrder/${po._id}`)}
                                                         >
                                                             Edit
                                                         </button>

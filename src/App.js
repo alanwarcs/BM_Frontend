@@ -21,6 +21,7 @@ import ViewItem from './components/User/Items/ViewItem';
 import Inventory from './components/User/Inventory/Inventory';
 import PurchaseOrder from './components/User/PurchaseOrders/PurchaseOrder';
 import CreatePurchaseorder from './components/User/PurchaseOrders/CreatePurchaseorder';
+import EditPurchaseOrder from './components/User/PurchaseOrders/EditPurchasOrder';
 
 function App() {
   return (
@@ -116,6 +117,11 @@ function App() {
             <Route 
               path='/createpurchaseorder'
               element={<ProtectedRoute component={CreatePurchaseorder} isAuthenticatedPage={true} />}
+            />
+
+            <Route
+              path='/editPurchaseOrder/:purchaseOrderId'
+              element={<ProtectedRoute component={EditPurchaseOrder} isAuthenticatedPage={true}/>}
             />
 
             {/* Redirect to dashboard for unknown routes */}
