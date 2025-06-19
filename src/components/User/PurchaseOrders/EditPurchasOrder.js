@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import SelectInput from "../ReusableComponents/SelectInput";
 import UserLayout from "../ReusableComponents/UserLayout";
 import TextInput from "../ReusableComponents/TextInput";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Alert from "../../Alert";
 import axios from "axios";
 import { useUser } from "../../../context/userContext";
@@ -12,26 +12,34 @@ import { State } from "country-state-city";
 import ProductTable from "./ProductTable";
 import PreviewModal from "../ReusableComponents/PreviewModal";
 import PurchaseOrderPreview from "../PurchaseOrders/PurchaseOrderPreview";
-import gstRatesData from '../../../data/gstRates.json'; // Adjust path as needed
+import gstRatesData from '../../../data/gstRates.json';
 
+// Utility to format dates for input fields (YYYY-MM-DD)
+const formatDate = (date) => date.toISOString().split("T")[0];
+
+// Initialize default dates
 const today = new Date();
 const nextYear = new Date();
 nextYear.setFullYear(today.getFullYear() + 1);
 
-const formatDate = (date) => date.toISOString().split("T")[0];
-
 const EditPurchaseOrder = () => {
-  const { user } = useUser();
+  // Hooks for navigation and URL parameters
+  const navigate = useNavigate();
   const { purchaseOrderId } = useParams();
-  const [alert, setAlert] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [states, setStates] = useState([]);
-  const [availableStorage, setAvailableStorage] = useState([]);
-  const [userAddress, setUserAddress] = useState(null);
-  const [attachmentFiles, setAttachmentFiles] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [taxes, setTaxes] = useState([]);
+  const { user } = useUser();
+
+  // State management
+  const [alert, setAlert] = useState(null); // Alerts for user feedback
+  const [vendors, setVendors] = useState([]); // List of available vendors
+  const [states, setStates] = useState([]); // Indian states for dropdown
+  const [availableStorage, setAvailableStorage] = useState([]); // Storage locations
+  const [userAddress, setUserAddress] = useState(null); // User's business address
+  const [attachmentFiles, setAttachmentFiles] = useState([]); // New files to upload
+  const [isDragging, setIsDragging] = useState(false); // Drag-and-drop state
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false); // Preview modal state
+  const [taxes, setTaxes] = useState([]); // Available tax rates
+
+  // Initial purchase order state
   const [purchaseOrder, setPurchaseOrder] = useState({
     business: {
       id: user ? user.organization.businessId : "",
@@ -110,9 +118,7 @@ const EditPurchaseOrder = () => {
     isDeleted: false,
   });
 
-  const navigate = useNavigate();
-
-  // Fetch initial data
+  // Fetch initial data on component mount
   useEffect(() => {
     const controller = new AbortController();
     const fetchData = async () => {
@@ -127,7 +133,6 @@ const EditPurchaseOrder = () => {
           const poData = purchaseOrderRes.data.data;
           setPurchaseOrder((prev) => ({
             ...prev,
-            // Direct fields
             poNumber: poData.poNumber || prev.poNumber,
             orderDate: poData.orderDate ? formatDate(new Date(poData.orderDate)) : prev.orderDate,
             dueDate: poData.dueDate ? formatDate(new Date(poData.dueDate)) : "",
@@ -142,24 +147,13 @@ const EditPurchaseOrder = () => {
             updatedBy: poData.updatedBy || prev.updatedBy,
             isDeleted: poData.isDeleted || prev.isDeleted,
             isBillGenerated: poData.isBillGenerated || prev.isBillGenerated,
-            // Nested objects
-            business: {
-              ...prev.business,
-              ...poData.business,
-            },
-            vendor: {
-              ...prev.vendor,
-              ...poData.vendor,
-            },
-            address: {
-              ...prev.address,
-              ...poData.address,
-            },
-            // Products array
+            business: { ...prev.business, ...poData.business },
+            vendor: { ...prev.vendor, ...poData.vendor },
+            address: { ...prev.address, ...poData.address },
             products: poData.products.map((product) => ({
               ...product,
               quantity: product.quantity.toString(),
-              rate: product.rate?.$numberDecimal?.toString() || "0",
+              rate: product.rate?.$numberDecimal?.toString() || product.rate || "0",
               inProductDiscount: product.inProductDiscount?.$numberDecimal?.toString() || "0",
               totalPrice: product.totalPrice?.$numberDecimal?.toString() || "0",
               taxes: product.taxes.map((tax) => ({
@@ -167,7 +161,6 @@ const EditPurchaseOrder = () => {
                 amount: tax.amount?.$numberDecimal?.toString() || tax.amount || "0",
               })),
             })),
-            // EMI details
             emiDetails: {
               ...prev.emiDetails,
               frequency: poData.emiDetails?.frequency || "",
@@ -176,7 +169,6 @@ const EditPurchaseOrder = () => {
               totalWithInterest: poData.emiDetails?.totalWithInterest?.$numberDecimal?.toString() || "0",
               installments: poData.emiDetails?.installments || [],
             },
-            // Numeric fields
             discount: poData.discount?.$numberDecimal?.toString() || "0",
             totalAmountOfDiscount: poData.totalAmountOfDiscount?.$numberDecimal?.toString() || "0",
             subtotal: poData.subtotal?.$numberDecimal?.toString() || "0",
@@ -187,8 +179,10 @@ const EditPurchaseOrder = () => {
             grandAmount: poData.grandAmount?.$numberDecimal?.toString() || "0",
             paidAmount: poData.paidAmount?.$numberDecimal?.toString() || "0",
             dueAmount: poData.dueAmount?.$numberDecimal?.toString() || "0",
-            // Attachments
-            attachments: poData.attachments || [],
+            attachments: poData.attachments.map((attachment) => ({
+              ...attachment,
+              isNew: false, // Mark existing attachments
+            })) || [],
             discountType: poData.discountType || prev.discountType,
             discountValueType: poData.discountValueType || prev.discountValueType,
           }));
@@ -197,7 +191,7 @@ const EditPurchaseOrder = () => {
           return;
         }
 
-        // Fetch organization and generate PO number if needed
+        // Fetch organization details and PO number if needed
         const poRes = await axios.get("/api/purchase-order/generate", {
           withCredentials: true,
           signal: controller.signal,
@@ -218,7 +212,7 @@ const EditPurchaseOrder = () => {
           setPurchaseOrder((prev) => ({
             ...prev,
             business: {
-              ...prev.business, // Preserve fetched business data
+              ...prev.business,
               id: user.organization.businessId,
               name: prev.business.name || organization.name || "",
               gstinStatus: prev.business.gstinStatus || organization.gstStatus || "",
@@ -250,13 +244,13 @@ const EditPurchaseOrder = () => {
           setAlert({ message: "No vendors found", type: "error" });
         }
 
-        // Fetch storage
+        // Fetch storage locations
         const storageRes = await axios.get("/api/storage/getList", {
           signal: controller.signal,
         });
         setAvailableStorage(storageRes.data?.data?.storage || []);
 
-        // Fetch taxes
+        // Fetch tax rates
         const taxRes = await axios.get("/api/tax/getTax", {
           withCredentials: true,
           signal: controller.signal,
@@ -267,7 +261,7 @@ const EditPurchaseOrder = () => {
           setAlert({ message: "Failed to fetch taxes", type: "error" });
         }
 
-        // Set states
+        // Load Indian states
         const allStates = State.getStatesOfCountry("IN") || [];
         setStates(allStates);
       } catch (err) {
@@ -278,11 +272,12 @@ const EditPurchaseOrder = () => {
         });
       }
     };
+
     fetchData();
     return () => controller.abort();
   }, [user?.organization?.businessId, user?.name, user?.id, purchaseOrderId]);
 
-  // Handle Attachment Selection
+  // Handle file input for attachments
   const handleAttachmentChange = (e) => {
     if (!e.target.files || e.target.files.length === 0) {
       setAlert({ message: "No files selected", type: "error" });
@@ -294,29 +289,29 @@ const EditPurchaseOrder = () => {
     const maxFileSize = 3 * 1024 * 1024; // 3 MB
     const allowedTypes = ["application/pdf", "image/jpeg"];
 
-    if (attachmentFiles.length + files.length > maxAttachments) {
-      setAlert({ message: `You can only upload up to ${maxAttachments} attachments.`, type: "error" });
+    if (purchaseOrder.attachments.length + files.length > maxAttachments) {
+      setAlert({ message: `Maximum ${maxAttachments} attachments allowed`, type: "error" });
       return;
     }
 
     const validFiles = files.filter((file) => {
       if (!file.name) {
-        setAlert({ message: "Invalid file: missing name.", type: "error" });
+        setAlert({ message: "Invalid file: missing name", type: "error" });
         return false;
       }
       if (!allowedTypes.includes(file.type)) {
         setAlert({
-          message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG files are allowed.`,
+          message: `File ${file.name} is not a valid type. Only PDF and JPG/JPEG allowed`,
           type: "error",
         });
         return false;
       }
       if (file.size > maxFileSize) {
-        setAlert({ message: `File ${file.name} exceeds 3 MB limit.`, type: "error" });
+        setAlert({ message: `File ${file.name} exceeds 3 MB limit`, type: "error" });
         return false;
       }
       if (file.size === 0) {
-        setAlert({ message: `File ${file.name} is empty.`, type: "error" });
+        setAlert({ message: `File ${file.name} is empty`, type: "error" });
         return false;
       }
       return true;
@@ -327,37 +322,101 @@ const EditPurchaseOrder = () => {
       return;
     }
 
-    // Save actual files for FormData
     setAttachmentFiles((prev) => [...prev, ...validFiles]);
-
-    // Save metadata in purchaseOrder.attachments
     setPurchaseOrder((prev) => ({
       ...prev,
       attachments: [
         ...prev.attachments,
         ...validFiles.map((file) => ({
           fileName: file.name,
-          filePath: `/Uploads/${file.name}`,
+          filePath: `Uploads/purchase-orders/${file.name}`, // Temporary path, updated by backend
           uploadedBy: user.id,
-          uploadedAt: new Date(),
+          uploadedAt: new Date().toISOString(),
+          isNew: true,
         })),
       ],
     }));
   };
 
-  // Remove Selected Attachment
-  const removeAttachment = (index) => {
-    setAttachmentFiles((prev) => prev.filter((_, i) => i !== index));
-    setPurchaseOrder((prev) => ({
-      ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index),
-    }));
+  // Remove an attachment
+  const removeAttachment = (index, isExisting = false) => {
+    if (isExisting) {
+      setPurchaseOrder((prev) => ({
+        ...prev,
+        attachments: prev.attachments.filter((_, i) => i !== index),
+      }));
+    } else {
+      const newFileIndex = index - purchaseOrder.attachments.filter((a) => !a.isNew).length;
+      setAttachmentFiles((prev) => prev.filter((_, i) => i !== newFileIndex));
+      setPurchaseOrder((prev) => ({
+        ...prev,
+        attachments: prev.attachments.filter((_, i) => i !== index),
+      }));
+    }
   };
 
-  // Drag and Drop Methods for Attachment
+  // View an existing attachment
+  const viewAttachment = async (attachment) => {
+    try {
+      const response = await axios.get(
+        `/api/purchase-order/ViewAttachment/${purchaseOrderId}/${attachment._id}`,
+        {
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+
+      const fileType = attachment.fileName.split(".").pop().toLowerCase();
+      const mimeType = fileType === "pdf" ? "application/pdf" : "image/jpeg";
+
+      const blob = new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      // Delay cleanup to allow browser to handle the file
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setAlert({
+        message: error.response?.data?.message || "Failed to view attachment",
+        type: "error",
+      });
+    }
+  };
+
+  // Download an existing attachment
+  const downloadAttachment = async (attachment) => {
+    try {
+      const response = await axios.get(
+        `/api/purchase-order/ViewAttachment/${purchaseOrderId}/${attachment._id}?download=true`,
+        {
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+
+      const fileType = attachment.fileName.split(".").pop().toLowerCase();
+      const mimeType = fileType === "pdf" ? "application/pdf" : "image/jpeg";
+
+      const blob = new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = attachment.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setAlert({
+        message: error.response?.data?.message || "Failed to download attachment. Please check your internet connection.",
+        type: "error",
+      });
+    }
+  };
+
+  // Drag-and-drop handlers
   const handleDragOver = (e) => {
     e.preventDefault();
-    if (attachmentFiles.length < 2) {
+    if (purchaseOrder.attachments.length < 2) {
       setIsDragging(true);
     }
   };
@@ -370,30 +429,29 @@ const EditPurchaseOrder = () => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    if (attachmentFiles.length < 2) {
+    if (purchaseOrder.attachments.length < 2) {
       const files = Array.from(e.dataTransfer.files);
       handleAttachmentChange({ target: { files } });
     }
   };
 
-  // Update Totals
+  // Update totals based on products and discounts
   const updateTotals = (totals) => {
     setPurchaseOrder((prev) => ({
       ...prev,
       totalAmountOfDiscount: totals.totalDiscount,
       taxAmount: totals.totalTax,
       subtotal: totals.totalBaseAmount,
-      totalBeforeDiscount: totals.taxableAmount,
+      totalBeforeDiscount: totals.totalBeforeDiscount,
       grandAmount: totals.totalInclTax,
-      dueAmount: (parseFloat(totals.totalInclTax) - parseFloat(prev.paidAmount)).toFixed(2),
+      dueAmount: (parseFloat(totals.totalInclTax) - parseFloat(prev.paidAmount || 0)).toFixed(2).toString(),
       roundOffAmount: totals.roundOffAmount,
     }));
   };
 
-  // Generate filtered taxes based on gstType
+  // Generate filtered tax options based on GST type (intra/inter)
   const getFilteredTaxes = (gstType) => {
     const gstRates = gstRatesData.gstRates;
-
     const customGstRates = gstRates.map((rate) => {
       if (gstType === "intra") {
         return {
@@ -402,14 +460,13 @@ const EditPurchaseOrder = () => {
           rate: rate.intraState.cgst.rate + rate.intraState.sgst.rate,
           type: "GST",
         };
-      } else {
-        return {
-          label: `IGST (${rate.interState.igst.rate}%)`,
-          value: rate.totalRate,
-          rate: rate.interState.igst.rate,
-          type: "IGST",
-        };
       }
+      return {
+        label: `IGST (${rate.interState.igst.rate}%)`,
+        value: rate.totalRate,
+        rate: rate.interState.igst.rate,
+        type: "IGST",
+      };
     });
 
     const formattedTaxes = taxes.map((tax) => ({
@@ -423,7 +480,7 @@ const EditPurchaseOrder = () => {
     return [...customGstRates, ...formattedTaxes];
   };
 
-  // Handle input changes
+  // Handle input changes for form fields
   const handleInputChange = async (...events) => {
     let updatedPurchaseOrder = { ...purchaseOrder };
     for (const event of events) {
@@ -434,7 +491,6 @@ const EditPurchaseOrder = () => {
 
       const { name, value } = event.target;
 
-      // Handle nested fields
       const setNestedValue = (obj, path, val) => {
         const keys = path.split(".");
         let current = obj;
@@ -473,7 +529,7 @@ const EditPurchaseOrder = () => {
             storageState = response.data?.storage?.storageState || "";
             storageAddress = response.data?.storage?.storageAddress || "";
           } catch (error) {
-            setAlert({ message: error.response?.data?.message || "Failed to fetch storage details.", type: "error" });
+            setAlert({ message: error.response?.data?.message || "Failed to fetch storage details", type: "error" });
             continue;
           }
         }
@@ -513,13 +569,11 @@ const EditPurchaseOrder = () => {
     }
 
     setPurchaseOrder(updatedPurchaseOrder);
-
-    // Recalculate totals
     const totals = calculateTotals(updatedPurchaseOrder.products, updatedPurchaseOrder);
     updateTotals(totals);
   };
 
-  // Re-Calculate Product Tax
+  // Recalculate taxes for products based on GST type
   const recalculateProductTaxes = (products, sourceState, deliveryState, filteredTaxes) => {
     const gstType = sourceState === deliveryState ? "intra" : "inter";
     return products.map((product) => {
@@ -532,7 +586,7 @@ const EditPurchaseOrder = () => {
       const discountAmount = product.inProductDiscountValueType === "Percent" ? amountBase * discount : discount;
       amountBase -= discountAmount;
 
-      const currentTaxRate = product.taxes && product.taxes.length > 0
+      const currentTaxRate = product.taxes?.length > 0
         ? product.taxes.reduce((sum, t) => sum + parseFloat(t.rate || 0), 0)
         : 0;
 
@@ -543,28 +597,15 @@ const EditPurchaseOrder = () => {
         matchingTax = filteredTaxes.find(
           (tax) =>
             tax.rate === currentTaxRate &&
-            (
-              (gstType === "intra" && tax.type === "GST") ||
-              (gstType === "inter" && tax.type === "IGST") ||
-              tax.type === "custom"
-            )
+            ((gstType === "intra" && tax.type === "GST") || (gstType === "inter" && tax.type === "IGST") || tax.type === "custom")
+        ) || filteredTaxes.find(
+          (tax) => tax.rate === currentTaxRate && (tax.type === "GST" || tax.type === "IGST" || tax.type === "custom")
         );
-
-        if (!matchingTax) {
-          matchingTax = filteredTaxes.find(
-            (tax) =>
-              tax.rate === currentTaxRate &&
-              (tax.type === "GST" || tax.type === "IGST" || tax.type === "custom")
-          );
-        }
       }
 
       if (!matchingTax) {
         matchingTax = filteredTaxes.find(
-          (tax) =>
-            (gstType === "intra" && tax.type === "GST") ||
-            (gstType === "inter" && tax.type === "IGST") ||
-            tax.type === "custom"
+          (tax) => (gstType === "intra" && tax.type === "GST") || (gstType === "inter" && tax.type === "IGST") || tax.type === "custom"
         );
       }
 
@@ -573,28 +614,13 @@ const EditPurchaseOrder = () => {
           const cgstRate = parseFloat(matchingTax.rate) / 2 || 0;
           const sgstRate = parseFloat(matchingTax.rate) / 2 || 0;
           taxes = [
-            {
-              type: "GST",
-              subType: "CGST",
-              rate: cgstRate,
-              amount: ((cgstRate / 100) * amountBase).toFixed(2).toString(),
-            },
-            {
-              type: "GST",
-              subType: "SGST",
-              rate: sgstRate,
-              amount: ((sgstRate / 100) * amountBase).toFixed(2).toString(),
-            },
+            { type: "GST", subType: "CGST", rate: cgstRate, amount: ((cgstRate / 100) * amountBase).toFixed(2).toString() },
+            { type: "GST", subType: "SGST", rate: sgstRate, amount: ((sgstRate / 100) * amountBase).toFixed(2).toString() },
           ];
         } else if (gstType === "inter" && matchingTax.type === "IGST") {
           const igstRate = parseFloat(matchingTax.rate) || 0;
           taxes = [
-            {
-              type: "IGST",
-              subType: "IGST",
-              rate: igstRate,
-              amount: ((igstRate / 100) * amountBase).toFixed(2).toString(),
-            },
+            { type: "IGST", subType: "IGST", rate: igstRate, amount: ((igstRate / 100) * amountBase).toFixed(2).toString() },
           ];
         } else if (matchingTax.type === "custom") {
           const customRate = parseFloat(matchingTax.rate) || 0;
@@ -620,15 +646,11 @@ const EditPurchaseOrder = () => {
       const totalTaxAmount = taxes.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
       const totalPrice = (amountBase + totalTaxAmount).toFixed(2).toString();
 
-      return {
-        ...product,
-        taxes,
-        totalPrice,
-      };
+      return { ...product, taxes, totalPrice };
     });
   };
 
-  // Calculate Totals
+  // Calculate totals for products and discounts
   const calculateTotals = (products, purchaseOrder) => {
     let totalBaseAmount = 0;
     let totalDiscount = 0;
@@ -637,6 +659,8 @@ const EditPurchaseOrder = () => {
     let sgstTotal = 0;
     let igstTotal = 0;
     let customTaxTotal = 0;
+    let totalTax = 0;
+    let totalBeforeDiscount = 0;
 
     products.forEach((product) => {
       const qty = parseFloat(product.quantity) || 0;
@@ -655,8 +679,10 @@ const EditPurchaseOrder = () => {
       }
       taxableAmount += subtotal - discountAmount;
 
-      product.taxes.forEach((tax) => {
-        const taxAmount = parseFloat(tax.amount || 0);
+      let productTaxAmount = 0;
+      product.taxes?.forEach((tax) => {
+        const taxAmount = parseFloat(tax.amount?.$numberDecimal || tax.amount || 0);
+        productTaxAmount += taxAmount;
         if (tax.type === "GST" && tax.subType === "CGST") {
           cgstTotal += taxAmount;
         } else if (tax.type === "GST" && tax.subType === "SGST") {
@@ -667,6 +693,8 @@ const EditPurchaseOrder = () => {
           customTaxTotal += taxAmount;
         }
       });
+      totalTax += productTaxAmount;
+      totalBeforeDiscount += subtotal + productTaxAmount;
     });
 
     if (purchaseOrder.discountType === "Flat") {
@@ -677,11 +705,10 @@ const EditPurchaseOrder = () => {
             ? (totalBaseAmount * discountValue) / 100
             : discountValue;
         totalDiscount += flatDiscountAmount;
-        taxableAmount -= flatDiscountAmount; // Apply flat discount to taxable amount
+        taxableAmount -= flatDiscountAmount;
       }
     }
 
-    const totalTax = cgstTotal + sgstTotal + igstTotal + customTaxTotal;
     let totalInclTax = taxableAmount + totalTax;
     let roundOffAmount = "0.00";
 
@@ -694,7 +721,7 @@ const EditPurchaseOrder = () => {
     return {
       totalBaseAmount: totalBaseAmount.toFixed(2).toString(),
       totalDiscount: totalDiscount.toFixed(2).toString(),
-      taxableAmount: taxableAmount.toFixed(2).toString(), // Corrected: taxableAmount before tax
+      taxableAmount: taxableAmount.toFixed(2).toString(),
       totalTax: totalTax.toFixed(2).toString(),
       totalInclTax: totalInclTax.toFixed(2).toString(),
       cgstTotal: cgstTotal.toFixed(2).toString(),
@@ -702,10 +729,11 @@ const EditPurchaseOrder = () => {
       igstTotal: igstTotal.toFixed(2).toString(),
       customTaxTotal: customTaxTotal.toFixed(2).toString(),
       roundOffAmount,
+      totalBeforeDiscount: totalBeforeDiscount.toFixed(2).toString(),
     };
   };
 
-  // Handle selected vendor
+  // Handle vendor selection
   const handleVendorSelect = async ({ vendorId, vendorName }) => {
     setPurchaseOrder((prev) => ({
       ...prev,
@@ -723,7 +751,7 @@ const EditPurchaseOrder = () => {
     try {
       const response = await axios.get(`/api/vendor/getVendorDetails/${vendorId}`);
       const vendorDetails = response?.data?.vendorDetails;
-      const vendorAddress = vendorDetails.billingAddress.addressLine1 && vendorDetails.billingAddress.city && vendorDetails.billingAddress.state && vendorDetails.billingAddress.country && vendorDetails.billingAddress.postalCode
+      const vendorAddress = vendorDetails.billingAddress?.addressLine1 && vendorDetails.billingAddress?.city && vendorDetails.billingAddress?.state && vendorDetails.billingAddress?.country && vendorDetails.billingAddress?.postalCode
         ? `${vendorDetails.billingAddress.addressLine1}, ${vendorDetails.billingAddress.city}, ${vendorDetails.billingAddress.state}, ${vendorDetails.billingAddress.country}, ${vendorDetails.billingAddress.postalCode}`
         : "";
 
@@ -758,135 +786,126 @@ const EditPurchaseOrder = () => {
         const totals = calculateTotals(updatedProducts, purchaseOrder);
         updateTotals(totals);
       } else {
-        setAlert({ message: "Vendor details not found.", type: "error" });
+        setAlert({ message: "Vendor details not found", type: "error" });
       }
     } catch (error) {
-      setAlert({ message: error.response?.data?.message || "Failed to fetch selected vendor's details.", type: "error" });
+      setAlert({ message: error.response?.data?.message || "Failed to fetch vendor details", type: "error" });
     }
   };
 
-  // Validate form
+  // Validate form before submission
   const validateForm = () => {
-    let isValid = true;
-    let errorMessage = "";
-
     if (!purchaseOrder.business.id) {
-      errorMessage = "You must be logged in to create a purchase order.";
-      isValid = false;
-    } else if (!purchaseOrder.vendor.id) {
-      errorMessage = "Please select a vendor for the purchase order.";
-      isValid = false;
-    } else if (!purchaseOrder.poNumber || purchaseOrder.poNumber.trim() === "") {
-      errorMessage = "Purchase order number is required.";
-      isValid = false;
-    } else if (!purchaseOrder.orderDate) {
-      errorMessage = "Order date is required.";
-      isValid = false;
-    } else if (purchaseOrder.dueDate) {
+      setAlert({ message: "You must be logged in to update a purchase order", type: "error" });
+      return false;
+    }
+    if (!purchaseOrder.vendor.id) {
+      setAlert({ message: "Please select a vendor", type: "error" });
+      return false;
+    }
+    if (!purchaseOrder.poNumber || purchaseOrder.poNumber.trim() === "") {
+      setAlert({ message: "Purchase order number is required", type: "error" });
+      return false;
+    }
+    if (!purchaseOrder.orderDate) {
+      setAlert({ message: "Order date is required", type: "error" });
+      return false;
+    }
+    if (purchaseOrder.dueDate) {
       const dueDate = new Date(purchaseOrder.dueDate);
       const orderDate = new Date(purchaseOrder.orderDate);
       if (dueDate < orderDate) {
-        errorMessage = "Due date cannot be before the order date.";
-        isValid = false;
-      }
-    } else if (!purchaseOrder.address.billing || purchaseOrder.address.billing.trim() === "") {
-      errorMessage = "Billing address is required.";
-      isValid = false;
-    } else if (!purchaseOrder.address.shipping || purchaseOrder.address.shipping.trim() === "") {
-      errorMessage = "Shipping address is required.";
-      isValid = false;
-    } else if (!purchaseOrder.address.deliveryLocation) {
-      errorMessage = "Delivery location is required.";
-      isValid = false;
-    } else if (!purchaseOrder.address.deliveryState) {
-      errorMessage = "Delivery state (Place of Supply) is required.";
-      isValid = false;
-    } else if (!purchaseOrder.address.sourceState) {
-      errorMessage = "Source state is required.";
-      isValid = false;
-    } else if (!purchaseOrder.products || purchaseOrder.products.length === 0) {
-      errorMessage = "At least one product is required for the purchase order.";
-      isValid = false;
-    } else {
-      for (let i = 0; i < purchaseOrder.products.length; i++) {
-        const product = purchaseOrder.products[i];
-        if (!product.productName || product.productName.trim() === "") {
-          errorMessage = `Product name is required for product ${i + 1}.`;
-          isValid = false;
-          break;
-        }
-        if (!product.quantity || parseFloat(product.quantity) <= 0) {
-          errorMessage = `Quantity must be a positive number for product ${i + 1}.`;
-          isValid = false;
-          break;
-        }
-        if (!product.rate || parseFloat(product.rate) <= 0) {
-          errorMessage = `Rate must be a positive number for product ${i + 1}.`;
-          isValid = false;
-          break;
-        }
-        if (!product.unit || product.unit.trim() === "") {
-          errorMessage = `Unit is required for product ${i + 1}.`;
-          isValid = false;
-          break;
-        }
+        setAlert({ message: "Due date cannot be before order date", type: "error" });
+        return false;
       }
     }
-
-    if (isValid && purchaseOrder.discount && parseFloat(purchaseOrder.discount) < 0) {
-      errorMessage = "Discount cannot be negative.";
-      isValid = false;
+    if (!purchaseOrder.address.billing || purchaseOrder.address.billing.trim() === "") {
+      setAlert({ message: "Billing address is required", type: "error" });
+      return false;
     }
-
-    if (isValid && purchaseOrder.paidAmount && parseFloat(purchaseOrder.paidAmount) < 0) {
-      errorMessage = "Paid amount cannot be negative.";
-      isValid = false;
+    if (!purchaseOrder.address.shipping || purchaseOrder.address.shipping.trim() === "") {
+      setAlert({ message: "Shipping address is required", type: "error" });
+      return false;
     }
-
-    if (!isValid) {
-      setAlert({ message: errorMessage, type: "error" });
+    if (!purchaseOrder.address.deliveryLocation) {
+      setAlert({ message: "Delivery location is required", type: "error" });
+      return false;
     }
-
-    return isValid;
+    if (!purchaseOrder.address.deliveryState) {
+      setAlert({ message: "Delivery state (Place of Supply) is required", type: "error" });
+      return false;
+    }
+    if (!purchaseOrder.address.sourceState) {
+      setAlert({ message: "Source state is required", type: "error" });
+      return false;
+    }
+    if (!purchaseOrder.products || purchaseOrder.products.length === 0) {
+      setAlert({ message: "At least one product is required", type: "error" });
+      return false;
+    }
+    for (let i = 0; i < purchaseOrder.products.length; i++) {
+      const product = purchaseOrder.products[i];
+      if (!product.productName || product.productName.trim() === "") {
+        setAlert({ message: `Product name is required for product ${i + 1}`, type: "error" });
+        return false;
+      }
+      if (!product.quantity || parseFloat(product.quantity) <= 0) {
+        setAlert({ message: `Quantity must be a positive number for product ${i + 1}`, type: "error" });
+        return false;
+      }
+      if (!product.rate || parseFloat(product.rate) <= 0) {
+        setAlert({ message: `Rate must be a positive number for product ${i + 1}`, type: "error" });
+        return false;
+      }
+      if (!product.unit || product.unit.trim() === "") {
+        setAlert({ message: `Unit is required for product ${i + 1}`, type: "error" });
+        return false;
+      }
+    }
+    if (purchaseOrder.discount && parseFloat(purchaseOrder.discount) < 0) {
+      setAlert({ message: "Discount cannot be negative", type: "error" });
+      return false;
+    }
+    if (purchaseOrder.paidAmount && parseFloat(purchaseOrder.paidAmount) < 0) {
+      setAlert({ message: "Paid amount cannot be negative", type: "error" });
+      return false;
+    }
+    return true;
   };
 
-  // Handle Submit
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     const formData = new FormData();
-
-    // Add JSON string
-    formData.append("purchaseOrder", JSON.stringify(purchaseOrder));
-
-    // Append actual File objects
+    formData.append("purchaseOrder", JSON.stringify({
+      ...purchaseOrder,
+      attachments: purchaseOrder.attachments.map(({ isNew, ...rest }) => rest),
+    }));
     attachmentFiles.forEach((file) => {
-      formData.append("attachments", file); // must match multer field name
+      formData.append("attachments", file);
     });
 
     try {
-      const response = await fetch("/api/purchase-order/create", {
-        method: "POST",
+      const response = await fetch(`/api/purchase-order/${purchaseOrderId}`, {
+        method: "PUT",
         body: formData,
       });
 
       const result = await response.json();
-
       if (response.ok) {
-        setAlert({ message: "Purchase order created successfully!", type: "success" });
+        setAlert({ message: "Purchase order updated successfully!", type: "success" });
         setTimeout(() => navigate("/purchaseorder"), 1000);
       } else {
-        setAlert({ message: result.message || "Failed to create purchase order!", type: "error" });
+        setAlert({ message: result.message || "Failed to update purchase order", type: "error" });
       }
     } catch (error) {
-      setAlert({ message: "Failed to create purchase order", type: "error" });
+      setAlert({ message: `Failed to update purchase order: ${error.message}`, type: "error" });
     }
   };
 
-
-  // Set options for storage (Delivery Location)
+  // Delivery location options for dropdown
   const deliveryLocationOptions = [
     userAddress || { value: "", label: "Loading user address..." },
     ...(Array.isArray(availableStorage)
@@ -897,22 +916,30 @@ const EditPurchaseOrder = () => {
       : []),
   ];
 
-  // Set file icon for attachments
+  // Get file icon based on extension
   const getFileIcon = (fileName) => {
-    if (!fileName || typeof fileName !== 'string') {
-      return '📎'; // Default icon for invalid or missing file names
-    }
-    const extension = fileName.split('.').pop().toLowerCase();
-    return extension === 'pdf' ? '📄' : '🖼️';
+    if (!fileName || typeof fileName !== "string") return "📎";
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    return extension === "pdf" ? "📄" : extension === "jpg" || extension === "jpeg" ? "🖼️" : "📎";
   };
 
-  console.log(purchaseOrder);
+  // Get file size for display
+  const getFileSize = (attachment, index) => {
+    if (attachment.isNew) {
+      const fileIndex = index - purchaseOrder.attachments.filter((a) => !a.isNew).length;
+      return attachmentFiles[fileIndex]?.size
+        ? (attachmentFiles[fileIndex].size / (1024 * 1024)).toFixed(2) + " MB"
+        : "N/A";
+    }
+    return "N/A"; // Backend should store file size for existing attachments
+  };
 
   return (
     <UserLayout>
       <div className="flex flex-col relative h-full w-full text-start overflow-visible">
+        {/* Header Section */}
         <div className="flex flex-row items-center justify-between px-3 text-2xl py-2">
-          <p>Purchase Orders</p>
+          <p>Edit Purchase Order</p>
           <Link
             to="/purchaseorder"
             className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light border border-gray-200 hover:border-gray-400"
@@ -921,8 +948,10 @@ const EditPurchaseOrder = () => {
           </Link>
         </div>
         <hr />
+        {/* Form Section */}
         <form className="h-full overflow-y-auto" onSubmit={handleSubmit}>
           <div className="flex flex-wrap w-full">
+            {/* Purchase Order Details */}
             <TextInput
               label="Purchase Order Number"
               name="poNumber"
@@ -977,29 +1006,19 @@ const EditPurchaseOrder = () => {
               name="address.deliveryLocation"
               id="deliveryLocation"
               value={purchaseOrder.address.deliveryLocation}
-              onChange={(e) =>
-                handleInputChange({ target: { name: "address.deliveryLocation", value: e.target.value } })
-              }
+              onChange={(e) => handleInputChange({ target: { name: "address.deliveryLocation", value: e.target.value } })}
               options={deliveryLocationOptions}
               required
             />
             <SelectInput
-              label="Delivery State (Place Of Supply)"
+              label="Delivery State (Place of Supply)"
               name="address.deliveryState"
               value={purchaseOrder.address.deliveryState}
-              onChange={(e) =>
-                handleInputChange({ target: { name: "address.deliveryState", value: e.target.value } })
-              }
-              options={
-                states.length > 0
-                  ? states.map((state) => ({
-                    value: state.name,
-                    label: state.name,
-                  }))
-                  : []
-              }
+              onChange={(e) => handleInputChange({ target: { name: "address.deliveryState", value: e.target.value } })}
+              options={states.map((state) => ({ value: state.name, label: state.name }))}
               required
             />
+            {/* Address Fields */}
             <div className="flex flex-wrap text-sm">
               <div className="m-2">
                 <label className="mb-2 block">
@@ -1009,9 +1028,7 @@ const EditPurchaseOrder = () => {
                   name="address.billing"
                   rows={5}
                   value={purchaseOrder.address.billing}
-                  onChange={(e) =>
-                    handleInputChange({ target: { name: "address.billing", value: e.target.value } })
-                  }
+                  onChange={(e) => handleInputChange({ target: { name: "address.billing", value: e.target.value } })}
                   className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                   required
                 />
@@ -1024,23 +1041,20 @@ const EditPurchaseOrder = () => {
                   name="address.shipping"
                   rows={5}
                   value={purchaseOrder.address.shipping}
-                  onChange={(e) =>
-                    handleInputChange({ target: { name: "address.shipping", value: e.target.value } })
-                  }
+                  onChange={(e) => handleInputChange({ target: { name: "address.shipping", value: e.target.value } })}
                   className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
                   required
                 />
               </div>
             </div>
+            {/* EMI Details (Conditional) */}
             {purchaseOrder.paymentType === "EMI" && (
               <div className="flex flex-wrap text-sm w-full">
                 <SelectInput
                   label="EMI Frequency"
                   name="emiDetails.frequency"
                   value={purchaseOrder.emiDetails.frequency}
-                  onChange={(e) =>
-                    handleInputChange({ target: { name: "emiDetails.frequency", value: e.target.value } })
-                  }
+                  onChange={(e) => handleInputChange({ target: { name: "emiDetails.frequency", value: e.target.value } })}
                   options={[
                     { value: "", label: "Select Frequency" },
                     { value: "Monthly", label: "Monthly" },
@@ -1054,9 +1068,7 @@ const EditPurchaseOrder = () => {
                   label="Interest Rate (%)"
                   name="emiDetails.interestRate"
                   value={purchaseOrder.emiDetails.interestRate}
-                  onChange={(e) =>
-                    handleInputChange({ target: { name: "emiDetails.interestRate", value: e.target.value } })
-                  }
+                  onChange={(e) => handleInputChange({ target: { name: "emiDetails.interestRate", value: e.target.value } })}
                   placeholder="0"
                 />
                 <TextInput
@@ -1064,23 +1076,21 @@ const EditPurchaseOrder = () => {
                   label="Advance Payment"
                   name="emiDetails.advancePayment"
                   value={purchaseOrder.emiDetails.advancePayment}
-                  onChange={(e) =>
-                    handleInputChange({
-                      target: { name: "emiDetails.advancePayment", value: e.target.value },
-                    })
-                  }
+                  onChange={(e) => handleInputChange({ target: { name: "emiDetails.advancePayment", value: e.target.value } })}
                   placeholder="0"
                 />
               </div>
             )}
           </div>
           <hr />
+          {/* Product Table */}
           <ProductTable
             purchaseOrder={purchaseOrder}
             handleInputChange={handleInputChange}
             updateTotals={updateTotals}
             taxes={taxes}
           />
+          {/* Notes and Terms */}
           <div className="flex flex-wrap text-sm w-full">
             <div className="m-2">
               <label className="mb-2 block">Note</label>
@@ -1100,9 +1110,7 @@ const EditPurchaseOrder = () => {
                 placeholder="Specify delivery terms"
                 rows={4}
                 value={purchaseOrder.deliveryTerms}
-                onChange={(e) =>
-                  handleInputChange({ target: { name: "deliveryTerms", value: e.target.value } })
-                }
+                onChange={(e) => handleInputChange({ target: { name: "deliveryTerms", value: e.target.value } })}
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
@@ -1113,22 +1121,21 @@ const EditPurchaseOrder = () => {
                 placeholder="Specify terms and conditions"
                 rows={4}
                 value={purchaseOrder.termsAndConditions}
-                onChange={(e) =>
-                  handleInputChange({ target: { name: "termsAndConditions", value: e.target.value } })
-                }
+                onChange={(e) => handleInputChange({ target: { name: "termsAndConditions", value: e.target.value } })}
                 className="w-[250px] py-2 px-2 rounded-lg outline outline-1 outline-gray-200 focus:outline-1 focus:outline-customSecondary text-gray-700 text-[14px]"
               />
             </div>
           </div>
           <hr />
+          {/* Attachments Section */}
           <div className="flex flex-wrap w-full text-sm mb-16">
             <div className="m-2 w-fit">
               <label className="mb-2 block font-medium text-gray-700">Attachments</label>
               <div
                 className={[
                   "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 bg-gray-50",
-                  isDragging && attachmentFiles.length < 2 ? "border-customPrimary bg-customPrimary/10" : "border-gray-300",
-                  attachmentFiles.length >= 2 ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400",
+                  isDragging && purchaseOrder.attachments.length < 2 ? "border-customPrimary bg-customPrimary/10" : "border-gray-300",
+                  purchaseOrder.attachments.length >= 2 ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400",
                 ].join(" ")}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -1142,12 +1149,12 @@ const EditPurchaseOrder = () => {
                   accept=".pdf,.jpg,.jpeg"
                   onChange={handleAttachmentChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  disabled={attachmentFiles.length >= 2}
+                  disabled={purchaseOrder.attachments.length >= 2}
                   aria-describedby="attachment-instructions"
                 />
                 <div className="flex flex-col items-center">
                   <p className="text-gray-600 text-sm">
-                    {attachmentFiles.length >= 2
+                    {purchaseOrder.attachments.length >= 2
                       ? "Maximum 2 attachments reached"
                       : "Drag and drop PDF or JPG/JPEG files here, or click to select"}
                   </p>
@@ -1157,44 +1164,65 @@ const EditPurchaseOrder = () => {
                 </div>
               </div>
             </div>
-            <div className="m-2 w-fit">
-              {attachmentFiles.length > 0 && (
-                <div className="ms-1 w-fit">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Selected Attachments:</p>
-                  <div className="space-y-2">
-                    {attachmentFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">{getFileIcon(file.name)}</span>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                            <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                          </div>
+            {purchaseOrder.attachments.length > 0 && (
+              <div className="m-2 w-fit">
+                <p className="text-sm font-medium text-gray-700 mb-2">Attachments:</p>
+                <div className="space-y-2">
+                  {purchaseOrder.attachments.map((attachment, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{getFileIcon(attachment.fileName)}</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">{attachment.fileName}</p>
+                          <p className="text-xs text-gray-500">{getFileSize(attachment, index)}</p>
                         </div>
+                      </div>
+                      <div className="flex items-center space-x-2 m-2">
+                        {!attachment.isNew && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => viewAttachment(attachment)}
+                              className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                              aria-label={`View ${attachment.fileName || "attachment"}`}
+                            >
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadAttachment(attachment)}
+                              className="text-green-500 hover:text-green-700 text-sm font-medium"
+                              aria-label={`Download ${attachment.fileName || "attachment"}`}
+                            >
+                              Download
+                            </button>
+                          </>
+                        )}
                         <button
                           type="button"
-                          onClick={() => removeAttachment(index)}
-                          className="text-red-500 hover:text-red-700 text-sm ms-2 font-medium"
-                          aria-label={`Remove ${file.name || 'attachment'}`}
+                          onClick={() => removeAttachment(index, !attachment.isNew)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                          aria-label={`Remove ${attachment.fileName || "attachment"}`}
                         >
                           Remove
                         </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+          {/* Form Actions */}
           <div className="absolute w-full bottom-0 bg-white border-t">
             <button
               type="submit"
               className="rounded-lg bg-customPrimary hover:bg-customPrimaryHover m-2 py-2 px-2 text-white text-[16px]"
             >
-              Submit
+              Update
             </button>
             <button
               type="button"
@@ -1206,6 +1234,7 @@ const EditPurchaseOrder = () => {
           </div>
         </form>
       </div>
+      {/* Alert and Preview Modal */}
       {alert && (
         <Alert
           message={alert.message}
