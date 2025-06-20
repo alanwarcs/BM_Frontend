@@ -137,7 +137,7 @@ const PurchaseOrder = () => {
     const deletePurchaseOrder = async (poId) => {
         try {
             setLoadingProgress(30);
-            const response = await axios.delete(`/api/purchaseorder/${poId}`);
+            const response = await axios.delete(`/api/purchase-order/${poId}`);
             setLoadingProgress(70);
 
             if (response.data.success) {
@@ -174,7 +174,7 @@ const PurchaseOrder = () => {
             setLoadingProgress(30);
 
             const deletePromises = selectedIds.map((poId) =>
-                axios.delete(`/api/purchaseorder/${poId}`)
+                axios.delete(`/api/purchase-order/${poId}`)
             );
 
             await Promise.all(deletePromises);
