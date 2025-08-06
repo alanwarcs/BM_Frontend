@@ -38,7 +38,7 @@ const EditPurchaseOrder = () => {
   const [isDragging, setIsDragging] = useState(false); // Drag-and-drop state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false); // Preview modal state
   const [taxes, setTaxes] = useState([]); // Available tax rates
-
+  const [isLoading, setIsLoading] = useState(false);
   // Initial purchase order state
   const [purchaseOrder, setPurchaseOrder] = useState({
     business: {
@@ -410,6 +410,34 @@ const EditPurchaseOrder = () => {
         message: error.response?.data?.message || "Failed to download attachment. Please check your internet connection.",
         type: "error",
       });
+    }
+  };
+
+  const downloadPurchaseOrder = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Fetching PO PDF with ID:', purchaseOrderId);
+      const response = await axios.get(`/api/purchase-order/download/${purchaseOrderId}`, {
+        withCredentials: true,
+        responseType: 'blob',
+      });
+      if (response.headers['content-type'] !== 'application/pdf') {
+        const text = await response.data.text();
+        console.error('Unexpected response:', text);
+        throw new Error(`Server did not return a PDF: ${text}`);
+      }
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+      // Optionally revoke the URL after a delay to free memory
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+    } catch (error) {
+      console.error('Fetch PDF error:', error.message, await error.response?.data?.text?.() || error);
+      setAlert({
+        message: error.message || 'Failed to fetch purchase order PDF',
+        type: 'error',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -940,12 +968,41 @@ const EditPurchaseOrder = () => {
         {/* Header Section */}
         <div className="flex flex-row items-center justify-between px-3 text-2xl py-2">
           <p>Edit Purchase Order</p>
-          <Link
-            to="/purchaseorder"
-            className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light border border-gray-200 hover:border-gray-400"
-          >
-            Purchase Order List
-          </Link>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={downloadPurchaseOrder}
+              className="p-2 m-1 bg-transparent rounded-md text-sm font-light border border-gray-200 hover:border-gray-400"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span>Downloading...</span>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-file-down"
+                >
+                  <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                  <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                  <path d="M12 18v-6" />
+                  <path d="m9 15 3 3 3-3" />
+                </svg>
+              )}
+            </button>
+            <Link
+              to="/purchaseorder"
+              className="p-2 m-1 bg-gray-100 rounded-md text-sm font-light border border-gray-200 hover:border-gray-400"
+            >
+              Purchase Order List
+            </Link>
+          </div>
         </div>
         <hr />
         {/* Form Section */}

@@ -442,12 +442,6 @@ const PurchaseOrder = () => {
                                                             Edit
                                                         </button>
                                                         <button
-                                                            className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100"
-                                                            onClick={() => navigate(`/viewpurchaseorder/${po._id}`)}
-                                                        >
-                                                            View
-                                                        </button>
-                                                        <button
                                                             className="block w-full px-4 py-2 text-start text-sm hover:bg-gray-100 text-red-500"
                                                             onClick={() => deletePurchaseOrder(po._id)}
                                                         >
